@@ -1,75 +1,84 @@
-# React + TypeScript + Vite
+# CodeMpi
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CodeMpi é uma plataforma de aprendizado de programação focada em prática guiada, feedback e evolução individual.
 
-Currently, two official plugins are available:
+A proposta é levar o aluno do básico ao pensamento algorítmico por meio de aulas, desafios progressivos, testes automáticos, diagnóstico de erros e ferramentas de experimentação.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## O que já existe
 
-## React Compiler
+- aulas guiadas para os níveis iniciais;
+- desafios progressivos com XP;
+- multiplicador de XP por uso de dicas: 100%, 90%, 75% e 50%;
+- testes automáticos;
+- diagnóstico educativo de erros;
+- teste de mesa com entradas personalizadas;
+- continuidade diária sem perda de progresso;
+- memória de aprendizado e revisão;
+- mapa da jornada;
+- tela de conclusão de nível;
+- temas de interface personalizáveis.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+- React 19
+- TypeScript
+- Vite
+- CodeMirror
+- CSS customizado
+- LocalStorage para persistência do progresso atual
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estrutura
 
 ```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+src/
+├── components/
+│   ├── AppHeader.tsx
+│   ├── CompletionPage.tsx
+│   ├── Dashboard.tsx
+│   ├── JourneyMap.tsx
+│   ├── LessonPage.tsx
+│   ├── MissionPage.tsx
+│   └── SettingsPage.tsx
+├── data/
+│   ├── concepts.ts
+│   └── themes.ts
+├── hooks/
+│   ├── useLearningProgress.ts
+│   ├── useMissionRunner.ts
+│   ├── useProgressStore.ts
+│   └── useTheme.ts
+├── utils/
+│   └── xp.ts
+├── CodeEditor.tsx
+├── index.css
+├── levels.ts
+├── lessons.ts
+├── progress.ts
+└── types.ts
 ```
+
+## Desenvolvimento
+
+```bash
+npm install
+npm run dev
+```
+
+Validação local:
+
+```bash
+npm run build
+npm run lint
+```
+
+## Conteúdo
+
+- **N1 — Variáveis e Operadores:** disponível.
+- **N2 — Condicionais:** disponível.
+- **N3 a N10:** jornada estruturada, conteúdo ainda em construção.
+
+## Arquitetura
+
+O `App.tsx` atua como orquestrador. As telas ficam em `components/`, o estado persistente e a execução da missão ficam em hooks, e regras reutilizáveis de progressão e XP ficam separadas da UI.
+
+A execução atual de JavaScript acontece no navegador para o protótipo. Antes de disponibilizar execução de código para usuários públicos, o executor deverá ser substituído por um ambiente sandbox seguro.
