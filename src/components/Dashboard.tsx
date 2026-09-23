@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { LEVELS } from '../levels';
-import { getActivityStreak } from '../progress';
+import { LEVELS } from '../data/levels';
+import { getActivityStreak } from '../utils/progress';
 import type { ConceptSummary, View } from '../types';
 
 interface DashboardProps {
