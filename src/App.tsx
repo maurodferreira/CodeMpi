@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
 import { CompletionPage } from './components/CompletionPage';
 import { Dashboard } from './components/Dashboard';
@@ -294,9 +295,7 @@ export default function App() {
         />
       )}
 
-      <footer className="note">
-        seu progresso (XP, dicas usadas e exercícios concluídos) fica salvo neste navegador
-      </footer>
+      <AppFooter view={view} setView={setView} />
     </div>
   );
 }
