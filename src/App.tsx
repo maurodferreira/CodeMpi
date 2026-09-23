@@ -13,7 +13,7 @@ import { useTheme } from './hooks/useTheme';
 import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
-import { getHintMultiplier, HINT_MULTIPLIERS } from './utils/xp';
+import { HINT_MULTIPLIERS } from './utils/xp';
 import type { ConceptSummary, View } from './types';
 
 export default function App() {
@@ -55,6 +55,7 @@ export default function App() {
   const currentLesson = LEVEL_LESSONS[levelIndex];
   const currentLessonStep = currentLesson?.steps[lessonStep];
   const lessonReward = currentLesson?.rewardXp || 25;
+  const lessonCompletion = currentLesson ? Boolean(store.lessonDone[levelIndex]) : false;
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
   const activityStreak = getActivityStreak(store.activityDates || []);
   const todayKey = getLocalDateKey();
@@ -189,7 +190,6 @@ export default function App() {
           activeLevel={activeLevel}
           activeLevelDone={activeLevelDone}
           activeLevelTotal={activeLevelTotal}
-          overallProgress={overallProgress}
           masteredConcepts={masteredConcepts}
           reviewConcepts={reviewConcepts}
           reviewTarget={reviewTarget}
