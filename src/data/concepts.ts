@@ -60,6 +60,26 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Lógica booleana',
     description: 'Combinar condições usando && e ||.',
   },
+  loops: {
+    id: 'loops',
+    name: 'Laços de repetição',
+    description: 'Repetir uma tarefa com for ou while sem duplicar código.',
+  },
+  counters: {
+    id: 'counters',
+    name: 'Contadores',
+    description: 'Usar uma variável para contar quantas vezes algo acontece.',
+  },
+  accumulators: {
+    id: 'accumulators',
+    name: 'Acumuladores',
+    description: 'Construir um resultado aos poucos dentro de um laço.',
+  },
+  iteration: {
+    id: 'iteration',
+    name: 'Percorrer listas',
+    description: 'Visitar os valores de uma lista usando um índice e um laço.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito') {
