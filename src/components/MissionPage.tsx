@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { CodeEditor } from '../CodeEditor';
-import { LEVELS } from '../levels';
+import { CodeEditor } from './CodeEditor';
+import { LEVELS } from '../data/levels';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
 
 const DIFF_LABEL: Record<string, string> = {
@@ -137,7 +137,7 @@ export function MissionPage({
                 </div>
               </div>
 
-              {!hasExercises ? (
+              {!hasExercises || !currentExercise ? (
                 <div className="soon-panel">
                   <div className="big">🔧 {currentLevel.count} exercícios em construção</div>
                   Temas planejados:
