@@ -594,7 +594,14 @@ export default function App() {
                   <button
                     className="btn primary"
                     disabled={currentLessonStep.type === 'quiz' && quizAnswer === null}
-                    onClick={() => { setLessonStep((prev) => prev + 1); setQuizAnswer(null); }}
+                    onClick={() => {
+                      if (currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer) {
+                        setQuizAnswer(null);
+                        return;
+                      }
+                      setLessonStep((prev) => prev + 1);
+                      setQuizAnswer(null);
+                    }}
                   >
                     {currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer ? 'Tentar novamente →' : 'Continuar →'}
                   </button>
