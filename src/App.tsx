@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from './levels';
 import { LEVEL_LESSONS } from './lessons';
+import { addTodayActivity, getActivityStreak, getLocalDateKey } from './progress';
 
 const DIFF_LABEL: Record<string, string> = {
   facil: 'FÁCIL',
@@ -24,6 +25,7 @@ interface StoreData {
   hints: Record<string, number>;
   lessonDone: Record<number, boolean>;
   performance: Record<string, PerformanceData>;
+  activityDates: string[];
 }
 
 export default function App() {
@@ -34,10 +36,10 @@ export default function App() {
     try {
       const saved = localStorage.getItem('circuito_v2');
       return saved
-        ? { done: {}, hints: {}, lessonDone: {}, performance: {}, ...JSON.parse(saved) }
-        : { done: {}, hints: {}, lessonDone: {}, performance: {} };
+        ? { done: {}, hints: {}, lessonDone: {}, performance: {}, activityDates: [], ...JSON.parse(saved) }
+        : { done: {}, hints: {}, lessonDone: {}, performance: {}, activityDates: [] };
     } catch {
-      return { done: {}, hints: {}, lessonDone: {}, performance: {} };
+      return { done: {}, hints: {}, lessonDone: {}, performance: {}, activityDates: [] };
     }
   });
 
@@ -143,6 +145,9 @@ export default function App() {
   }, 0);
   const lessonCompletion = currentLesson ? Boolean(store.lessonDone[levelIndex]) : false;
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
+  const activityStreak = getActivityStreak(store.activityDates || []);
+  const todayKey = getLocalDateKey();
+  const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
   const conceptStats = LEVELS.flatMap((level, li) =>
     (level.exercises || []).map((exercise, ei) => ({
@@ -206,6 +211,13 @@ export default function App() {
     setView('mission');
   };
 
+  const registerActivity = () => {
+    setStore((prev) => ({
+      ...prev,
+      activityDates: addTodayActivity(prev.activityDates || []),
+    }));
+  };
+
   const openMission = (li: number, ei?: number) => {
     if (!levelUnlocked(li)) return;
 
@@ -257,6 +269,7 @@ export default function App() {
     if (!currentExercise) return;
 
     const key = getKey(levelIndex, exerciseIndex);
+    registerActivity();
     setStore((prev) => ({
       ...prev,
       performance: {
@@ -431,6 +444,7 @@ export default function App() {
 
 
   const handleLessonFinish = () => {
+    registerActivity();
     if (!store.lessonDone[levelIndex] && currentLesson) {
       setStore((prev) => ({
         ...prev,
@@ -637,6 +651,58 @@ export default function App() {
                 </div>
               </div>
             )}
+          </section>
+
+          <section className="daily-grid">
+            <article className={`streak-card ${activityStreak.activeToday ? 'active' : ''}`}>
+              <div className="daily-card-top">
+                <span className="section-kicker">CONTINUIDADE</span>
+                <span className="daily-date">{todayKey.split('-').reverse().join('/')}</span>
+              </div>
+              <div className="streak-main">
+                <span className="streak-flame">⌁</span>
+                <div>
+                  <strong>{activityStreak.current}</strong>
+                  <span>{activityStreak.current === 1 ? 'dia de sequência' : 'dias de sequência'}</span>
+                </div>
+              </div>
+              <p>
+                {activityStreak.activeToday
+                  ? 'Você já fez sua atividade hoje. Seu progresso continua do seu jeito.'
+                  : activityStreak.current > 0
+                    ? 'Você ainda pode praticar hoje e manter sua sequência.'
+                    : 'Comece uma missão hoje. Não precisa ser longo para contar.'}
+              </p>
+              <div className="streak-best">Melhor sequência: <b>{activityStreak.best} dias</b></div>
+            </article>
+
+            <article className="daily-review-card">
+              <div className="daily-card-top">
+                <span className="section-kicker">FOCO DE HOJE</span>
+                <span className="daily-review-icon">↻</span>
+              </div>
+              {reviewTarget ? (
+                <>
+                  <h2>{reviewTarget.skill}</h2>
+                  <p>
+                    {reviewConcepts.length > 0
+                      ? 'Esse conceito apareceu algumas vezes nas suas dificuldades. Uma revisão curta pode ajudar a consolidar a base.'
+                      : 'Você já avançou nesse assunto. Uma passada rápida ajuda a manter o conhecimento ativo.'}
+                  </p>
+                  <button className="btn ghost" onClick={() => handleReviewConcept(reviewTarget)}>
+                    Revisar agora →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2>Seu primeiro foco está esperando.</h2>
+                  <p>Complete uma missão para o CodeMpi começar a identificar quais conceitos você domina e quais merecem reforço.</p>
+                  <button className="btn ghost" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
+                    Começar uma missão →
+                  </button>
+                </>
+              )}
+            </article>
           </section>
 
           <section className="continue-grid">
