@@ -1,41 +1,17 @@
 import { useEffect, useState } from 'react';
-import { CodeEditor } from './CodeEditor';
+import { AppHeader } from './components/AppHeader';
+import { CompletionPage } from './components/CompletionPage';
+import { Dashboard } from './components/Dashboard';
+import { JourneyMap } from './components/JourneyMap';
+import { LessonPage } from './components/LessonPage';
+import { MissionPage } from './components/MissionPage';
+import { SettingsPage } from './components/SettingsPage';
+import { useTheme } from './hooks/useTheme';
 import { LEVELS } from './levels';
 import { LEVEL_LESSONS } from './lessons';
 import { addTodayActivity, getActivityStreak, getLocalDateKey } from './progress';
-
-const DIFF_LABEL: Record<string, string> = {
-  facil: 'FÁCIL',
-  medio: 'MÉDIO',
-  dificil: 'DIFÍCIL',
-  boss: 'BOSS',
-};
-
-const HINT_MULT = [1, 0.9, 0.75, 0.5];
-
-type View = 'dashboard' | 'map' | 'lesson' | 'mission' | 'completion' | 'settings';
-type ThemeKey = 'green' | 'carbon' | 'violet' | 'crimson' | 'ocean';
-
-const THEMES: Array<{ id: ThemeKey; name: string; description: string; colors: string[] }> = [
-  { id: 'green', name: 'Code Green', description: 'A identidade original do CodeMpi.', colors: ['#07110F', '#35E875', '#FFB84D'] },
-  { id: 'carbon', name: 'Carbon', description: 'Preto quase absoluto e contraste limpo.', colors: ['#050505', '#FFFFFF', '#AAAAAA'] },
-  { id: 'violet', name: 'Violet', description: 'Roxo escuro com uma energia mais futurista.', colors: ['#0E0A16', '#8F5CFF', '#CFAAFF'] },
-  { id: 'crimson', name: 'Crimson', description: 'Vermelho profundo com personalidade forte.', colors: ['#120809', '#FF404F', '#FFBE66'] },
-  { id: 'ocean', name: 'Ocean', description: 'Azul escuro, técnico e mais frio.', colors: ['#07101A', '#2E95FF', '#65B7FF'] },
-];
-
-interface PerformanceData {
-  attempts: number;
-  failures: number;
-}
-
-interface StoreData {
-  done: Record<string, number>;
-  hints: Record<string, number>;
-  lessonDone: Record<number, boolean>;
-  performance: Record<string, PerformanceData>;
-  activityDates: string[];
-}
+import { calculateExerciseXp, getHintMultiplier, HINT_MULTIPLIERS } from './utils/xp';
+import type { LastTest, StoreData, View } from './types';
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
@@ -66,25 +42,11 @@ export default function App() {
   const [freeInputs, setFreeInputs] = useState<string[]>([]);
   const [freeResult, setFreeResult] = useState<{ ok: boolean; value?: string; error?: string } | null>(null);
   const [showFreeTest, setShowFreeTest] = useState(false);
-  const [theme, setTheme] = useState<ThemeKey>(() => {
-    try {
-      const saved = localStorage.getItem('codempi_settings_v1');
-      const parsed = saved ? JSON.parse(saved) : null;
-      return parsed?.theme || 'green';
-    } catch {
-      return 'green';
-    }
-  });
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
   }, [store]);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('codempi_settings_v1', JSON.stringify({ theme }));
-  }, [theme]);
-
 
 
   useEffect(() => {
@@ -124,7 +86,7 @@ export default function App() {
 
   const getMult = (li: number, ei: number) => {
     const shown = Math.min(store.hints[getKey(li, ei)] || 0, 3);
-    return HINT_MULT[shown];
+    return getHintMultiplier(shown);
   };
 
   const calcTotalXp = () => {
@@ -464,7 +426,7 @@ export default function App() {
     setLastTest({ passed, total: currentExercise.tests.length, firstFailure });
 
     if (passed === currentExercise.tests.length) {
-      const earnedXp = Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex));
+      const earnedXp = calculateExerciseXp(currentExercise.xp, hintsShown);
 
       logs.push({
         tag: 'info',
@@ -563,860 +525,118 @@ export default function App() {
 
   return (
     <div className="wrap">
-      <header className="top app-header">
-        <button className="header-brand-button" onClick={() => setView('dashboard')} aria-label="Ir para o início">
-          <div className="top-brand">
-            <div className="logo-shell">
-              <div className="logo">
-                <img src="/codempi-assets/logo/codempi-logo.png" alt="CodeMpi" />
-              </div>
-            </div>
-            <div className="brand-copy">
-              <div className="brand-status">
-                <span className="dot" /> SISTEMA ONLINE · TRILHA DE PROGRAMAÇÃO
-              </div>
-              <div className="tagline">
-                Aprenda programação na prática, sem medo de errar. Resolva desafios, ganhe XP e avance no seu ritmo.
-              </div>
-            </div>
-          </div>
-        </button>
-
-        <nav className="main-nav" aria-label="Navegação principal">
-          <button className={`nav-link ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
-            Início
-          </button>
-          <button className={`nav-link ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
-            Jornada
-          </button>
-          <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
-            Missão
-          </button>
-        </nav>
-
-        <button className="settings-trigger" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
-          ⚙
-        </button>
-
-        <div className="score-box">
-          <div className="score-meta">
-            <span className="score-label">XP TOTAL</span>
-            <span className="score-max">
-              META <span id="maxscore">{totalMax}</span>
-            </span>
-          </div>
-          <div className="score-value" id="score">{totalEarned}</div>
-          <div className="score-track" aria-hidden={true}>
-            <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
-          </div>
-          <div className="sub" id="lvlprog">
-            {levelsDoneTotal} / {LEVELS.length} níveis fechados
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        view={view}
+        setView={setView}
+        totalEarned={totalEarned}
+        totalMax={totalMax}
+        overallProgress={overallProgress}
+        levelsDoneTotal={levelsDoneTotal}
+      />
 
       {view === 'settings' && (
-        <main className="settings-page">
-          <div className="settings-toolbar">
-            <button className="text-action" onClick={() => setView('dashboard')}>← Voltar para o início</button>
-            <span>CONFIGURAÇÕES</span>
-          </div>
-
-          <section className="settings-shell">
-            <div className="settings-intro">
-              <span className="eyebrow">CODEMPI / PREFERÊNCIAS</span>
-              <h1>Deixe a jornada com a sua cara.</h1>
-              <p>Escolha um tema para mudar a atmosfera do CodeMpi. Suas escolhas ficam salvas neste navegador.</p>
-            </div>
-
-            <section className="settings-section">
-              <div className="settings-section-head">
-                <div>
-                  <span className="section-kicker">APARÊNCIA</span>
-                  <h2>Tema da interface</h2>
-                </div>
-                <span className="settings-meta">{THEMES.find((item) => item.id === theme)?.name}</span>
-              </div>
-
-              <div className="theme-grid">
-                {THEMES.map((item) => {
-                  const selected = theme === item.id;
-
-                  return (
-                    <button
-                      key={item.id}
-                      className={`theme-card ${selected ? 'selected' : ''} theme-${item.id}`}
-                      onClick={() => setTheme(item.id)}
-                    >
-                      <div className="theme-preview">
-                        <div className="theme-preview-top">
-                          <span />
-                          <span />
-                          <span />
-                        </div>
-                        <div className="theme-preview-body">
-                          <div className="theme-preview-main" />
-                          <div className="theme-preview-side">
-                            <i />
-                            <i />
-                            <i />
-                          </div>
-                        </div>
-                        <div className="theme-swatches">
-                          {item.colors.map((color) => <span key={color} style={{ background: color }} />)}
-                        </div>
-                      </div>
-
-                      <div className="theme-copy">
-                        <div>
-                          <strong>{item.name}</strong>
-                          {selected && <span className="theme-selected">✓ ATIVO</span>}
-                        </div>
-                        <p>{item.description}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="settings-section account-preview">
-              <div className="settings-section-head">
-                <div>
-                  <span className="section-kicker">PRÓXIMA FASE</span>
-                  <h2>Conta e sincronização</h2>
-                </div>
-                <span className="coming-badge">EM BREVE</span>
-              </div>
-
-              <div className="account-preview-card">
-                <div className="account-placeholder">◌</div>
-                <div>
-                  <strong>Leve seu progresso com você.</strong>
-                  <p>Futuramente, uma conta CodeMpi permitirá sincronizar XP, níveis, histórico e preferências entre dispositivos.</p>
-                </div>
-                <span className="account-arrow">→</span>
-              </div>
-            </section>
-          </section>
-        </main>
+        <SettingsPage theme={theme} setTheme={setTheme} setView={setView} />
       )}
 
       {view === 'dashboard' && (
-        <main className="dashboard">
-          <section className="dashboard-hero">
-            <div className="hero-copy">
-              <span className="eyebrow">CODEMPI / LEARNING SYSTEM</span>
-              <h1>Aprenda a programar.<br /><em>Um desafio por vez.</em></h1>
-              <p>
-                Uma jornada do básico ao pensamento algorítmico, feita para você praticar, errar,
-                entender e continuar.
-              </p>
-              <div className="hero-actions">
-                <button className="btn primary hero-button" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
-                  {completedExercises === 0 ? 'Começar minha jornada →' : 'Continuar de onde parei →'}
-                </button>
-                <button className="btn ghost hero-button" onClick={() => setView('map')}>
-                  Ver mapa da jornada
-                </button>
-              </div>
-              <div className="hero-microcopy">
-                <span>✓ sem pressão</span>
-                <span>✓ feedback imediato</span>
-                <span>✓ progresso salvo</span>
-              </div>
-            </div>
-
-            <div className="hero-console">
-              <div className="hero-console-head">
-                <span><i /> codempi-session</span>
-                <span>ONLINE</span>
-              </div>
-              <div className="hero-console-body">
-                <div><span className="prompt">&gt;</span> init learning_path</div>
-                <div className="success">✓ 10 níveis carregados</div>
-                <div className="success">✓ {completedExercises} desafios concluídos</div>
-                <div><span className="prompt">&gt;</span> current_level</div>
-                <div className="current-line">{activeLevel.tag} / {activeLevel.name}</div>
-                <div><span className="prompt">&gt;</span> status</div>
-                <div className="status-line">READY<span className="cursor" /></div>
-              </div>
-            </div>
-          </section>
-
-          <section className="stats-grid" aria-label="Estatísticas do jogador">
-            <article className="stat-card">
-              <span className="stat-icon">✦</span>
-              <div>
-                <span className="stat-label">XP acumulado</span>
-                <strong>{totalEarned}</strong>
-                <small>{lessonsEarnedXp} XP vindos das aulas</small>
-              </div>
-            </article>
-            <article className="stat-card">
-              <span className="stat-icon">◎</span>
-              <div>
-                <span className="stat-label">Desafios concluídos</span>
-                <strong>{completedExercises}</strong>
-                <small>missões resolvidas</small>
-              </div>
-            </article>
-            <article className="stat-card">
-              <span className="stat-icon">◇</span>
-              <div>
-                <span className="stat-label">Níveis concluídos</span>
-                <strong>{levelsDoneTotal}/{LEVELS.length}</strong>
-                <small>sua jornada até aqui</small>
-              </div>
-            </article>
-          </section>
-
-          <section className="concepts-section">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
-                <h2>O que você já domina</h2>
-              </div>
-              <span className="concept-count">{masteredConcepts.length} dominados</span>
-            </div>
-
-            <div className="concepts-grid">
-              {masteredConcepts.length > 0 ? masteredConcepts.slice(0, 6).map((concept) => (
-                <article className="concept-card mastered" key={concept.skill}>
-                  <div className="concept-card-top">
-                    <span className="concept-state">✓ DOMINADO</span>
-                    <span>{concept.completed}/{concept.total}</span>
-                  </div>
-                  <h3>{concept.skill}</h3>
-                  <p>Você já resolveu os desafios desse conceito sem precisar voltar para o básico.</p>
-                </article>
-              )) : (
-                <div className="concept-empty">
-                  <span>◎</span>
-                  <div>
-                    <strong>Seu primeiro conceito está esperando.</strong>
-                    <p>Conclua uma missão para começar a construir seu histórico de domínio.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="concepts-section review-section">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">PROFESSOR DO CODEMPI</span>
-                <h2>Conceitos para revisar</h2>
-              </div>
-              {reviewConcepts.length > 0 && <span className="concept-count review">{reviewConcepts.length} para revisar</span>}
-            </div>
-
-            {reviewConcepts.length > 0 ? (
-              <div className="review-list">
-                {reviewConcepts.slice(0, 4).map((concept) => (
-                  <article className="review-card" key={concept.skill}>
-                    <div className="review-copy">
-                      <span className="concept-state">↻ VALE REVISAR</span>
-                      <h3>{concept.skill}</h3>
-                      <p>Você encontrou dificuldade {concept.failures} vezes em {concept.attempts} tentativas. Isso não é fracasso — é um sinal de onde podemos reforçar a base.</p>
-                    </div>
-                    <button className="btn ghost" onClick={() => handleReviewConcept(concept)}>Revisar →</button>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="review-clear">
-                <span>✦</span>
-                <div>
-                  <strong>Nenhum conceito precisa de revisão agora.</strong>
-                  <p>Continue praticando. O CodeMpi observa sua evolução e avisa quando algum assunto merece uma nova passada.</p>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="daily-grid">
-            <article className={`streak-card ${activityStreak.activeToday ? 'active' : ''}`}>
-              <div className="daily-card-top">
-                <span className="section-kicker">CONTINUIDADE</span>
-                <span className="daily-date">{todayKey.split('-').reverse().join('/')}</span>
-              </div>
-              <div className="streak-main">
-                <span className="streak-flame">⌁</span>
-                <div>
-                  <strong>{activityStreak.current}</strong>
-                  <span>{activityStreak.current === 1 ? 'dia de sequência' : 'dias de sequência'}</span>
-                </div>
-              </div>
-              <p>
-                {activityStreak.activeToday
-                  ? 'Você já fez sua atividade hoje. Seu progresso continua do seu jeito.'
-                  : activityStreak.current > 0
-                    ? 'Você ainda pode praticar hoje e manter sua sequência.'
-                    : 'Comece uma missão hoje. Não precisa ser longo para contar.'}
-              </p>
-              <div className="streak-best">Melhor sequência: <b>{activityStreak.best} dias</b></div>
-            </article>
-
-            <article className="daily-review-card">
-              <div className="daily-card-top">
-                <span className="section-kicker">FOCO DE HOJE</span>
-                <span className="daily-review-icon">↻</span>
-              </div>
-              {reviewTarget ? (
-                <>
-                  <h2>{reviewTarget.skill}</h2>
-                  <p>
-                    {reviewConcepts.length > 0
-                      ? 'Esse conceito apareceu algumas vezes nas suas dificuldades. Uma revisão curta pode ajudar a consolidar a base.'
-                      : 'Você já avançou nesse assunto. Uma passada rápida ajuda a manter o conhecimento ativo.'}
-                  </p>
-                  <button className="btn ghost" onClick={() => handleReviewConcept(reviewTarget)}>
-                    Revisar agora →
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h2>Seu primeiro foco está esperando.</h2>
-                  <p>Complete uma missão para o CodeMpi começar a identificar quais conceitos você domina e quais merecem reforço.</p>
-                  <button className="btn ghost" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
-                    Começar uma missão →
-                  </button>
-                </>
-              )}
-            </article>
-          </section>
-
-          <section className="continue-grid">
-            <article className="continue-card">
-              <div className="section-kicker">CONTINUE SUA JORNADA</div>
-              <div className="continue-title-row">
-                <div>
-                  <h2>{activeLevel.tag} · {activeLevel.name}</h2>
-                  <p>{activeLevel.exercises ? `${activeLevelDone} de ${activeLevelTotal} desafios concluídos.` : 'O próximo nível da jornada está sendo preparado.'}</p>
-                </div>
-                <span className="continue-badge">{activeLevel.exercises ? `${activeLevelDone}/${activeLevelTotal}` : 'EM BREVE'}</span>
-              </div>
-              <div className="progress-bar large">
-                <span style={{ width: `${activeLevelTotal ? (activeLevelDone / activeLevelTotal) * 100 : 0}%` }} />
-              </div>
-              <button className="text-action" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
-                {activeLevel.exercises ? 'Abrir próxima missão →' : 'Ver detalhes do nível →'}
-              </button>
-            </article>
-
-            <article className="philosophy-card">
-              <div className="section-kicker">COMO O CODEMPI FUNCIONA</div>
-              <h2>Errar não tira você do caminho.</h2>
-              <p>Os testes mostram onde sua lógica precisa melhorar. As pistas ajudam sem entregar tudo. Você tenta de novo, entende e segue.</p>
-              <div className="mini-steps">
-                <span>01 · entender</span>
-                <span>02 · tentar</span>
-                <span>03 · corrigir</span>
-                <span>04 · dominar</span>
-              </div>
-            </article>
-          </section>
-
-          <section className="dashboard-section">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">PRÓXIMAS ETAPAS</span>
-                <h2>Sua jornada de programação</h2>
-              </div>
-              <button className="text-action" onClick={() => setView('map')}>Abrir mapa completo →</button>
-            </div>
-
-            <div className="path-preview">
-              {LEVELS.slice(0, 5).map((level, index) => {
-                const unlocked = levelUnlocked(index);
-                const complete = levelComplete(index);
-                const inProgress = unlocked && !complete && Boolean(level.exercises?.length);
-
-                return (
-                  <button
-                    key={level.tag}
-                    className={`path-card ${complete ? 'complete' : ''} ${inProgress ? 'current' : ''} ${!unlocked ? 'locked' : ''}`}
-                    onClick={() => unlocked && openMission(index)}
-                    disabled={!unlocked}
-                  >
-                    <span className="path-number">{complete ? '✓' : level.tag}</span>
-                    <span className="path-name">{level.name}</span>
-                    <span className="path-meta">
-                      {level.exercises ? `${levelDoneCount(index)}/${level.exercises.length} desafios` : 'Em breve'}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </main>
+        <Dashboard
+          completedExercises={completedExercises}
+          totalEarned={totalEarned}
+          levelsDoneTotal={levelsDoneTotal}
+          lessonsEarnedXp={lessonsEarnedXp}
+          activeLevel={activeLevel}
+          activeLevelDone={activeLevelDone}
+          activeLevelTotal={activeLevelTotal}
+          overallProgress={overallProgress}
+          masteredConcepts={masteredConcepts}
+          reviewConcepts={reviewConcepts}
+          reviewTarget={reviewTarget}
+          activityStreak={activityStreak}
+          todayKey={todayKey}
+          continuePoint={continuePoint}
+          levelUnlocked={levelUnlocked}
+          levelComplete={levelComplete}
+          levelDoneCount={levelDoneCount}
+          openMission={openMission}
+          handleReviewConcept={handleReviewConcept}
+          setView={setView}
+        />
       )}
 
       {view === 'map' && (
-        <main className="map-page">
-          <section className="map-hero">
-            <div>
-              <span className="eyebrow">CODEMPI / JOURNEY MAP</span>
-              <h1>Sua jornada começa no básico.<br /><em>E fica mais interessante a cada nível.</em></h1>
-              <p>Complete um nível para liberar o próximo. Cada etapa introduz uma ideia nova e aumenta o desafio gradualmente.</p>
-            </div>
-            <div className="map-summary">
-              <span>PROGRESSO GERAL</span>
-              <strong>{Math.round(overallProgress)}%</strong>
-              <div className="progress-bar"><span style={{ width: `${Math.min(100, overallProgress)}%` }} /></div>
-              <small>{completedExercises} desafios · {levelsDoneTotal} níveis</small>
-            </div>
-          </section>
-
-          <section className="level-map" aria-label="Mapa de progressão dos níveis">
-            {LEVELS.map((level, li) => {
-              const unlocked = levelUnlocked(li);
-              const complete = levelComplete(li);
-              const inProgress = unlocked && !complete && Boolean(level.exercises?.length);
-              const built = Boolean(level.exercises?.length);
-              const progress = built ? levelDoneCount(li) / level.exercises!.length : 0;
-
-              return (
-                <div className={`map-level-row ${complete ? 'complete' : ''} ${inProgress ? 'current' : ''} ${!unlocked ? 'locked' : ''} ${!built ? 'soon' : ''}`} key={level.tag}>
-                  <div className="map-connector" />
-                  <div className="map-node">
-                    <span>{complete ? '✓' : unlocked ? level.tag : '×'}</span>
-                  </div>
-                  <button
-                    className="map-level-card"
-                    onClick={() => unlocked && openMission(li)}
-                    disabled={!unlocked}
-                  >
-                    <div className="map-level-top">
-                      <span className="map-level-tag">{level.tag}</span>
-                      <span className={`map-status ${complete ? 'done' : inProgress ? 'current' : !unlocked ? 'locked' : 'soon'}`}>
-                        {complete ? 'CONCLUÍDO' : inProgress ? 'EM ANDAMENTO' : unlocked ? 'EM BREVE' : 'BLOQUEADO'}
-                      </span>
-                    </div>
-                    <h2>{level.name}</h2>
-                    <p>{built ? `${level.exercises!.length} desafios para dominar este tema.` : 'Conteúdo planejado para a próxima etapa do CodeMpi.'}</p>
-                    {built ? (
-                      <div className="map-progress-row">
-                        <div className="progress-bar"><span style={{ width: `${progress * 100}%` }} /></div>
-                        <span>{levelDoneCount(li)}/{level.exercises!.length}</span>
-                      </div>
-                    ) : (
-                      <div className="map-topics">{level.topics}</div>
-                    )}
-                    <span className="map-action">{unlocked ? (built ? 'Abrir nível →' : 'Explorar nível →') : 'Complete o nível anterior para liberar'}</span>
-                  </button>
-                </div>
-              );
-            })}
-          </section>
-        </main>
+        <JourneyMap
+          overallProgress={overallProgress}
+          completedExercises={completedExercises}
+          levelsDoneTotal={levelsDoneTotal}
+          levelUnlocked={levelUnlocked}
+          levelComplete={levelComplete}
+          levelDoneCount={levelDoneCount}
+          openMission={openMission}
+        />
       )}
 
       {view === 'lesson' && currentLesson && currentLessonStep && (
-        <main className="lesson-page">
-          <div className="lesson-toolbar">
-            <button className="text-action" onClick={() => setView('map')}>← Voltar para a jornada</button>
-            <span>{currentLesson.levelTag} · AULA GUIADA</span>
-          </div>
-
-          <section className="lesson-card">
-            <div className="lesson-progress">
-              <span>PASSO {lessonStep + 1} DE {currentLesson.steps.length}</span>
-              <div className="progress-bar"><span style={{ width: `${((lessonStep + 1) / currentLesson.steps.length) * 100}%` }} /></div>
-            </div>
-
-            <div className="lesson-reward-strip">
-              <span className="lesson-reward-icon">✦</span>
-              <div>
-                <strong>{lessonCompletion ? `Aula concluída · +${lessonReward} XP recebidos` : `Conclua a aula e receba +${lessonReward} XP`}</strong>
-                <small>{lessonCompletion ? 'Você pode revisitar esta aula quando quiser.' : 'Uma pequena recompensa por completar a preparação antes da prática.'}</small>
-              </div>
-              {lessonCompletion && <span className="lesson-reward-check">✓</span>}
-            </div>
-
-            <div className="lesson-content">
-              <span className="eyebrow">{currentLessonStep.eyebrow}</span>
-              <h1>{currentLessonStep.title}</h1>
-              <p className="lesson-body">{currentLessonStep.body}</p>
-
-              {currentLessonStep.code && (
-                <pre className="lesson-code"><code>{currentLessonStep.code}</code></pre>
-              )}
-
-              {currentLessonStep.explanation && (
-                <div className="lesson-explanation">
-                  <span>💡</span>
-                  <div><strong>Por que isso funciona?</strong><p>{currentLessonStep.explanation}</p></div>
-                </div>
-              )}
-
-              {currentLessonStep.quiz && (
-                <div className="lesson-quiz">
-                  <strong>{currentLessonStep.quiz.question}</strong>
-                  <div className="quiz-options">
-                    {currentLessonStep.quiz.options.map((option, index) => {
-                      const selected = quizAnswer === index;
-                      const answered = quizAnswer !== null;
-                      const correct = index === currentLessonStep.quiz!.answer;
-                      return (
-                        <button
-                          key={option}
-                          className={`quiz-option ${selected ? 'selected' : ''} ${answered && correct ? 'correct' : ''} ${answered && selected && !correct ? 'wrong' : ''}`}
-                          onClick={() => setQuizAnswer(index)}
-                        >
-                          <span>{String.fromCharCode(65 + index)}</span>{option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {quizAnswer !== null && (
-                    <div className={`quiz-feedback ${quizAnswer === currentLessonStep.quiz.answer ? 'correct' : 'wrong'}`}>
-                      {quizAnswer === currentLessonStep.quiz.answer ? '✓ Acertou! ' : '↻ Ainda não. '}
-                      {currentLessonStep.quiz.explanation}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="lesson-footer">
-              <span>{lessonStep === 0 ? 'Começando pelo básico' : 'Você está avançando'}</span>
-              <div>
-                {lessonStep > 0 && (
-                  <button className="btn ghost" onClick={() => { setLessonStep((prev) => prev - 1); setQuizAnswer(null); }}>
-                    ← Voltar
-                  </button>
-                )}
-                {lessonStep < currentLesson.steps.length - 1 ? (
-                  <button
-                    className="btn primary"
-                    disabled={currentLessonStep.type === 'quiz' && quizAnswer === null}
-                    onClick={() => {
-                      if (currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer) {
-                        setQuizAnswer(null);
-                        return;
-                      }
-                      setLessonStep((prev) => prev + 1);
-                      setQuizAnswer(null);
-                    }}
-                  >
-                    {currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer ? 'Tentar novamente →' : 'Continuar →'}
-                  </button>
-                ) : (
-                  <button className="btn primary" onClick={handleLessonFinish}>
-                    {lessonCompletion ? 'Voltar para a missão →' : `Concluir aula · +${lessonReward} XP`}
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-        </main>
+        <LessonPage
+          currentLesson={currentLesson}
+          currentLessonStep={currentLessonStep}
+          lessonStep={lessonStep}
+          lessonReward={lessonReward}
+          lessonCompletion={lessonCompletion}
+          quizAnswer={quizAnswer}
+          setLessonStep={setLessonStep}
+          setQuizAnswer={setQuizAnswer}
+          handleLessonFinish={handleLessonFinish}
+          setView={setView}
+        />
       )}
 
       {view === 'completion' && completionLevel !== null && (
-        <main className="completion-page">
-          <section className="completion-card">
-            <div className="completion-orbit"><span>✦</span><span>✦</span><span>✦</span></div>
-            <span className="eyebrow">NÍVEL CONCLUÍDO · {LEVELS[completionLevel].tag}</span>
-            <h1>Você fechou <em>{LEVELS[completionLevel].name}.</em></h1>
-            <p className="completion-intro">Você não só passou pelos desafios. Você praticou, encontrou erros, corrigiu sua lógica e construiu uma base nova.</p>
-
-            <div className="completion-stats">
-              <div><strong>{levelDoneCount(completionLevel)}</strong><span>desafios concluídos</span></div>
-              <div><strong>+{LEVELS[completionLevel].exercises?.reduce((sum, ex, ei) => sum + (store.done[getKey(completionLevel, ei)] || 0), 0) || 0}</strong><span>XP nos desafios</span></div>
-              <div><strong>+{LEVEL_LESSONS[completionLevel]?.rewardXp || 0}</strong><span>XP da aula</span></div>
-            </div>
-
-            <div className="completion-learned">
-              <span className="section-kicker">VOCÊ PRATICOU</span>
-              <div className="completion-tags">
-                {(completionLevel === 0
-                  ? ['Variáveis', 'Operadores', 'Funções']
-                  : ['if / else', 'Comparações', '&& e ||', 'Múltiplas condições']
-                ).map((item) => <span key={item}>✓ {item}</span>)}
-              </div>
-            </div>
-
-            <div className="completion-actions">
-              <button className="btn ghost" onClick={() => setView('map')}>Ver jornada</button>
-              {completionLevel < LEVELS.length - 1 ? (
-                <button className="btn primary" onClick={() => openMission(completionLevel + 1)}>
-                  Desbloqueado: {LEVELS[completionLevel + 1].tag} →
-                </button>
-              ) : (
-                <button className="btn primary" onClick={() => setView('dashboard')}>Voltar ao Dashboard</button>
-              )}
-            </div>
-          </section>
-        </main>
+        <CompletionPage
+          completionLevel={completionLevel}
+          getKey={getKey}
+          levelDoneCount={levelDoneCount}
+          done={store.done}
+          openMission={openMission}
+          setView={(nextView) => setView(nextView)}
+        />
       )}
 
       {view === 'mission' && (
-        <main className="mission-shell">
-          <div className="mission-toolbar">
-            <button className="text-action" onClick={() => setView('map')}>← Voltar para o mapa</button>
-            <span>MISSÃO ATUAL · {currentLevel.tag}</span>
-          </div>
-
-          <div className="grid">
-            <nav className="circuit" id="circuit" aria-label="Mapa de níveis da missão">
-              {LEVELS.map((level, li) => {
-                const unlocked = levelUnlocked(li);
-                const built = Boolean(level.exercises?.length);
-                const done = built && levelComplete(li);
-                const progressLabel = built ? `${levelDoneCount(li)}/${level.exercises!.length}` : unlocked ? 'em breve' : 'bloqueado';
-
-                const nodeClass = [
-                  'node',
-                  done ? 'done' : '',
-                  li === levelIndex ? 'active' : '',
-                  !unlocked ? 'locked' : '',
-                  unlocked && !built ? 'soon' : '',
-                ].filter(Boolean).join(' ');
-
-                return (
-                  <button key={level.tag} className={nodeClass} onClick={() => unlocked && openMission(li)}>
-                    <span className="lvl-title">{level.tag}. {level.name}</span>
-                    <span className="lvl-tag">{progressLabel}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            <section className="panel">
-              <div className="panel-head">
-                <div className="kicker">
-                  {currentLevel.tag} · {currentLevel.name}
-                  {currentExercise ? ` · EXERCÍCIO ${exerciseIndex + 1}/${currentLevel.exercises!.length}` : ''}
-                </div>
-                <h2>{currentExercise ? currentExercise.title : currentLevel.name}</h2>
-                <p>{currentExercise ? currentExercise.desc : 'Este nível ainda está sendo construído — chegando em breve.'}</p>
-
-                <div className="badges">
-                  {currentExercise && (
-                    <>
-                      <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
-                      <span className="badge xp">XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}</span>
-                      <span className="sig">{currentExercise.sig}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {!hasExercises ? (
-                <div className="soon-panel">
-                  <div className="big">🔧 {currentLevel.count} exercícios em construção</div>
-                  Temas planejados:
-                  <div className="topics">{currentLevel.topics}</div>
-                  <button className="btn ghost soon-back" onClick={() => setView('map')}>Voltar para a jornada</button>
-                </div>
-              ) : (
-                <div id="exBody">
-                  <div className="ex-strip">
-                    {currentLevel.exercises!.map((exercise, ei) => {
-                      const isDone = Boolean(store.done[getKey(levelIndex, ei)]);
-                      const isUnlocked = exUnlocked(levelIndex, ei);
-                      const isActive = ei === exerciseIndex;
-
-                      const dotClass = [
-                        'ex-dot',
-                        `diff-${exercise.difficulty}`,
-                        isDone ? 'done' : '',
-                        isActive ? 'active' : '',
-                        !isUnlocked ? 'locked' : '',
-                      ].filter(Boolean).join(' ');
-
-                      return (
-                        <button
-                          key={ei}
-                          className={dotClass}
-                          title={exercise.title}
-                          onClick={() => isUnlocked && setExerciseIndex(ei)}
-                          disabled={!isUnlocked}
-                        >
-                          {isDone ? '✓' : ei + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="editor-wrap">
-                    <CodeEditor code={code} onChange={setCode} />
-
-                    <div className="learning-note">
-                      <span>💡</span>
-                      <span>Errar faz parte. Você pode testar quantas vezes precisar. As dicas reduzem o XP, mas não impedem seu progresso.</span>
-                    </div>
-
-                    <div className="actions">
-                      <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
-                      <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
-                      <button
-                        className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
-                        onClick={() => {
-                          setShowFreeTest((prev) => !prev);
-                          setFreeResult(null);
-                        }}
-                      >
-                        {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
-                      </button>
-                      <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
-                        {hintsShown >= currentExercise.hints.length
-                          ? 'Todas as dicas exibidas'
-                          : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(HINT_MULT[hintsShown + 1] * 100)}%`}
-                      </button>
-                      <span className="xp-live">
-                        {!alreadyDoneXP && hintsShown > 0
-                          ? `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
-                          : ''}
-                      </span>
-                    </div>
-
-                    <div className="hints-box">
-                      {currentExercise.hints.slice(0, hintsShown).map((hintText, index) => (
-                        <div key={index} className="hint-line">
-                          <b>Dica {index + 1}</b> {hintText}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {(isPassed || alreadyDoneXP) && (
-                    <div className="win-banner show">
-                      <span>
-                        {alreadyDoneXP
-                          ? `Exercício já concluído — você ganhou ${alreadyDoneXP} XP aqui.`
-                          : `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`}
-                      </span>
-
-                      {(
-                        <button className="btn primary" onClick={handleNext}>
-                          {exerciseIndex === currentLevel.exercises!.length - 1 ? 'Ver resumo do nível →' : 'Próximo exercício →'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-
-                  {learningFeedback && (
-                    <div className={`learning-feedback ${learningFeedback.tone}`}>
-                      <span className="learning-feedback-icon">
-                        {learningFeedback.tone === 'success' ? '✓' : learningFeedback.tone === 'error' ? '!' : '↻'}
-                      </span>
-
-                      <div className="learning-feedback-content">
-                        <strong>{learningFeedback.title}</strong>
-                        <p>{learningFeedback.body}</p>
-
-                        {lastTest && lastTest.firstFailure && lastTest.passed < lastTest.total && (
-                          lastTest.firstFailure.error ? (
-                            <div className="diagnostic-error">
-                              <span>ERRO DURANTE A EXECUÇÃO</span>
-                              <code>{lastTest.firstFailure.error}</code>
-                            </div>
-                          ) : (
-                            <div className="diagnostic-grid">
-                              <div className="diagnostic-item">
-                                <span>ENTRADA</span>
-                                <code>{lastTest.firstFailure.args || '—'}</code>
-                              </div>
-                              <div className="diagnostic-item">
-                                <span>SEU RESULTADO</span>
-                                <code>{lastTest.firstFailure.got}</code>
-                              </div>
-                              <div className="diagnostic-item expected">
-                                <span>ESPERADO</span>
-                                <code>{lastTest.firstFailure.expected}</code>
-                              </div>
-                            </div>
-                          )
-                        )}
-
-                        {learningFeedback.tone !== 'success' && (
-                          <div className="diagnostic-tip">
-                            <span>O QUE OBSERVAR</span>
-                            <strong>{learningFeedback.tone === 'error'
-                              ? 'O código precisa conseguir executar antes de os testes avaliarem a lógica.'
-                              : 'Compare a entrada com o resultado produzido e procure a operação ou condição que transforma um no outro.'}
-                            </strong>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="test-summary">
-                    {consoleLogs.length > 0 ? (
-                      <>
-                        <span>{consoleLogs.filter((log) => log.ok === true).length}/{currentExercise.tests.length} testes passaram</span>
-                        {isPassed ? <b>✓ Missão concluída</b> : <small>Você pode tentar novamente</small>}
-                      </>
-                    ) : (
-                      <span>Pronto para testar seu código</span>
-                    )}
-                  </div>
-
-                                    {showFreeTest && (
-<section className="free-test-panel">
-                    <div className="free-test-head">
-                      <div>
-                        <span>TESTE DE MESA</span>
-                        <strong>Experimente seus próprios valores</strong>
-                      </div>
-                      <small>não afeta XP nem o progresso</small>
-                    </div>
-
-                    <div className="free-test-grid">
-                      {freeInputs.map((value, index) => (
-                        <label className="free-input" key={index}>
-                          <span>{currentExercise.tests[0]?.args.length > 1 ? String.fromCharCode(97 + index) : 'valor'}</span>
-                          <input
-                            value={value}
-                            onChange={(event) => {
-                              const nextInputs = [...freeInputs];
-                              nextInputs[index] = event.target.value;
-                              setFreeInputs(nextInputs);
-                              setFreeResult(null);
-                            }}
-                            spellCheck={false}
-                            aria-label={`Valor da entrada ${index + 1}`}
-                          />
-                        </label>
-                      ))}
-                      <button className="btn secondary free-test-button" onClick={handleFreeTest}>Testar entrada →</button>
-                    </div>
-
-                    {freeResult && (
-                      <div className={`free-result ${freeResult.ok ? 'ok' : 'error'}`}>
-                        <span>{freeResult.ok ? 'RESULTADO' : 'ERRO'}</span>
-                        <strong>{freeResult.ok ? freeResult.value : freeResult.error}</strong>
-                      </div>
-                    )}
-                  </section>
-                  )}
-
-                  <div className="section-label">
-                    Resultados dos testes
-                    <span style={{ color: 'var(--muted-2)', fontWeight: 'normal' }}>— rode para verificar a resposta</span>
-                  </div>
-
-                  <div className="console">
-                    {consoleLogs.length === 0 ? (
-                      <div className="console-empty">// o resultado dos testes aparece aqui<span className="cursor" /></div>
-                    ) : (
-                      consoleLogs.map((log, index) => (
-                        <div key={index} className={`row ${log.ok === true ? 'row-ok' : log.ok === false ? 'row-err' : 'row-info'}`}>
-                          <span className={`tag ${log.ok === undefined ? 'info' : log.ok ? 'ok' : 'err'}`}>{log.tag}</span>
-                          <span className="msg">{log.msg}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </section>
-          </div>
-        </main>
+        <MissionPage
+          currentLevel={currentLevel}
+          currentExercise={currentExercise}
+          levelIndex={levelIndex}
+          exerciseIndex={exerciseIndex}
+          store={store}
+          code={code}
+          hintsShown={hintsShown}
+          alreadyDoneXP={alreadyDoneXP}
+          isPassed={isPassed}
+          consoleLogs={consoleLogs}
+          lastTest={lastTest}
+          learningFeedback={learningFeedback}
+          freeInputs={freeInputs}
+          freeResult={freeResult}
+          showFreeTest={showFreeTest}
+          hMult={HINT_MULTIPLIERS as unknown as number[]}
+          getKey={getKey}
+          getMult={getMult}
+          levelUnlocked={levelUnlocked}
+          levelComplete={levelComplete}
+          levelDoneCount={levelDoneCount}
+          exUnlocked={exUnlocked}
+          setExerciseIndex={setExerciseIndex}
+          setView={setView}
+          setCode={setCode}
+          setFreeInputs={setFreeInputs}
+          setFreeResult={setFreeResult}
+          setShowFreeTest={setShowFreeTest}
+          handleEvaluate={handleEvaluate}
+          handleResetCode={handleResetCode}
+          handleFreeTest={handleFreeTest}
+          handleShowHint={handleShowHint}
+          handleNext={handleNext}
+        />
       )}
 
       <footer className="note">
