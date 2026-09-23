@@ -17,6 +17,7 @@ type View = 'dashboard' | 'map' | 'lesson' | 'mission';
 interface StoreData {
   done: Record<string, number>;
   hints: Record<string, number>;
+  lessonDone: Record<number, boolean>;
 }
 
 export default function App() {
@@ -26,9 +27,9 @@ export default function App() {
   const [store, setStore] = useState<StoreData>(() => {
     try {
       const saved = localStorage.getItem('circuito_v2');
-      return saved ? JSON.parse(saved) : { done: {}, hints: {} };
+      return saved ? { lessonDone: {}, ...JSON.parse(saved) } : { done: {}, hints: {}, lessonDone: {} };
     } catch {
-      return { done: {}, hints: {} };
+      return { done: {}, hints: {}, lessonDone: {} };
     }
   });
 
@@ -94,6 +95,11 @@ export default function App() {
       });
     });
 
+    Object.entries(LEVEL_LESSONS).forEach(([li, lesson]) => {
+      max += lesson.rewardXp || 0;
+      if (store.lessonDone[Number(li)]) earned += lesson.rewardXp || 0;
+    });
+
     return { earned, max };
   };
 
@@ -120,6 +126,12 @@ export default function App() {
   const activeLevelTotal = activeLevel.exercises?.length || 0;
   const currentLesson = LEVEL_LESSONS[levelIndex];
   const currentLessonStep = currentLesson?.steps[lessonStep];
+  const lessonReward = currentLesson?.rewardXp || 25;
+  const lessonsEarnedXp = Object.entries(store.lessonDone).reduce((sum, [li, done]) => {
+    if (!done) return sum;
+    return sum + (LEVEL_LESSONS[Number(li)]?.rewardXp || 0);
+  }, 0);
+  const lessonCompletion = currentLesson ? Boolean(store.lessonDone[levelIndex]) : false;
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
 
   const openMission = (li: number, ei?: number) => {
@@ -263,6 +275,16 @@ export default function App() {
     setConsoleLogs(logs);
   };
 
+  const handleLessonFinish = () => {
+    if (!store.lessonDone[levelIndex] && currentLesson) {
+      setStore((prev) => ({
+        ...prev,
+        lessonDone: { ...prev.lessonDone, [levelIndex]: true },
+      }));
+    }
+    setView('mission');
+  };
+
   const handleNext = () => {
     if (!currentLevel.exercises) return;
 
@@ -377,7 +399,7 @@ export default function App() {
               <div>
                 <span className="stat-label">XP acumulado</span>
                 <strong>{totalEarned}</strong>
-                <small>de {totalMax} XP disponíveis</small>
+                <small>{lessonsEarnedXp} XP vindos das aulas</small>
               </div>
             </article>
             <article className="stat-card">
@@ -537,6 +559,15 @@ export default function App() {
               <div className="progress-bar"><span style={{ width: `${((lessonStep + 1) / currentLesson.steps.length) * 100}%` }} /></div>
             </div>
 
+            <div className="lesson-reward-strip">
+              <span className="lesson-reward-icon">✦</span>
+              <div>
+                <strong>{lessonCompletion ? `Aula concluída · +${lessonReward} XP recebidos` : `Conclua a aula e receba +${lessonReward} XP`}</strong>
+                <small>{lessonCompletion ? 'Você pode revisitar esta aula quando quiser.' : 'Uma pequena recompensa por completar a preparação antes da prática.'}</small>
+              </div>
+              {lessonCompletion && <span className="lesson-reward-check">✓</span>}
+            </div>
+
             <div className="lesson-content">
               <span className="eyebrow">{currentLessonStep.eyebrow}</span>
               <h1>{currentLessonStep.title}</h1>
@@ -606,8 +637,8 @@ export default function App() {
                     {currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer ? 'Tentar novamente →' : 'Continuar →'}
                   </button>
                 ) : (
-                  <button className="btn primary" onClick={() => setView('mission')}>
-                    Começar meu primeiro desafio →
+                  <button className="btn primary" onClick={handleLessonFinish}>
+                    {lessonCompletion ? 'Voltar para a missão →' : `Concluir aula · +${lessonReward} XP`}
                   </button>
                 )}
               </div>
@@ -755,6 +786,17 @@ export default function App() {
                     </div>
                   )}
 
+                  <div className="test-summary">
+                    {consoleLogs.length > 0 ? (
+                      <>
+                        <span>{consoleLogs.filter((log) => log.ok === true).length}/{currentExercise.tests.length} testes passaram</span>
+                        {isPassed ? <b>✓ Missão concluída</b> : <small>Você pode tentar novamente</small>}
+                      </>
+                    ) : (
+                      <span>Pronto para testar seu código</span>
+                    )}
+                  </div>
+
                   <div className="section-label">
                     Resultados dos testes
                     <span style={{ color: 'var(--muted-2)', fontWeight: 'normal' }}>— rode para verificar a resposta</span>
@@ -765,7 +807,7 @@ export default function App() {
                       <div className="console-empty">// o resultado dos testes aparece aqui<span className="cursor" /></div>
                     ) : (
                       consoleLogs.map((log, index) => (
-                        <div key={index} className="row">
+                        <div key={index} className={`row ${log.ok === true ? 'row-ok' : log.ok === false ? 'row-err' : 'row-info'}`}>
                           <span className={`tag ${log.ok === undefined ? 'info' : log.ok ? 'ok' : 'err'}`}>{log.tag}</span>
                           <span className="msg">{log.msg}</span>
                         </div>
