@@ -98,7 +98,7 @@ export function ConceptVisualizer({
         </div>
 
         <div className="experiment-footer">
-          <span>Primeiro pense no que entra e no que deve sair. Depois escreva o código.</span>
+          <span className="experiment-footer-label">TESTES</span>
           <div className="experiment-tests">
             <b>{passed}/{total}</b>
             <span style={{ width: `${progress}%` }} />
