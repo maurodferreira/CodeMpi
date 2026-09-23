@@ -1,0 +1,58 @@
+import { LEVELS } from '../levels';
+import { LEVEL_LESSONS } from '../lessons';
+
+interface CompletionPageProps {
+  completionLevel: number;
+  getKey: (li: number, ei: number) => string;
+  levelDoneCount: (li: number) => number;
+  done: Record<string, number>;
+  openMission: (li: number) => void;
+  setView: (view: 'map' | 'dashboard') => void;
+}
+
+export function CompletionPage({
+  completionLevel,
+  getKey,
+  levelDoneCount,
+  done,
+  openMission,
+  setView,
+}: CompletionPageProps) {
+  return (
+<main className="completion-page">
+          <section className="completion-card">
+            <div className="completion-orbit"><span>✦</span><span>✦</span><span>✦</span></div>
+            <span className="eyebrow">NÍVEL CONCLUÍDO · {LEVELS[completionLevel].tag}</span>
+            <h1>Você fechou <em>{LEVELS[completionLevel].name}.</em></h1>
+            <p className="completion-intro">Você não só passou pelos desafios. Você praticou, encontrou erros, corrigiu sua lógica e construiu uma base nova.</p>
+
+            <div className="completion-stats">
+              <div><strong>{levelDoneCount(completionLevel)}</strong><span>desafios concluídos</span></div>
+              <div><strong>+{LEVELS[completionLevel].exercises?.reduce((sum, ex, ei) => sum + (store.done[getKey(completionLevel, ei)] || 0), 0) || 0}</strong><span>XP nos desafios</span></div>
+              <div><strong>+{LEVEL_LESSONS[completionLevel]?.rewardXp || 0}</strong><span>XP da aula</span></div>
+            </div>
+
+            <div className="completion-learned">
+              <span className="section-kicker">VOCÊ PRATICOU</span>
+              <div className="completion-tags">
+                {(completionLevel === 0
+                  ? ['Variáveis', 'Operadores', 'Funções']
+                  : ['if / else', 'Comparações', '&& e ||', 'Múltiplas condições']
+                ).map((item) => <span key={item}>✓ {item}</span>)}
+              </div>
+            </div>
+
+            <div className="completion-actions">
+              <button className="btn ghost" onClick={() => setView('map')}>Ver jornada</button>
+              {completionLevel < LEVELS.length - 1 ? (
+                <button className="btn primary" onClick={() => openMission(completionLevel + 1)}>
+                  Desbloqueado: {LEVELS[completionLevel + 1].tag} →
+                </button>
+              ) : (
+                <button className="btn primary" onClick={() => setView('dashboard')}>Voltar ao Dashboard</button>
+              )}
+            </div>
+          </section>
+        </main>
+  );
+}
