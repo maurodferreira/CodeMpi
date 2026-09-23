@@ -12,7 +12,7 @@ import { useProgressStore } from './hooks/useProgressStore';
 import { useTheme } from './hooks/useTheme';
 import { LEVELS } from './levels';
 import { LEVEL_LESSONS } from './lessons';
-import { addTodayActivity, getActivityStreak, getLocalDateKey } from './progress';
+import { getActivityStreak, getLocalDateKey } from './progress';
 import { getHintMultiplier, HINT_MULTIPLIERS } from './utils/xp';
 import type { ConceptSummary, View } from './types';
 
@@ -47,11 +47,17 @@ export default function App() {
     activeLevelDone,
     activeLevelTotal,
     lessonsEarnedXp,
-    concepts,
     masteredConcepts,
     reviewConcepts,
     reviewTarget,
   } = useLearningProgress(store);
+
+  const currentLesson = LEVEL_LESSONS[levelIndex];
+  const currentLessonStep = currentLesson?.steps[lessonStep];
+  const lessonReward = currentLesson?.rewardXp || 25;
+  const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
+  const activityStreak = getActivityStreak(store.activityDates || []);
+  const todayKey = getLocalDateKey();
 
   const hintsShown = store.hints[getKey(levelIndex, exerciseIndex)] || 0;
   const alreadyDoneXP = store.done[getKey(levelIndex, exerciseIndex)];
