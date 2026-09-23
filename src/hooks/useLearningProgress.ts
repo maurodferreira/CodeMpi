@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { LEVELS } from '../levels';
-import { LEVEL_LESSONS } from '../lessons';
+import { LEVELS } from '../data/levels';
+import { LEVEL_LESSONS } from '../data/lessons';
 import { getHintMultiplier } from '../utils/xp';
 import type { ConceptSummary, StoreData } from '../types';
 
