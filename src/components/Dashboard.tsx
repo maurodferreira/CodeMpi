@@ -47,6 +47,7 @@ export function Dashboard({
   setView,
 }: DashboardProps) {
   const continueExercise = activeLevel.exercises?.[continuePoint.ei];
+  const builtLevels = LEVELS.filter((level) => Boolean(level.exercises?.length)).length;
 
   return (
 <main className="dashboard">
@@ -79,12 +80,21 @@ export function Dashboard({
                 <span>ONLINE</span>
               </div>
               <div className="hero-console-body">
-                <div><span className="prompt">&gt;</span> init learning_path</div>
-                <div className="success">✓ 10 níveis carregados</div>
+                <div><span className="prompt">&gt;</span> learning_path</div>
+                <div className="success">✓ {builtLevels} de {LEVELS.length} níveis disponíveis</div>
                 <div className="success">✓ {completedExercises} desafios concluídos</div>
-                <div><span className="prompt">&gt;</span> current_level</div>
+                <div><span className="prompt">&gt;</span> next_mission</div>
                 <div className="current-line">{activeLevel.tag} / {activeLevel.name}</div>
-                <div><span className="prompt">&gt;</span> status</div>
+                <div className="hero-console-mission">{continueExercise?.title || "Nível concluído"}</div>
+                <div className="hero-console-progress">
+                  <div>
+                    <span>{activeLevelDone}/{activeLevelTotal} concluídos</span>
+                    <span>{activeLevelTotal ? Math.round((activeLevelDone / activeLevelTotal) * 100) : 0}%</span>
+                  </div>
+                  <span className="hero-console-progress-bar">
+                    <i style={{ width: (activeLevelTotal ? Math.round((activeLevelDone / activeLevelTotal) * 100) : 0) + "%" }} />
+                  </span>
+                </div>
                 <div className="status-line">READY<span className="cursor" /></div>
               </div>
             </div>
@@ -240,11 +250,11 @@ export function Dashboard({
                 <div>
                   <h2>{activeLevel.tag} · {activeLevel.name}</h2>
                   <p>{activeLevel.exercises ? `${activeLevelDone} de ${activeLevelTotal} desafios concluídos.` : 'O próximo nível da jornada está sendo preparado.'}</p>
+                  {continueExercise && (
+                    <span className="continue-next">Próximo: <b>{continueExercise.title}</b></span>
+                  )}
                 </div>
                 <span className="continue-badge">{activeLevel.exercises ? `${activeLevelDone}/${activeLevelTotal}` : 'EM BREVE'}</span>
-                {continueExercise && (
-                  <span className="continue-next">Próximo: <b>{continueExercise.title}</b></span>
-                )}
               </div>
               <div className="progress-bar large">
                 <span style={{ width: `${activeLevelTotal ? (activeLevelDone / activeLevelTotal) * 100 : 0}%` }} />
