@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useState } from 'react';
 import { addTodayActivity } from '../progress';
 import type { StoreData } from '../types';
 
@@ -43,7 +43,7 @@ export function useProgressStore() {
 
   return {
     store,
-    setStore: setStore as Dispatch<SetStateAction<StoreData>>,
+    setStore,
     registerActivity,
   };
 }
