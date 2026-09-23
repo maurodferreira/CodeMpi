@@ -505,6 +505,7 @@ export default function App() {
     };
   };
 
+  const learningFeedback = getLearningFeedback();
 
   const handleLevelCompletion = (li: number) => {
     setCompletionLevel(li);
@@ -1181,12 +1182,49 @@ export default function App() {
                     </div>
                   )}
 
-                  {getLearningFeedback() && (
-                    <div className={`learning-feedback ${getLearningFeedback()!.tone}`}>
-                      <span className="learning-feedback-icon">{getLearningFeedback()!.tone === 'success' ? '✓' : getLearningFeedback()!.tone === 'error' ? '!' : '↻'}</span>
-                      <div>
-                        <strong>{getLearningFeedback()!.title}</strong>
-                        <p>{getLearningFeedback()!.body}</p>
+                  {learningFeedback && (
+                    <div className={`learning-feedback ${learningFeedback.tone}`}>
+                      <span className="learning-feedback-icon">
+                        {learningFeedback.tone === 'success' ? '✓' : learningFeedback.tone === 'error' ? '!' : '↻'}
+                      </span>
+
+                      <div className="learning-feedback-content">
+                        <strong>{learningFeedback.title}</strong>
+                        <p>{learningFeedback.body}</p>
+
+                        {lastTest && lastTest.firstFailure && lastTest.passed < lastTest.total && (
+                          lastTest.firstFailure.error ? (
+                            <div className="diagnostic-error">
+                              <span>ERRO DURANTE A EXECUÇÃO</span>
+                              <code>{lastTest.firstFailure.error}</code>
+                            </div>
+                          ) : (
+                            <div className="diagnostic-grid">
+                              <div className="diagnostic-item">
+                                <span>ENTRADA</span>
+                                <code>{lastTest.firstFailure.args || '—'}</code>
+                              </div>
+                              <div className="diagnostic-item">
+                                <span>SEU RESULTADO</span>
+                                <code>{lastTest.firstFailure.got}</code>
+                              </div>
+                              <div className="diagnostic-item expected">
+                                <span>ESPERADO</span>
+                                <code>{lastTest.firstFailure.expected}</code>
+                              </div>
+                            </div>
+                          )
+                        )}
+
+                        {learningFeedback.tone !== 'success' && (
+                          <div className="diagnostic-tip">
+                            <span>O QUE OBSERVAR</span>
+                            <strong>{learningFeedback.tone === 'error'
+                              ? 'O código precisa conseguir executar antes de os testes avaliarem a lógica.'
+                              : 'Compare a entrada com o resultado produzido e procure a operação ou condição que transforma um no outro.'}
+                            </strong>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
