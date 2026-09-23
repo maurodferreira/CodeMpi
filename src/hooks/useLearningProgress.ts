@@ -86,11 +86,11 @@ export function useLearningProgress(store: StoreData) {
     });
 
     return { totalEarned: earned, totalMax: max };
-  }, [store.done, store.lessonDone]);
+  }, [store]);
 
   const levelsDoneTotal = useMemo(
     () => LEVELS.filter((_, levelIndex) => isLevelComplete(store, levelIndex)).length,
-    [store.done],
+    [store],
   );
 
   const completedExercises = Object.keys(store.done).length;
@@ -115,7 +115,7 @@ export function useLearningProgress(store: StoreData) {
       li: lastBuilt,
       ei: Math.max(0, (LEVELS[lastBuilt].exercises?.length || 1) - 1),
     };
-  }, [store.done]);
+  }, [store]);
 
   const activeLevel = LEVELS[continuePoint.li];
   const activeLevelDone = getLevelDoneCount(store, continuePoint.li);
@@ -168,7 +168,7 @@ export function useLearningProgress(store: StoreData) {
     }, {});
 
     return stats;
-  }, [store.done, store.performance]);
+  }, [store]);
 
   const concepts = Object.values(conceptStats);
 
