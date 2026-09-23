@@ -12,7 +12,6 @@ interface DashboardProps {
   activeLevel: (typeof LEVELS)[number];
   activeLevelDone: number;
   activeLevelTotal: number;
-  masteredConcepts: ConceptSummary[];
   reviewConcepts: ConceptSummary[];
   concepts: ConceptSummary[];
   reviewTarget: ConceptSummary | null;
@@ -35,7 +34,6 @@ export function Dashboard({
   activeLevel,
   activeLevelDone,
   activeLevelTotal,
-  masteredConcepts,
   reviewConcepts,
   concepts,
   reviewTarget,
