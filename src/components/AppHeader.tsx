@@ -25,7 +25,7 @@ export function AppHeader({
         <div className="top-brand">
           <div className="logo-shell">
             <div className="logo">
-              <img src="/codempi-assets/logo/codempi-logo.png" alt="CodeMpi" />
+              <img src="/logo.png" alt="CodeMpi" />
             </div>
           </div>
           <div className="brand-copy">
