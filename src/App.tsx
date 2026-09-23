@@ -140,6 +140,8 @@ export default function App() {
     if (!levelUnlocked(li)) return;
 
     setLevelIndex(li);
+    setLessonStep(0);
+    setQuizAnswer(null);
 
     const level = LEVELS[li];
     if (!level.exercises?.length) {
@@ -161,7 +163,7 @@ export default function App() {
     }
 
     setExerciseIndex(target);
-    setView(currentLesson ? 'lesson' : 'mission');
+    setView(LEVEL_LESSONS[li] ? 'lesson' : 'mission');
   };
 
   const handleShowHint = () => {
