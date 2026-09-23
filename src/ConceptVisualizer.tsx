@@ -7,12 +7,35 @@ interface ConceptVisualizerProps {
   isPassed: boolean;
 }
 
+interface MachineConfig {
+  operator: string;
+  formula: string;
+  label: string;
+}
+
 function displayValue(value: unknown) {
   if (typeof value === 'string') return `"${value}"`;
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (value === undefined) return 'undefined';
   if (value === null) return 'null';
   return JSON.stringify(value);
+}
+
+function getN1Machine(exerciseTitle: string): MachineConfig {
+  const title = exerciseTitle.toLowerCase();
+
+  if (title.includes('soma')) return { operator: '+', formula: 'a + b', label: 'SOMADOR' };
+  if (title.includes('subtra')) return { operator: '−', formula: 'a − b', label: 'SUBTRATOR' };
+  if (title.includes('dobro')) return { operator: '×2', formula: 'n × 2', label: 'DUPLICADOR' };
+  if (title.includes('multiplica')) return { operator: '×', formula: 'a × b', label: 'MULTIPLICADOR' };
+  if (title.includes('divis')) return { operator: '÷', formula: 'a ÷ b', label: 'DIVISOR' };
+  if (title.includes('triplo')) return { operator: '×3', formula: 'n × 3', label: 'TRIPLICADOR' };
+  if (title.includes('média')) return { operator: '÷3', formula: '(a + b + c) ÷ 3', label: 'MÉDIA' };
+  if (title.includes('resto')) return { operator: '%', formula: 'a % b', label: 'RESTO' };
+  if (title.includes('celsius')) return { operator: '°F', formula: 'c × 9 ÷ 5 + 32', label: 'CONVERSOR' };
+  if (title.includes('círculo')) return { operator: 'π', formula: 'π × r × r', label: 'GEOMETRIA' };
+
+  return { operator: 'ƒ', formula: 'entrada → resultado', label: 'PROCESSADOR' };
 }
 
 export function ConceptVisualizer({
@@ -24,9 +47,101 @@ export function ConceptVisualizer({
   isPassed,
 }: ConceptVisualizerProps) {
   const firstTest = tests[0];
-  const inputA = firstTest?.args[0];
-  const inputB = firstTest?.args[1];
   const expected = firstTest?.exp;
+
+  if (levelIndex === 0) {
+    const machine = getN1Machine(exerciseTitle);
+    const inputs = firstTest?.args || [];
+    const testProgress = total ? (passed / total) * 100 : 0;
+
+    return (
+      <section className={`concept-lab machine-lab ${isPassed ? 'solved' : ''}`}>
+        <div className="machine-topbar">
+          <div className="machine-identity">
+            <span className="lab-eyebrow">CODEMPI LAB · MÁQUINA 01</span>
+            <h3>Core de Transformação</h3>
+            <p>Veja os dados entrando na máquina e entenda o papel da sua função.</p>
+          </div>
+
+          <div className="machine-status">
+            <span className="status-light" />
+            <div>
+              <small>STATUS</small>
+              <strong>{isPassed ? 'PROCESSO CONCLUÍDO' : 'AGUARDANDO CÓDIGO'}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="machine-board">
+          <div className="machine-track track-in">
+            <span className="track-label">INPUT</span>
+            <div className="input-capsules">
+              {inputs.length ? inputs.map((value, index) => (
+                <div className="input-capsule" key={index}>
+                  <span>{inputs.length > 1 ? `VAR ${String.fromCharCode(65 + index)}` : 'VALOR'}</span>
+                  <strong>{displayValue(value)}</strong>
+                </div>
+              )) : (
+                <div className="input-capsule muted-capsule">aguardando entrada</div>
+              )}
+            </div>
+          </div>
+
+          <div className="machine-rail">
+            <span className="rail-dot" />
+            <span className="rail-dot" />
+            <span className="rail-dot" />
+          </div>
+
+          <div className="machine-core">
+            <div className="core-ring ring-outer" />
+            <div className="core-ring ring-inner" />
+            <div className="core-center">
+              <span>{machine.operator}</span>
+            </div>
+            <div className="core-label">
+              <small>{machine.label}</small>
+              <strong>{machine.formula}</strong>
+            </div>
+          </div>
+
+          <div className="machine-rail output-rail">
+            <span className="rail-dot" />
+            <span className="rail-dot" />
+            <span className="rail-dot" />
+          </div>
+
+          <div className="machine-track track-out">
+            <span className="track-label">OUTPUT</span>
+            <div className="output-box">
+              <small>RESULTADO ESPERADO</small>
+              <strong>{displayValue(expected)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="machine-footer">
+          <div className="machine-explanation">
+            <span className="explanation-icon">↳</span>
+            <div>
+              <small>IDEIA DO NÍVEL</small>
+              <strong>Entrada → operação → resultado</strong>
+            </div>
+          </div>
+
+          <div className="machine-tests">
+            <div className="tests-copy">
+              <span>DIAGNÓSTICO</span>
+              <strong>{passed} / {total} testes</strong>
+            </div>
+            <div className="machine-progress">
+              <span style={{ width: `${testProgress}%` }} />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (levelIndex === 1) {
     const condition = exerciseTitle.toLowerCase().includes('par')
@@ -50,8 +165,8 @@ export function ConceptVisualizer({
         <div className="decision-flow">
           <div className="lab-node input-node">
             <span className="lab-node-label">ENTRADA</span>
-            <strong>{displayValue(inputA)}</strong>
-            {inputB !== undefined && <small>+ {displayValue(inputB)}</small>}
+            <strong>{displayValue(firstTest?.args[0])}</strong>
+            {firstTest?.args[1] !== undefined && <small>+ {displayValue(firstTest.args[1])}</small>}
           </div>
 
           <div className="flow-line"><span /></div>
@@ -78,7 +193,7 @@ export function ConceptVisualizer({
     );
   }
 
-  const params = tests[0]?.args || [];
+  const params = firstTest?.args || [];
   const slots = params.map((value, index) => ({
     label: String.fromCharCode(65 + index),
     value: displayValue(value),
