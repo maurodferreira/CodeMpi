@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { addTodayActivity } from '../progress';
+import { addTodayActivity } from '../utils/progress';
 import type { StoreData } from '../types';
 
 const STORAGE_KEY = 'circuito_v2';
