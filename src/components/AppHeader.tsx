@@ -47,6 +47,9 @@ export function AppHeader({
         <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
           Missão
         </button>
+        <button className="settings-trigger nav-settings" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
+          ⚙
+        </button>
       </nav>
 
       <div className="header-actions">
@@ -66,9 +69,6 @@ export function AppHeader({
           </div>
         </div>
 
-        <button className="settings-trigger" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
-          ⚙
-        </button>
       </div>
     </header>
   );
