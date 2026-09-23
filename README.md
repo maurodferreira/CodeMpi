@@ -41,6 +41,8 @@ src/
 │   └── SettingsPage.tsx
 ├── data/
 │   ├── concepts.ts
+│   ├── levels.ts
+│   ├── lessons.ts
 │   └── themes.ts
 ├── hooks/
 │   ├── useLearningProgress.ts
@@ -48,12 +50,9 @@ src/
 │   ├── useProgressStore.ts
 │   └── useTheme.ts
 ├── utils/
+│   ├── progress.ts
 │   └── xp.ts
-├── CodeEditor.tsx
 ├── index.css
-├── levels.ts
-├── lessons.ts
-├── progress.ts
 └── types.ts
 ```
 
