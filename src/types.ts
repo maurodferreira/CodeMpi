@@ -21,12 +21,19 @@ export interface StoreData {
   activityDates: string[];
 }
 
+export type ConceptState = 'new' | 'developing' | 'solid' | 'review';
+
 export interface ConceptSummary {
+  id: string;
   skill: string;
+  name: string;
+  description: string;
+  state: ConceptState;
   completed: number;
   total: number;
   failures: number;
   attempts: number;
+  progress: number;
   levelIndex: number;
   exerciseIndex: number;
   title: string;
