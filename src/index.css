@@ -1777,3 +1777,37 @@ footer.note::before {
   .lesson-reward-strip { margin:16px 20px 0; }
   .test-summary { align-items:flex-start; flex-direction:column; }
 }
+
+
+.learning-feedback {
+  display:flex;
+  gap:12px;
+  margin:14px 0;
+  padding:14px 16px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:rgba(7,17,15,.55);
+  animation: feedbackIn .35s ease both;
+}
+.learning-feedback-icon {
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:30px;
+  flex:none;
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+  font-weight:700;
+}
+.learning-feedback strong { display:block; color:var(--text); font-size:10px; }
+.learning-feedback p { margin:5px 0 0; color:var(--muted); font-size:10px; line-height:1.65; }
+.learning-feedback.success { border-color:rgba(124,255,155,.2); background:rgba(124,255,155,.035); }
+.learning-feedback.success .learning-feedback-icon { color:var(--accent); background:rgba(124,255,155,.08); }
+.learning-feedback.focus { border-color:rgba(255,184,77,.18); background:rgba(255,184,77,.025); }
+.learning-feedback.focus .learning-feedback-icon { color:var(--amber); background:rgba(255,184,77,.07); }
+.learning-feedback.error { border-color:rgba(255,100,100,.18); background:rgba(255,100,100,.025); }
+.learning-feedback.error .learning-feedback-icon { color:#ff9c9c; background:rgba(255,100,100,.06); }
+@keyframes feedbackIn {
+  from { opacity:0; transform:translateY(5px); }
+  to { opacity:1; transform:translateY(0); }
+}
