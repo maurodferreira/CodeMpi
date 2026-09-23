@@ -316,7 +316,7 @@ export default function App() {
       });
 
       const result = userFn(...args);
-      setFreeResult({ ok: true, value: JSON.stringify(result) });
+      setFreeResult({ ok: true, value: JSON.stringify(result) ?? String(result) });
     } catch (error: any) {
       setFreeResult({
         ok: false,
