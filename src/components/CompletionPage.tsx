@@ -1,5 +1,5 @@
-import { LEVELS } from '../levels';
-import { LEVEL_LESSONS } from '../lessons';
+import { LEVELS } from '../data/levels';
+import { LEVEL_LESSONS } from '../data/lessons';
 
 interface CompletionPageProps {
   completionLevel: number;
