@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CodeEditor } from './CodeEditor';
+import { ConceptVisualizer } from './ConceptVisualizer';
 import { LEVELS } from './levels';
 import { LEVEL_LESSONS } from './lessons';
 import { addTodayActivity, getActivityStreak, getLocalDateKey } from './progress';
@@ -1062,6 +1063,15 @@ export default function App() {
                       );
                     })}
                   </div>
+
+                  <ConceptVisualizer
+                    levelIndex={levelIndex}
+                    exerciseTitle={currentExercise.title}
+                    tests={currentExercise.tests}
+                    passed={lastTest?.passed || 0}
+                    total={lastTest?.total || currentExercise.tests.length}
+                    isPassed={isPassed || Boolean(alreadyDoneXP)}
+                  />
 
                   <div className="editor-wrap">
                     <CodeEditor code={code} onChange={setCode} />
