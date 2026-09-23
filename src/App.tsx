@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from './levels';
+import { LEVEL_LESSONS } from './lessons';
 
 const DIFF_LABEL: Record<string, string> = {
   facil: 'FÁCIL',
@@ -11,7 +12,7 @@ const DIFF_LABEL: Record<string, string> = {
 
 const HINT_MULT = [1, 0.9, 0.75, 0.5];
 
-type View = 'dashboard' | 'map' | 'mission';
+type View = 'dashboard' | 'map' | 'lesson' | 'mission';
 
 interface StoreData {
   done: Record<string, number>;
@@ -38,6 +39,8 @@ export default function App() {
   const [code, setCode] = useState(currentExercise?.starter || '');
   const [consoleLogs, setConsoleLogs] = useState<Array<{ tag: string; msg: string; ok?: boolean }>>([]);
   const [isPassed, setIsPassed] = useState(false);
+  const [lessonStep, setLessonStep] = useState(0);
+  const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
@@ -115,6 +118,8 @@ export default function App() {
   const activeLevel = LEVELS[continuePoint.li];
   const activeLevelDone = levelDoneCount(continuePoint.li);
   const activeLevelTotal = activeLevel.exercises?.length || 0;
+  const currentLesson = LEVEL_LESSONS[levelIndex];
+  const currentLessonStep = currentLesson?.steps[lessonStep];
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
 
   const openMission = (li: number, ei?: number) => {
@@ -142,7 +147,7 @@ export default function App() {
     }
 
     setExerciseIndex(target);
-    setView('mission');
+    setView(currentLesson ? 'lesson' : 'mission');
   };
 
   const handleShowHint = () => {
@@ -515,6 +520,91 @@ export default function App() {
                 </div>
               );
             })}
+          </section>
+        </main>
+      )}
+
+      {view === 'lesson' && currentLesson && currentLessonStep && (
+        <main className="lesson-page">
+          <div className="lesson-toolbar">
+            <button className="text-action" onClick={() => setView('map')}>← Voltar para a jornada</button>
+            <span>{currentLesson.levelTag} · AULA GUIADA</span>
+          </div>
+
+          <section className="lesson-card">
+            <div className="lesson-progress">
+              <span>PASSO {lessonStep + 1} DE {currentLesson.steps.length}</span>
+              <div className="progress-bar"><span style={{ width: `${((lessonStep + 1) / currentLesson.steps.length) * 100}%` }} /></div>
+            </div>
+
+            <div className="lesson-content">
+              <span className="eyebrow">{currentLessonStep.eyebrow}</span>
+              <h1>{currentLessonStep.title}</h1>
+              <p className="lesson-body">{currentLessonStep.body}</p>
+
+              {currentLessonStep.code && (
+                <pre className="lesson-code"><code>{currentLessonStep.code}</code></pre>
+              )}
+
+              {currentLessonStep.explanation && (
+                <div className="lesson-explanation">
+                  <span>💡</span>
+                  <div><strong>Por que isso funciona?</strong><p>{currentLessonStep.explanation}</p></div>
+                </div>
+              )}
+
+              {currentLessonStep.quiz && (
+                <div className="lesson-quiz">
+                  <strong>{currentLessonStep.quiz.question}</strong>
+                  <div className="quiz-options">
+                    {currentLessonStep.quiz.options.map((option, index) => {
+                      const selected = quizAnswer === index;
+                      const answered = quizAnswer !== null;
+                      const correct = index === currentLessonStep.quiz!.answer;
+                      return (
+                        <button
+                          key={option}
+                          className={`quiz-option ${selected ? 'selected' : ''} ${answered && correct ? 'correct' : ''} ${answered && selected && !correct ? 'wrong' : ''}`}
+                          onClick={() => setQuizAnswer(index)}
+                        >
+                          <span>{String.fromCharCode(65 + index)}</span>{option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {quizAnswer !== null && (
+                    <div className={`quiz-feedback ${quizAnswer === currentLessonStep.quiz.answer ? 'correct' : 'wrong'}`}>
+                      {quizAnswer === currentLessonStep.quiz.answer ? '✓ Acertou! ' : '↻ Ainda não. '}
+                      {currentLessonStep.quiz.explanation}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="lesson-footer">
+              <span>{lessonStep === 0 ? 'Começando pelo básico' : 'Você está avançando'}</span>
+              <div>
+                {lessonStep > 0 && (
+                  <button className="btn ghost" onClick={() => { setLessonStep((prev) => prev - 1); setQuizAnswer(null); }}>
+                    ← Voltar
+                  </button>
+                )}
+                {lessonStep < currentLesson.steps.length - 1 ? (
+                  <button
+                    className="btn primary"
+                    disabled={currentLessonStep.type === 'quiz' && quizAnswer === null}
+                    onClick={() => { setLessonStep((prev) => prev + 1); setQuizAnswer(null); }}
+                  >
+                    {currentLessonStep.type === 'quiz' && quizAnswer !== currentLessonStep.quiz?.answer ? 'Tentar novamente →' : 'Continuar →'}
+                  </button>
+                ) : (
+                  <button className="btn primary" onClick={() => setView('mission')}>
+                    Começar meu primeiro desafio →
+                  </button>
+                )}
+              </div>
+            </div>
           </section>
         </main>
       )}
