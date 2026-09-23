@@ -39,6 +39,7 @@ interface MissionPageProps {
   setFreeInputs: Dispatch<SetStateAction<string[]>>;
   setFreeResult: Dispatch<SetStateAction<{ ok: boolean; value?: string; error?: string } | null>>;
   setShowFreeTest: Dispatch<SetStateAction<boolean>>;
+  openMission: (li: number) => void;
   handleEvaluate: () => void;
   handleResetCode: () => void;
   handleFreeTest: () => void;
@@ -75,12 +76,15 @@ export function MissionPage({
   setFreeInputs,
   setFreeResult,
   setShowFreeTest,
+  openMission,
   handleEvaluate,
   handleResetCode,
   handleFreeTest,
   handleShowHint,
   handleNext,
 }: MissionPageProps) {
+  const hasExercises = Boolean(currentLevel.exercises?.length);
+
   return (
 <main className="mission-shell">
           <div className="mission-toolbar">
@@ -193,7 +197,7 @@ export function MissionPage({
                       <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
                         {hintsShown >= currentExercise.hints.length
                           ? 'Todas as dicas exibidas'
-                          : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(HINT_MULT[hintsShown + 1] * 100)}%`}
+                          : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`}
                       </button>
                       <span className="xp-live">
                         {!alreadyDoneXP && hintsShown > 0
