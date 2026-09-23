@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { LEVELS } from '../levels';
+import { LEVELS } from '../data/levels';
 import type { View } from '../types';
 
 interface AppHeaderProps {
