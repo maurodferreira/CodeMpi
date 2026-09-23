@@ -13,7 +13,7 @@ const DIFF_LABEL: Record<string, string> = {
 
 const HINT_MULT = [1, 0.9, 0.75, 0.5];
 
-type View = 'dashboard' | 'map' | 'lesson' | 'mission';
+type View = 'dashboard' | 'map' | 'lesson' | 'mission' | 'completion';
 
 interface PerformanceData {
   attempts: number;
@@ -53,6 +53,7 @@ export default function App() {
   const [lessonStep, setLessonStep] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [lastTest, setLastTest] = useState<{ passed: number; total: number; firstFailure?: { args: string; got: string; expected: string; error?: string } } | null>(null);
+  const [completionLevel, setCompletionLevel] = useState<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
@@ -444,6 +445,11 @@ export default function App() {
   };
 
 
+  const handleLevelCompletion = (li: number) => {
+    setCompletionLevel(li);
+    setView('completion');
+  };
+
   const handleLessonFinish = () => {
     registerActivity();
     if (!store.lessonDone[levelIndex] && currentLesson) {
@@ -465,10 +471,7 @@ export default function App() {
       return;
     }
 
-    if (levelIndex < LEVELS.length - 1) {
-      setLevelIndex((prev) => prev + 1);
-      setExerciseIndex(0);
-    }
+    handleLevelCompletion(levelIndex);
   };
 
   return (
@@ -933,6 +936,44 @@ export default function App() {
         </main>
       )}
 
+      {view === 'completion' && completionLevel !== null && (
+        <main className="completion-page">
+          <section className="completion-card">
+            <div className="completion-orbit"><span>✦</span><span>✦</span><span>✦</span></div>
+            <span className="eyebrow">NÍVEL CONCLUÍDO · {LEVELS[completionLevel].tag}</span>
+            <h1>Você fechou <em>{LEVELS[completionLevel].name}.</em></h1>
+            <p className="completion-intro">Você não só passou pelos desafios. Você praticou, encontrou erros, corrigiu sua lógica e construiu uma base nova.</p>
+
+            <div className="completion-stats">
+              <div><strong>{levelDoneCount(completionLevel)}</strong><span>desafios concluídos</span></div>
+              <div><strong>+{LEVELS[completionLevel].exercises?.reduce((sum, ex, ei) => sum + (store.done[getKey(completionLevel, ei)] || 0), 0) || 0}</strong><span>XP nos desafios</span></div>
+              <div><strong>+{LEVEL_LESSONS[completionLevel]?.rewardXp || 0}</strong><span>XP da aula</span></div>
+            </div>
+
+            <div className="completion-learned">
+              <span className="section-kicker">VOCÊ PRATICOU</span>
+              <div className="completion-tags">
+                {(completionLevel === 0
+                  ? ['Variáveis', 'Operadores', 'Funções']
+                  : ['if / else', 'Comparações', '&& e ||', 'Múltiplas condições']
+                ).map((item) => <span key={item}>✓ {item}</span>)}
+              </div>
+            </div>
+
+            <div className="completion-actions">
+              <button className="btn ghost" onClick={() => setView('map')}>Ver jornada</button>
+              {completionLevel < LEVELS.length - 1 ? (
+                <button className="btn primary" onClick={() => openMission(completionLevel + 1)}>
+                  Desbloqueado: {LEVELS[completionLevel + 1].tag} →
+                </button>
+              ) : (
+                <button className="btn primary" onClick={() => setView('dashboard')}>Voltar ao Dashboard</button>
+              )}
+            </div>
+          </section>
+        </main>
+      )}
+
       {view === 'mission' && (
         <main className="mission-shell">
           <div className="mission-toolbar">
@@ -1062,12 +1103,10 @@ export default function App() {
                           : `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`}
                       </span>
 
-                      {exerciseIndex < currentLevel.exercises!.length - 1 || levelIndex < LEVELS.length - 1 ? (
+                      {(
                         <button className="btn primary" onClick={handleNext}>
-                          {exerciseIndex === currentLevel.exercises!.length - 1 ? 'Próximo nível →' : 'Próximo exercício →'}
+                          {exerciseIndex === currentLevel.exercises!.length - 1 ? 'Ver resumo do nível →' : 'Próximo exercício →'}
                         </button>
-                      ) : (
-                        <button className="btn primary" disabled>Circuito completo 🎉</button>
                       )}
                     </div>
                   )}
