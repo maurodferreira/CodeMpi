@@ -20,6 +20,7 @@ export interface LevelLesson {
   levelTag: string;
   title: string;
   subtitle: string;
+  rewardXp: number;
   steps: LessonStep[];
 }
 
