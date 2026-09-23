@@ -8,43 +8,61 @@ export function getProgressKey(levelIndex: number, exerciseIndex: number): strin
   return `${levelIndex}-${exerciseIndex}`;
 }
 
+export function getLevelDoneCount(store: StoreData, levelIndex: number): number {
+  const level = LEVELS[levelIndex];
+
+  if (!level.exercises) return 0;
+
+  return level.exercises.filter((_, exerciseIndex) => (
+    store.done[getProgressKey(levelIndex, exerciseIndex)]
+  )).length;
+}
+
+export function isLevelComplete(store: StoreData, levelIndex: number): boolean {
+  const level = LEVELS[levelIndex];
+
+  return Boolean(
+    level.exercises?.length &&
+    getLevelDoneCount(store, levelIndex) === level.exercises.length,
+  );
+}
+
+export function isLevelUnlocked(store: StoreData, levelIndex: number): boolean {
+  return levelIndex === 0 || isLevelComplete(store, levelIndex - 1);
+}
+
+export function isExerciseUnlocked(
+  store: StoreData,
+  levelIndex: number,
+  exerciseIndex: number,
+): boolean {
+  if (!isLevelUnlocked(store, levelIndex)) return false;
+  if (exerciseIndex === 0) return true;
+
+  return Boolean(store.done[getProgressKey(levelIndex, exerciseIndex - 1)]);
+}
+
+export function getStoredHintMultiplier(
+  store: StoreData,
+  levelIndex: number,
+  exerciseIndex: number,
+): number {
+  const shown = Math.min(store.hints[getProgressKey(levelIndex, exerciseIndex)] || 0, 3);
+  return getHintMultiplier(shown);
+}
+
 export function useLearningProgress(store: StoreData) {
   const getKey = getProgressKey;
 
-  const levelDoneCount = (levelIndex: number) => {
-    const level = LEVELS[levelIndex];
-
-    if (!level.exercises) return 0;
-
-    return level.exercises.filter((_, exerciseIndex) => (
-      store.done[getKey(levelIndex, exerciseIndex)]
-    )).length;
-  };
-
-  const levelComplete = (levelIndex: number) => {
-    const level = LEVELS[levelIndex];
-
-    return Boolean(
-      level.exercises?.length &&
-      levelDoneCount(levelIndex) === level.exercises.length,
-    );
-  };
-
-  const levelUnlocked = (levelIndex: number) => (
-    levelIndex === 0 || levelComplete(levelIndex - 1)
+  const levelDoneCount = (levelIndex: number) => getLevelDoneCount(store, levelIndex);
+  const levelComplete = (levelIndex: number) => isLevelComplete(store, levelIndex);
+  const levelUnlocked = (levelIndex: number) => isLevelUnlocked(store, levelIndex);
+  const exUnlocked = (levelIndex: number, exerciseIndex: number) => (
+    isExerciseUnlocked(store, levelIndex, exerciseIndex)
   );
-
-  const exUnlocked = (levelIndex: number, exerciseIndex: number) => {
-    if (!levelUnlocked(levelIndex)) return false;
-    if (exerciseIndex === 0) return true;
-
-    return Boolean(store.done[getKey(levelIndex, exerciseIndex - 1)]);
-  };
-
-  const getMult = (levelIndex: number, exerciseIndex: number) => {
-    const shown = Math.min(store.hints[getKey(levelIndex, exerciseIndex)] || 0, 3);
-    return getHintMultiplier(shown);
-  };
+  const getMult = (levelIndex: number, exerciseIndex: number) => (
+    getStoredHintMultiplier(store, levelIndex, exerciseIndex)
+  );
 
   const { totalEarned, totalMax } = useMemo(() => {
     let earned = 0;
@@ -54,7 +72,7 @@ export function useLearningProgress(store: StoreData) {
       level.exercises?.forEach((exercise, exerciseIndex) => {
         max += exercise.xp;
 
-        const earnedXp = store.done[getKey(levelIndex, exerciseIndex)];
+        const earnedXp = store.done[getProgressKey(levelIndex, exerciseIndex)];
         if (earnedXp) earned += earnedXp;
       });
     });
@@ -67,14 +85,11 @@ export function useLearningProgress(store: StoreData) {
       }
     });
 
-    return {
-      totalEarned: earned,
-      totalMax: max,
-    };
+    return { totalEarned: earned, totalMax: max };
   }, [store.done, store.lessonDone]);
 
   const levelsDoneTotal = useMemo(
-    () => LEVELS.filter((_, levelIndex) => levelComplete(levelIndex)).length,
+    () => LEVELS.filter((_, levelIndex) => isLevelComplete(store, levelIndex)).length,
     [store.done],
   );
 
@@ -82,10 +97,10 @@ export function useLearningProgress(store: StoreData) {
 
   const continuePoint = useMemo(() => {
     for (let levelIndex = 0; levelIndex < LEVELS.length; levelIndex += 1) {
-      if (!levelUnlocked(levelIndex) || !LEVELS[levelIndex].exercises?.length) continue;
+      if (!isLevelUnlocked(store, levelIndex) || !LEVELS[levelIndex].exercises?.length) continue;
 
       for (let exerciseIndex = 0; exerciseIndex < LEVELS[levelIndex].exercises!.length; exerciseIndex += 1) {
-        if (!store.done[getKey(levelIndex, exerciseIndex)]) {
+        if (!store.done[getProgressKey(levelIndex, exerciseIndex)]) {
           return { li: levelIndex, ei: exerciseIndex };
         }
       }
@@ -103,10 +118,9 @@ export function useLearningProgress(store: StoreData) {
   }, [store.done]);
 
   const activeLevel = LEVELS[continuePoint.li];
-  const activeLevelDone = levelDoneCount(continuePoint.li);
+  const activeLevelDone = getLevelDoneCount(store, continuePoint.li);
   const activeLevelTotal = activeLevel.exercises?.length || 0;
 
-  const currentLesson = LEVEL_LESSONS;
   const lessonsEarnedXp = Object.entries(store.lessonDone).reduce((sum, [levelIndex, done]) => {
     if (!done) return sum;
 
@@ -120,8 +134,8 @@ export function useLearningProgress(store: StoreData) {
         title: exercise.title,
         levelIndex,
         exerciseIndex,
-        done: Boolean(store.done[getKey(levelIndex, exerciseIndex)]),
-        performance: store.performance[getKey(levelIndex, exerciseIndex)] || { attempts: 0, failures: 0 },
+        done: Boolean(store.done[getProgressKey(levelIndex, exerciseIndex)]),
+        performance: store.performance[getProgressKey(levelIndex, exerciseIndex)] || { attempts: 0, failures: 0 },
       })),
     ).reduce<Record<string, ConceptSummary>>((acc, item) => {
       const current = acc[item.skill] || {
@@ -190,7 +204,6 @@ export function useLearningProgress(store: StoreData) {
     activeLevel,
     activeLevelDone,
     activeLevelTotal,
-    currentLesson,
     lessonsEarnedXp,
     concepts,
     masteredConcepts,
