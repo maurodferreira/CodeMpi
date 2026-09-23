@@ -148,6 +148,16 @@ export function useMissionRunner({
         total: currentExercise.tests.length,
         firstFailure: { args: '', got: '', expected: '', error: message },
       });
+      setStore((prev) => ({
+        ...prev,
+        performance: {
+          ...prev.performance,
+          [key]: {
+            attempts: prev.performance[key]?.attempts || 1,
+            failures: (prev.performance[key]?.failures || 0) + 1,
+          },
+        },
+      }));
       setIsPassed(false);
       return;
     }
