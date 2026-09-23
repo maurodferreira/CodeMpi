@@ -1,4 +1,30 @@
-export const LEVELS = [
+export interface ExerciseTest {
+    args: unknown[];
+    exp: unknown;
+}
+
+export interface Exercise {
+    title: string;
+    desc: string;
+    sig: string;
+    starter: string;
+    fn: string;
+    difficulty: "facil" | "medio" | "dificil" | "boss";
+    xp: number;
+    skill: string;
+    hints: string[];
+    tests: ExerciseTest[];
+}
+
+export interface Level {
+    name: string;
+    tag: string;
+    exercises: Exercise[] | null;
+    count?: number;
+    topics?: string;
+}
+
+export const LEVELS: Level[] = [
     {
         name: "Variáveis e Operadores", tag: "N1", exercises: [
             {
