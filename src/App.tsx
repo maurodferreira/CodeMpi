@@ -47,8 +47,8 @@ export default function App() {
     activeLevelDone,
     activeLevelTotal,
     lessonsEarnedXp,
-    masteredConcepts,
     reviewConcepts,
+    concepts,
     reviewTarget,
   } = useLearningProgress(store);
 
@@ -198,8 +198,8 @@ export default function App() {
           activeLevel={activeLevel}
           activeLevelDone={activeLevelDone}
           activeLevelTotal={activeLevelTotal}
-          masteredConcepts={masteredConcepts}
           reviewConcepts={reviewConcepts}
+          concepts={concepts}
           reviewTarget={reviewTarget}
           activityStreak={activityStreak}
           todayKey={todayKey}
