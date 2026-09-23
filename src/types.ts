@@ -44,3 +44,15 @@ export interface LastTest {
   total: number;
   firstFailure?: TestFailure;
 }
+
+export interface ConsoleLog {
+  tag: string;
+  msg: string;
+  ok?: boolean;
+}
+
+export interface LearningFeedback {
+  tone: 'success' | 'focus' | 'error';
+  title: string;
+  body: string;
+}
