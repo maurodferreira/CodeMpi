@@ -30,11 +30,9 @@ export function AppHeader({
           </div>
           <div className="brand-copy">
             <div className="brand-status">
-              <span className="dot" /> SISTEMA ONLINE · TRILHA DE PROGRAMAÇÃO
+              <span className="dot" /> SISTEMA ONLINE
             </div>
-            <div className="tagline">
-              Aprenda programação na prática, sem medo de errar. Resolva desafios, ganhe XP e avance no seu ritmo.
-            </div>
+            <div className="brand-context">TRILHA DE PROGRAMAÇÃO</div>
           </div>
         </div>
       </button>
@@ -51,11 +49,8 @@ export function AppHeader({
         </button>
       </nav>
 
-      <button className="settings-trigger" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
-        ⚙
-      </button>
-
-      <div className="score-box">
+      <div className="header-actions">
+        <div className="score-box">
         <div className="score-meta">
           <span className="score-label">XP TOTAL</span>
           <span className="score-max">
@@ -66,9 +61,14 @@ export function AppHeader({
         <div className="score-track" aria-hidden={true}>
           <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
         </div>
-        <div className="sub" id="lvlprog">
-          {levelsDoneTotal} / {LEVELS.length} níveis fechados
+          <div className="sub" id="lvlprog">
+            {levelsDoneTotal} / {LEVELS.length} níveis fechados
+          </div>
         </div>
+
+        <button className="settings-trigger" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
+          ⚙
+        </button>
       </div>
     </header>
   );
