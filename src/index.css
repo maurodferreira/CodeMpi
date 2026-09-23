@@ -1846,3 +1846,31 @@ footer.note::before {
   .concepts-grid { grid-template-columns:1fr; }
   .review-card { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Healthy daily practice */
+.daily-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:28px; }
+.streak-card, .daily-review-card {
+  min-height:205px;
+  padding:19px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(12,27,23,.72),rgba(7,17,15,.5));
+}
+.streak-card.active { border-color:rgba(124,255,155,.16); box-shadow:0 0 30px rgba(124,255,155,.035); }
+.daily-card-top { display:flex; align-items:center; justify-content:space-between; }
+.daily-date { color:var(--muted-2); font-family:var(--font-mono); font-size:8px; }
+.streak-main { display:flex; align-items:center; gap:13px; margin:23px 0 12px; }
+.streak-flame { display:grid; place-items:center; width:48px; height:48px; border:1px solid rgba(124,255,155,.12); border-radius:13px; background:rgba(124,255,155,.045); color:var(--accent); font-size:26px; transform:rotate(-25deg); }
+.streak-main strong { display:block; font-family:var(--font-head); font-size:35px; line-height:.9; letter-spacing:-.05em; }
+.streak-main span:not(.streak-flame) { display:block; margin-top:5px; color:var(--muted-2); font-size:8px; }
+.streak-card p, .daily-review-card p { max-width:450px; margin:0; color:var(--muted); font-size:9.5px; line-height:1.65; }
+.streak-best { margin-top:16px; color:var(--muted-2); font-size:8px; }
+.streak-best b { color:var(--text); }
+.daily-review-card { border-color:rgba(255,190,77,.11); }
+.daily-review-card h2 { margin:20px 0 7px; font-family:var(--font-head); font-size:22px; letter-spacing:-.03em; }
+.daily-review-card .btn { margin-top:17px; }
+.daily-review-icon { color:#ffbe4d; font-size:17px; }
+@media (max-width: 700px) {
+  .daily-grid { grid-template-columns:1fr; }
+}
