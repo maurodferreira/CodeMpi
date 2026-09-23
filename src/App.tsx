@@ -74,6 +74,7 @@ export default function App() {
     showFreeTest,
     setShowFreeTest,
     learningFeedback,
+    resetMissionState,
     handleEvaluate,
     handleResetCode,
     handleFreeTest,
@@ -91,6 +92,7 @@ export default function App() {
   });
 
   const handleReviewConcept = (concept: ConceptSummary) => {
+    resetMissionState(LEVELS[concept.levelIndex].exercises?.[concept.exerciseIndex] || null);
     setLevelIndex(concept.levelIndex);
     setExerciseIndex(concept.exerciseIndex);
     setLessonStep(0);
@@ -101,13 +103,13 @@ export default function App() {
   const openMission = (li: number, ei?: number) => {
     if (!levelUnlocked(li)) return;
 
-    setLevelIndex(li);
-    setLessonStep(0);
-    setQuizAnswer(null);
-
     const level = LEVELS[li];
     if (!level.exercises?.length) {
+      resetMissionState(null);
+      setLevelIndex(li);
       setExerciseIndex(0);
+      setLessonStep(0);
+      setQuizAnswer(null);
       setView('mission');
       return;
     }
@@ -124,7 +126,11 @@ export default function App() {
       }
     }
 
+    resetMissionState(level.exercises[target] || null);
+    setLevelIndex(li);
     setExerciseIndex(target);
+    setLessonStep(0);
+    setQuizAnswer(null);
     setView(LEVEL_LESSONS[li] ? 'lesson' : 'mission');
   };
 
@@ -159,7 +165,9 @@ export default function App() {
     const isLastInLevel = exerciseIndex === currentLevel.exercises.length - 1;
 
     if (!isLastInLevel) {
-      setExerciseIndex((prev) => prev + 1);
+      const nextExerciseIndex = exerciseIndex + 1;
+      resetMissionState(currentLevel.exercises[nextExerciseIndex]);
+      setExerciseIndex(nextExerciseIndex);
       return;
     }
 
@@ -267,7 +275,10 @@ export default function App() {
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
           exUnlocked={exUnlocked}
-          setExerciseIndex={setExerciseIndex}
+          selectExercise={(ei) => {
+            resetMissionState(currentLevel.exercises?.[ei] || null);
+            setExerciseIndex(ei);
+          }}
           setView={setView}
           openMission={openMission}
           setCode={setCode}
