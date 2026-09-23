@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { CodeEditor } from '../CodeEditor';
 import { LEVELS } from '../levels';
-import type { LastTest, StoreData, View } from '../types';
+import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
 
 const DIFF_LABEL: Record<string, string> = {
   facil: 'FÁCIL',
@@ -20,9 +20,9 @@ interface MissionPageProps {
   hintsShown: number;
   alreadyDoneXP: number | undefined;
   isPassed: boolean;
-  consoleLogs: Array<{ tag: string; msg: string; ok?: boolean }>;
+  consoleLogs: ConsoleLog[];
   lastTest: LastTest | null;
-  learningFeedback: { tone: string; title: string; body: string } | null;
+  learningFeedback: LearningFeedback | null;
   freeInputs: string[];
   freeResult: { ok: boolean; value?: string; error?: string } | null;
   showFreeTest: boolean;
