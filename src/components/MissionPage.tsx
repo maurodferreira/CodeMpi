@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { CodeEditor } from '../CodeEditor';
 import { LEVELS } from '../levels';
-import type { LastTest, PerformanceData, StoreData, View } from '../types';
+import type { LastTest, StoreData, View } from '../types';
 
 const DIFF_LABEL: Record<string, string> = {
   facil: 'FÁCIL',
@@ -26,7 +26,7 @@ interface MissionPageProps {
   freeInputs: string[];
   freeResult: { ok: boolean; value?: string; error?: string } | null;
   showFreeTest: boolean;
-  hMult: number[];
+  hMult: readonly number[];
   getKey: (li: number, ei: number) => string;
   getMult: (li: number, ei: number) => number;
   levelUnlocked: (li: number) => boolean;
