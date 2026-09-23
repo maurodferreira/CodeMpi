@@ -1,5 +1,5 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
-import type { Exercise } from '../levels';
+import type { Exercise } from '../data/levels';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData } from '../types';
 import { calculateExerciseXp } from '../utils/xp';
 
