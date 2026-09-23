@@ -28,7 +28,7 @@ export function CompletionPage({
 
             <div className="completion-stats">
               <div><strong>{levelDoneCount(completionLevel)}</strong><span>desafios concluídos</span></div>
-              <div><strong>+{LEVELS[completionLevel].exercises?.reduce((sum, ex, ei) => sum + (store.done[getKey(completionLevel, ei)] || 0), 0) || 0}</strong><span>XP nos desafios</span></div>
+              <div><strong>+{LEVELS[completionLevel].exercises?.reduce((sum, _, ei) => sum + (done[getKey(completionLevel, ei)] || 0), 0) || 0}</strong><span>XP nos desafios</span></div>
               <div><strong>+{LEVEL_LESSONS[completionLevel]?.rewardXp || 0}</strong><span>XP da aula</span></div>
             </div>
 
