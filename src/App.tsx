@@ -14,10 +14,16 @@ const HINT_MULT = [1, 0.9, 0.75, 0.5];
 
 type View = 'dashboard' | 'map' | 'lesson' | 'mission';
 
+interface PerformanceData {
+  attempts: number;
+  failures: number;
+}
+
 interface StoreData {
   done: Record<string, number>;
   hints: Record<string, number>;
   lessonDone: Record<number, boolean>;
+  performance: Record<string, PerformanceData>;
 }
 
 export default function App() {
@@ -27,9 +33,11 @@ export default function App() {
   const [store, setStore] = useState<StoreData>(() => {
     try {
       const saved = localStorage.getItem('circuito_v2');
-      return saved ? { lessonDone: {}, ...JSON.parse(saved) } : { done: {}, hints: {}, lessonDone: {} };
+      return saved
+        ? { done: {}, hints: {}, lessonDone: {}, performance: {}, ...JSON.parse(saved) }
+        : { done: {}, hints: {}, lessonDone: {}, performance: {} };
     } catch {
-      return { done: {}, hints: {}, lessonDone: {} };
+      return { done: {}, hints: {}, lessonDone: {}, performance: {} };
     }
   });
 
@@ -136,6 +144,68 @@ export default function App() {
   const lessonCompletion = currentLesson ? Boolean(store.lessonDone[levelIndex]) : false;
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
 
+  const conceptStats = LEVELS.flatMap((level, li) =>
+    (level.exercises || []).map((exercise, ei) => ({
+      skill: exercise.skill || level.name,
+      title: exercise.title,
+      levelIndex: li,
+      exerciseIndex: ei,
+      done: Boolean(store.done[getKey(li, ei)]),
+      performance: store.performance[getKey(li, ei)] || { attempts: 0, failures: 0 },
+    })),
+  ).reduce<Record<string, {
+    skill: string;
+    completed: number;
+    total: number;
+    failures: number;
+    attempts: number;
+    levelIndex: number;
+    exerciseIndex: number;
+    title: string;
+  }>>((acc, item) => {
+    const current = acc[item.skill] || {
+      skill: item.skill,
+      completed: 0,
+      total: 0,
+      failures: 0,
+      attempts: 0,
+      levelIndex: item.levelIndex,
+      exerciseIndex: item.exerciseIndex,
+      title: item.title,
+    };
+
+    current.total += 1;
+    current.completed += item.done ? 1 : 0;
+    current.failures += item.performance.failures;
+    current.attempts += item.performance.attempts;
+
+    if (item.levelIndex < current.levelIndex || (item.levelIndex === current.levelIndex && item.exerciseIndex < current.exerciseIndex)) {
+      current.levelIndex = item.levelIndex;
+      current.exerciseIndex = item.exerciseIndex;
+      current.title = item.title;
+    }
+
+    acc[item.skill] = current;
+    return acc;
+  }, {});
+
+  const concepts = Object.values(conceptStats);
+  const masteredConcepts = concepts.filter((concept) => concept.completed === concept.total && concept.failures < 2);
+  const reviewConcepts = concepts
+    .filter((concept) => concept.failures >= 2 && concept.completed < concept.total || concept.failures >= 3)
+    .sort((a, b) => b.failures - a.failures);
+  const inProgressConcepts = concepts
+    .filter((concept) => concept.completed > 0 && concept.completed < concept.total)
+    .sort((a, b) => b.completed - a.completed);
+
+  const handleReviewConcept = (concept: (typeof concepts)[number]) => {
+    setLevelIndex(concept.levelIndex);
+    setExerciseIndex(concept.exerciseIndex);
+    setLessonStep(0);
+    setQuizAnswer(null);
+    setView('mission');
+  };
+
   const openMission = (li: number, ei?: number) => {
     if (!levelUnlocked(li)) return;
 
@@ -186,6 +256,18 @@ export default function App() {
   const handleEvaluate = () => {
     if (!currentExercise) return;
 
+    const key = getKey(levelIndex, exerciseIndex);
+    setStore((prev) => ({
+      ...prev,
+      performance: {
+        ...prev.performance,
+        [key]: {
+          attempts: (prev.performance[key]?.attempts || 0) + 1,
+          failures: prev.performance[key]?.failures || 0,
+        },
+      },
+    }));
+
     const logs: Array<{ tag: string; msg: string; ok?: boolean }> = [];
     let userFn: any;
 
@@ -213,6 +295,17 @@ export default function App() {
     }
 
     if (typeof userFn !== 'function') {
+      setStore((prev) => ({
+        ...prev,
+        performance: {
+          ...prev.performance,
+          [key]: {
+            attempts: prev.performance[key]?.attempts || 1,
+            failures: (prev.performance[key]?.failures || 0) + 1,
+          },
+        },
+      }));
+
       const expectedFn = currentExercise.fn;
       setConsoleLogs([{ tag: 'estrutura', msg: `Ainda não encontrei uma função chamada ${expectedFn}. Confira o nome e a estrutura pedidos na missão.`, ok: false }]);
       setLastTest({
@@ -286,6 +379,16 @@ export default function App() {
 
       setIsPassed(true);
     } else {
+      setStore((prev) => ({
+        ...prev,
+        performance: {
+          ...prev.performance,
+          [key]: {
+            attempts: prev.performance[key]?.attempts || 1,
+            failures: (prev.performance[key]?.failures || 0) + 1,
+          },
+        },
+      }));
       setIsPassed(false);
     }
 
@@ -470,6 +573,70 @@ export default function App() {
                 <small>sua jornada até aqui</small>
               </div>
             </article>
+          </section>
+
+          <section className="concepts-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
+                <h2>O que você já domina</h2>
+              </div>
+              <span className="concept-count">{masteredConcepts.length} dominados</span>
+            </div>
+
+            <div className="concepts-grid">
+              {masteredConcepts.length > 0 ? masteredConcepts.slice(0, 6).map((concept) => (
+                <article className="concept-card mastered" key={concept.skill}>
+                  <div className="concept-card-top">
+                    <span className="concept-state">✓ DOMINADO</span>
+                    <span>{concept.completed}/{concept.total}</span>
+                  </div>
+                  <h3>{concept.skill}</h3>
+                  <p>Você já resolveu os desafios desse conceito sem precisar voltar para o básico.</p>
+                </article>
+              )) : (
+                <div className="concept-empty">
+                  <span>◎</span>
+                  <div>
+                    <strong>Seu primeiro conceito está esperando.</strong>
+                    <p>Conclua uma missão para começar a construir seu histórico de domínio.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="concepts-section review-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-kicker">PROFESSOR DO CODEMPI</span>
+                <h2>Conceitos para revisar</h2>
+              </div>
+              {reviewConcepts.length > 0 && <span className="concept-count review">{reviewConcepts.length} para revisar</span>}
+            </div>
+
+            {reviewConcepts.length > 0 ? (
+              <div className="review-list">
+                {reviewConcepts.slice(0, 4).map((concept) => (
+                  <article className="review-card" key={concept.skill}>
+                    <div className="review-copy">
+                      <span className="concept-state">↻ VALE REVISAR</span>
+                      <h3>{concept.skill}</h3>
+                      <p>Você encontrou dificuldade {concept.failures} vezes em {concept.attempts} tentativas. Isso não é fracasso — é um sinal de onde podemos reforçar a base.</p>
+                    </div>
+                    <button className="btn ghost" onClick={() => handleReviewConcept(concept)}>Revisar →</button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="review-clear">
+                <span>✦</span>
+                <div>
+                  <strong>Nenhum conceito precisa de revisão agora.</strong>
+                  <p>Continue praticando. O CodeMpi observa sua evolução e avisa quando algum assunto merece uma nova passada.</p>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="continue-grid">
