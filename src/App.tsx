@@ -269,6 +269,7 @@ export default function App() {
           exUnlocked={exUnlocked}
           setExerciseIndex={setExerciseIndex}
           setView={setView}
+          openMission={openMission}
           setCode={setCode}
           setFreeInputs={setFreeInputs}
           setFreeResult={setFreeResult}
