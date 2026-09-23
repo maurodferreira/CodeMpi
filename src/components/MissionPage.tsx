@@ -33,7 +33,7 @@ interface MissionPageProps {
   levelComplete: (li: number) => boolean;
   levelDoneCount: (li: number) => number;
   exUnlocked: (li: number, ei: number) => boolean;
-  setExerciseIndex: Dispatch<SetStateAction<number>>;
+  selectExercise: (exerciseIndex: number) => void;
   setView: Dispatch<SetStateAction<View>>;
   setCode: Dispatch<SetStateAction<string>>;
   setFreeInputs: Dispatch<SetStateAction<string[]>>;
@@ -70,7 +70,7 @@ export function MissionPage({
   levelComplete,
   levelDoneCount,
   exUnlocked,
-  setExerciseIndex,
+  selectExercise,
   setView,
   setCode,
   setFreeInputs,
@@ -165,7 +165,7 @@ export function MissionPage({
                           key={ei}
                           className={dotClass}
                           title={exercise.title}
-                          onClick={() => isUnlocked && setExerciseIndex(ei)}
+                          onClick={() => isUnlocked && selectExercise(ei)}
                           disabled={!isUnlocked}
                         >
                           {isDone ? '✓' : ei + 1}
