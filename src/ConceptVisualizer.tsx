@@ -7,10 +7,10 @@ interface ConceptVisualizerProps {
   isPassed: boolean;
 }
 
-interface MachineConfig {
-  operator: string;
+interface N1Visual {
   formula: string;
-  label: string;
+  operator: string;
+  sentence: string;
 }
 
 function displayValue(value: unknown) {
@@ -21,21 +21,21 @@ function displayValue(value: unknown) {
   return JSON.stringify(value);
 }
 
-function getN1Machine(exerciseTitle: string): MachineConfig {
+function getN1Visual(exerciseTitle: string): N1Visual {
   const title = exerciseTitle.toLowerCase();
 
-  if (title.includes('soma')) return { operator: '+', formula: 'a + b', label: 'SOMADOR' };
-  if (title.includes('subtra')) return { operator: '−', formula: 'a − b', label: 'SUBTRATOR' };
-  if (title.includes('dobro')) return { operator: '×2', formula: 'n × 2', label: 'DUPLICADOR' };
-  if (title.includes('multiplica')) return { operator: '×', formula: 'a × b', label: 'MULTIPLICADOR' };
-  if (title.includes('divis')) return { operator: '÷', formula: 'a ÷ b', label: 'DIVISOR' };
-  if (title.includes('triplo')) return { operator: '×3', formula: 'n × 3', label: 'TRIPLICADOR' };
-  if (title.includes('média')) return { operator: '÷3', formula: '(a + b + c) ÷ 3', label: 'MÉDIA' };
-  if (title.includes('resto')) return { operator: '%', formula: 'a % b', label: 'RESTO' };
-  if (title.includes('celsius')) return { operator: '°F', formula: 'c × 9 ÷ 5 + 32', label: 'CONVERSOR' };
-  if (title.includes('círculo')) return { operator: 'π', formula: 'π × r × r', label: 'GEOMETRIA' };
+  if (title.includes('soma')) return { formula: 'a + b', operator: '+', sentence: 'juntar dois valores' };
+  if (title.includes('subtra')) return { formula: 'a − b', operator: '−', sentence: 'descobrir a diferença' };
+  if (title.includes('dobro')) return { formula: 'n × 2', operator: '×2', sentence: 'multiplicar por dois' };
+  if (title.includes('multiplica')) return { formula: 'a × b', operator: '×', sentence: 'multiplicar dois valores' };
+  if (title.includes('divis')) return { formula: 'a ÷ b', operator: '÷', sentence: 'dividir um valor pelo outro' };
+  if (title.includes('triplo')) return { formula: 'n × 3', operator: '×3', sentence: 'multiplicar por três' };
+  if (title.includes('média')) return { formula: '(a + b + c) ÷ 3', operator: '÷3', sentence: 'combinar valores e dividir' };
+  if (title.includes('resto')) return { formula: 'a % b', operator: '%', sentence: 'encontrar o que sobra' };
+  if (title.includes('celsius')) return { formula: 'c × 9 ÷ 5 + 32', operator: '°F', sentence: 'converter uma temperatura' };
+  if (title.includes('círculo')) return { formula: 'π × r × r', operator: 'π', sentence: 'calcular uma área' };
 
-  return { operator: 'ƒ', formula: 'entrada → resultado', label: 'PROCESSADOR' };
+  return { formula: 'entrada → resultado', operator: 'ƒ', sentence: 'transformar um valor' };
 }
 
 export function ConceptVisualizer({
@@ -47,96 +47,61 @@ export function ConceptVisualizer({
   isPassed,
 }: ConceptVisualizerProps) {
   const firstTest = tests[0];
-  const expected = firstTest?.exp;
 
   if (levelIndex === 0) {
-    const machine = getN1Machine(exerciseTitle);
+    const visual = getN1Visual(exerciseTitle);
     const inputs = firstTest?.args || [];
-    const testProgress = total ? (passed / total) * 100 : 0;
+    const progress = total ? (passed / total) * 100 : 0;
 
     return (
-      <section className={`concept-lab machine-lab ${isPassed ? 'solved' : ''}`}>
-        <div className="machine-topbar">
-          <div className="machine-identity">
-            <span className="lab-eyebrow">CODEMPI LAB · MÁQUINA 01</span>
-            <h3>Core de Transformação</h3>
-            <p>Veja os dados entrando na máquina e entenda o papel da sua função.</p>
+      <section className={`concept-lab experiment-lab ${isPassed ? 'solved' : ''}`}>
+        <div className="experiment-head">
+          <div>
+            <span>CODEMPI LAB · N1</span>
+            <strong>Entenda a transformação</strong>
+          </div>
+          <span className="experiment-status">
+            {isPassed ? '✓ CONFIRMADO' : 'EXPERIMENTO'}
+          </span>
+        </div>
+
+        <div className="experiment-visual">
+          <div className="experiment-side">
+            <small>ENTRADA</small>
+            <div className="experiment-values">
+              {inputs.map((value, index) => (
+                <span key={index}>
+                  {inputs.length > 1 && <i>{String.fromCharCode(97 + index)}</i>}
+                  {displayValue(value)}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="machine-status">
-            <span className="status-light" />
-            <div>
-              <small>STATUS</small>
-              <strong>{isPassed ? 'PROCESSO CONCLUÍDO' : 'AGUARDANDO CÓDIGO'}</strong>
+          <div className="experiment-connector"><span /></div>
+
+          <div className="experiment-operation">
+            <small>SUA FUNÇÃO</small>
+            <div className="operation-chip">
+              <span>{visual.operator}</span>
+              <strong>{visual.formula}</strong>
             </div>
+            <em>{visual.sentence}</em>
+          </div>
+
+          <div className="experiment-connector"><span /></div>
+
+          <div className="experiment-side output-side">
+            <small>SAÍDA ESPERADA</small>
+            <div className="experiment-result">{displayValue(firstTest?.exp)}</div>
           </div>
         </div>
 
-        <div className="machine-board">
-          <div className="machine-track track-in">
-            <span className="track-label">INPUT</span>
-            <div className="input-capsules">
-              {inputs.length ? inputs.map((value, index) => (
-                <div className="input-capsule" key={index}>
-                  <span>{inputs.length > 1 ? `VAR ${String.fromCharCode(65 + index)}` : 'VALOR'}</span>
-                  <strong>{displayValue(value)}</strong>
-                </div>
-              )) : (
-                <div className="input-capsule muted-capsule">aguardando entrada</div>
-              )}
-            </div>
-          </div>
-
-          <div className="machine-rail">
-            <span className="rail-dot" />
-            <span className="rail-dot" />
-            <span className="rail-dot" />
-          </div>
-
-          <div className="machine-core">
-            <div className="core-ring ring-outer" />
-            <div className="core-ring ring-inner" />
-            <div className="core-center">
-              <span>{machine.operator}</span>
-            </div>
-            <div className="core-label">
-              <small>{machine.label}</small>
-              <strong>{machine.formula}</strong>
-            </div>
-          </div>
-
-          <div className="machine-rail output-rail">
-            <span className="rail-dot" />
-            <span className="rail-dot" />
-            <span className="rail-dot" />
-          </div>
-
-          <div className="machine-track track-out">
-            <span className="track-label">OUTPUT</span>
-            <div className="output-box">
-              <small>RESULTADO ESPERADO</small>
-              <strong>{displayValue(expected)}</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="machine-footer">
-          <div className="machine-explanation">
-            <span className="explanation-icon">↳</span>
-            <div>
-              <small>IDEIA DO NÍVEL</small>
-              <strong>Entrada → operação → resultado</strong>
-            </div>
-          </div>
-
-          <div className="machine-tests">
-            <div className="tests-copy">
-              <span>DIAGNÓSTICO</span>
-              <strong>{passed} / {total} testes</strong>
-            </div>
-            <div className="machine-progress">
-              <span style={{ width: `${testProgress}%` }} />
-            </div>
+        <div className="experiment-footer">
+          <span>Primeiro pense no que entra e no que deve sair. Depois escreva o código.</span>
+          <div className="experiment-tests">
+            <b>{passed}/{total}</b>
+            <span style={{ width: `${progress}%` }} />
           </div>
         </div>
       </section>
@@ -237,7 +202,7 @@ export function ConceptVisualizer({
 
         <div className="flow-stage">
           <span className="stage-label">RESULTADO ESPERADO</span>
-          <div className="expected-value">{displayValue(expected)}</div>
+          <div className="expected-value">{displayValue(firstTest?.exp)}</div>
         </div>
       </div>
 
