@@ -147,7 +147,6 @@ export default function App() {
   const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
   const activityStreak = getActivityStreak(store.activityDates || []);
   const todayKey = getLocalDateKey();
-  const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
   const conceptStats = LEVELS.flatMap((level, li) =>
     (level.exercises || []).map((exercise, ei) => ({
@@ -202,6 +201,8 @@ export default function App() {
   const inProgressConcepts = concepts
     .filter((concept) => concept.completed > 0 && concept.completed < concept.total)
     .sort((a, b) => b.completed - a.completed);
+
+  const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
   const handleReviewConcept = (concept: (typeof concepts)[number]) => {
     setLevelIndex(concept.levelIndex);
