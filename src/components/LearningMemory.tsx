@@ -1,26 +1,30 @@
-import type { ConceptSummary } from '../types';
+import { useState } from 'react';
+import { LEVELS } from '../data/levels';
+import { getProgressKey } from '../hooks/useLearningProgress';
+import type { ConceptSummary, StoreData } from '../types';
 
 interface LearningMemoryProps {
   concepts: ConceptSummary[];
+  store: StoreData;
   onReview: (concept: ConceptSummary) => void;
 }
 
 const STATE_META = {
   review: {
     label: 'VALE REVISAR',
-    description: 'Você encontrou algumas dificuldades aqui. Uma nova tentativa guiada pode consolidar a base.',
+    short: '2+ tentativas com erro',
   },
   developing: {
     label: 'EM DESENVOLVIMENTO',
-    description: 'Você já começou a praticar este conceito e está construindo consistência.',
+    short: 'prática em andamento',
   },
   solid: {
     label: 'DOMINADO',
-    description: 'Você concluiu os desafios ligados a este conceito com poucas dificuldades registradas.',
+    short: 'concluído com consistência',
   },
   new: {
     label: 'AINDA NÃO PRATICADO',
-    description: 'Este conceito ainda não entrou de forma prática na sua jornada.',
+    short: 'nenhum desafio concluído',
   },
 } as const;
 
@@ -31,10 +35,13 @@ const STATE_ORDER = {
   solid: 3,
 } as const;
 
-export function LearningMemory({ concepts, onReview }: LearningMemoryProps) {
+export function LearningMemory({ concepts, store, onReview }: LearningMemoryProps) {
+  const [showAll, setShowAll] = useState(false);
+
   const orderedConcepts = [...concepts].sort((a, b) => (
     STATE_ORDER[a.state] - STATE_ORDER[b.state] ||
     b.progress - a.progress ||
+    b.attempts - a.attempts ||
     a.name.localeCompare(b.name)
   ));
 
@@ -45,6 +52,9 @@ export function LearningMemory({ concepts, onReview }: LearningMemoryProps) {
     new: concepts.filter((concept) => concept.state === 'new').length,
   };
 
+  const visibleConcepts = showAll ? orderedConcepts : orderedConcepts.slice(0, 6);
+  const hiddenCount = Math.max(0, orderedConcepts.length - visibleConcepts.length);
+
   return (
     <section className="learning-memory">
       <div className="section-heading learning-memory-heading">
@@ -52,30 +62,37 @@ export function LearningMemory({ concepts, onReview }: LearningMemoryProps) {
           <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
           <h2>Como estão suas habilidades</h2>
           <p className="learning-memory-intro">
-            O CodeMpi observa o que você pratica, onde encontra dificuldade e quais conceitos já ficaram consistentes.
+            O CodeMpi usa seus exercícios concluídos, tentativas e erros para acompanhar cada conceito.
           </p>
         </div>
         <span className="concept-count">{concepts.length} conceitos acompanhados</span>
       </div>
 
       <div className="memory-summary" aria-label="Resumo da memória de aprendizado">
-        <span className="memory-summary-item review">
-          <b>{counts.review}</b> para revisar
-        </span>
-        <span className="memory-summary-item developing">
-          <b>{counts.developing}</b> em desenvolvimento
-        </span>
-        <span className="memory-summary-item solid">
-          <b>{counts.solid}</b> dominados
-        </span>
-        <span className="memory-summary-item new">
-          <b>{counts.new}</b> ainda não praticados
-        </span>
+        <span className="memory-summary-item review"><b>{counts.review}</b><span>para revisar</span></span>
+        <span className="memory-summary-item developing"><b>{counts.developing}</b><span>em desenvolvimento</span></span>
+        <span className="memory-summary-item solid"><b>{counts.solid}</b><span>dominados</span></span>
+        <span className="memory-summary-item new"><b>{counts.new}</b><span>ainda não praticados</span></span>
       </div>
 
       <div className="memory-grid">
-        {orderedConcepts.map((concept) => {
+        {visibleConcepts.map((concept) => {
           const meta = STATE_META[concept.state];
+          const relatedExercises = LEVELS.flatMap((level, levelIndex) =>
+            (level.exercises || []).flatMap((exercise, exerciseIndex) => {
+              if (!exercise.conceptIds?.includes(concept.id)) return [];
+
+              const key = getProgressKey(levelIndex, exerciseIndex);
+              const performance = store.performance[key] || { attempts: 0, failures: 0 };
+
+              return [{
+                title: exercise.title,
+                done: Boolean(store.done[key]),
+                attempts: performance.attempts,
+                failures: performance.failures,
+              }];
+            }),
+          );
 
           return (
             <article className={`memory-card state-${concept.state}`} key={concept.id}>
@@ -85,16 +102,16 @@ export function LearningMemory({ concepts, onReview }: LearningMemoryProps) {
               </div>
 
               <h3>{concept.name}</h3>
-              <p>{concept.description || meta.description}</p>
+              <p className="memory-description">{concept.description}</p>
 
-              <div className="memory-progress">
+              <div className="memory-progress" aria-label={`Progresso: ${concept.progress}%`}>
                 <span style={{ width: `${concept.progress}%` }} />
               </div>
 
               <div className="memory-meta">
                 <span>{concept.completed}/{concept.total} desafios</span>
-                {concept.attempts > 0 && <span>{concept.attempts} tentativas</span>}
-                {concept.failures > 0 && <span>{concept.failures} dificuldades</span>}
+                <span>{concept.attempts} tentativas</span>
+                <span>{concept.failures} com erro</span>
               </div>
 
               {concept.state !== 'new' && (
@@ -102,10 +119,45 @@ export function LearningMemory({ concepts, onReview }: LearningMemoryProps) {
                   {concept.state === 'review' ? 'Revisar conceito →' : concept.state === 'solid' ? 'Praticar novamente →' : 'Continuar praticando →'}
                 </button>
               )}
+
+              <details className="memory-details">
+                <summary>Ver como foi calculado</summary>
+                <div className="memory-proof">
+                  <p className="memory-rule">
+                    Estado atual: <b>{meta.label.toLowerCase()}</b> · {meta.short}.
+                  </p>
+                  <div className="memory-proof-list">
+                    {relatedExercises.map((exercise) => (
+                      <div className="memory-proof-row" key={exercise.title}>
+                        <span className={exercise.done ? 'proof-status done' : 'proof-status'}>
+                          {exercise.done ? '✓' : '○'}
+                        </span>
+                        <div>
+                          <strong>{exercise.title}</strong>
+                          <small>
+                            {exercise.done ? 'concluído' : 'não concluído'} · {exercise.attempts} {exercise.attempts === 1 ? 'tentativa' : 'tentativas'}
+                            {exercise.failures > 0 ? ` · ${exercise.failures} com erro` : ''}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="memory-proof-formula">
+                    <span>PROGRESSO</span>
+                    <b>{concept.completed}/{concept.total} desafios concluídos</b>
+                  </div>
+                </div>
+              </details>
             </article>
           );
         })}
       </div>
+
+      {orderedConcepts.length > 6 && (
+        <button className="memory-toggle" onClick={() => setShowAll((value) => !value)}>
+          {showAll ? 'Mostrar menos ↑' : `Mostrar mais ${hiddenCount} conceitos ↓`}
+        </button>
+      )}
     </section>
   );
 }
