@@ -10,9 +10,9 @@ import { useMissionRunner } from './hooks/useMissionRunner';
 import { useLearningProgress } from './hooks/useLearningProgress';
 import { useProgressStore } from './hooks/useProgressStore';
 import { useTheme } from './hooks/useTheme';
-import { LEVELS } from './levels';
-import { LEVEL_LESSONS } from './lessons';
-import { getActivityStreak, getLocalDateKey } from './progress';
+import { LEVELS } from './data/levels';
+import { LEVEL_LESSONS } from './data/lessons';
+import { getActivityStreak, getLocalDateKey } from './utils/progress';
 import { getHintMultiplier, HINT_MULTIPLIERS } from './utils/xp';
 import type { ConceptSummary, View } from './types';
 
