@@ -28,6 +28,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
     levelTag: 'N1',
     title: 'Variáveis e Operadores',
     subtitle: 'Antes de escrever bastante código, vamos entender as peças que você vai usar.',
+    rewardXp: 25,
     steps: [
       {
         id: 'variables',
