@@ -1142,7 +1142,7 @@ export default function App() {
                           setFreeResult(null);
                         }}
                       >
-                        ◇ Teste de mesa
+                        {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
                       </button>
                       <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
                         {hintsShown >= currentExercise.hints.length
@@ -1206,8 +1206,8 @@ export default function App() {
 <section className="free-test-panel">
                     <div className="free-test-head">
                       <div>
-                        <span>LABORATÓRIO</span>
-                        <strong>Teste com seus próprios valores</strong>
+                        <span>TESTE DE MESA</span>
+                        <strong>Experimente seus próprios valores</strong>
                       </div>
                       <small>não afeta XP nem o progresso</small>
                     </div>
