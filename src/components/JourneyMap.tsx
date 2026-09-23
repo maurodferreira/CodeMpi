@@ -1,4 +1,4 @@
-import { LEVELS } from '../levels';
+import { LEVELS } from '../data/levels';
 
 interface JourneyMapProps {
   overallProgress: number;
