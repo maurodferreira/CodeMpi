@@ -95,7 +95,7 @@ export function useLearningProgress(store: StoreData) {
 
   const completedExercises = Object.keys(store.done).length;
 
-  const continuePoint = useMemo(() => {
+  const continuePoint = (() => {
     for (let levelIndex = 0; levelIndex < LEVELS.length; levelIndex += 1) {
       if (!isLevelUnlocked(store, levelIndex) || !LEVELS[levelIndex].exercises?.length) continue;
 
@@ -115,7 +115,7 @@ export function useLearningProgress(store: StoreData) {
       li: lastBuilt,
       ei: Math.max(0, (LEVELS[lastBuilt].exercises?.length || 1) - 1),
     };
-  }, [store]);
+  })();
 
   const activeLevel = LEVELS[continuePoint.li];
   const activeLevelDone = getLevelDoneCount(store, continuePoint.li);
