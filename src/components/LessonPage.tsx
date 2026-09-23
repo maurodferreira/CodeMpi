@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { LevelLesson } from '../lessons';
+import type { LevelLesson } from '../data/lessons';
 import type { View } from '../types';
 
 interface LessonPageProps {
