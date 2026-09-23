@@ -46,6 +46,8 @@ export function Dashboard({
   handleReviewConcept,
   setView,
 }: DashboardProps) {
+  const continueExercise = activeLevel.exercises?.[continuePoint.ei];
+
   return (
 <main className="dashboard">
           <section className="dashboard-hero">
@@ -119,7 +121,7 @@ export function Dashboard({
             <div className="section-heading">
               <div>
                 <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
-                <h2>O que você já domina</h2>
+                <h2>Habilidades já praticadas</h2>
               </div>
               <span className="concept-count">{masteredConcepts.length} dominados</span>
             </div>
@@ -128,11 +130,11 @@ export function Dashboard({
               {masteredConcepts.length > 0 ? masteredConcepts.slice(0, 6).map((concept) => (
                 <article className="concept-card mastered" key={concept.skill}>
                   <div className="concept-card-top">
-                    <span className="concept-state">✓ DOMINADO</span>
+                    <span className="concept-state">✓ PRATICADO</span>
                     <span>{concept.completed}/{concept.total}</span>
                   </div>
                   <h3>{concept.skill}</h3>
-                  <p>Você já resolveu os desafios desse conceito sem precisar voltar para o básico.</p>
+                  <p>Você já concluiu os desafios registrados nessa habilidade.</p>
                 </article>
               )) : (
                 <div className="concept-empty">
@@ -149,8 +151,8 @@ export function Dashboard({
           <section className="concepts-section review-section">
             <div className="section-heading">
               <div>
-                <span className="section-kicker">PROFESSOR DO CODEMPI</span>
-                <h2>Conceitos para revisar</h2>
+                <span className="section-kicker">ATENÇÃO DE APRENDIZADO</span>
+                <h2>Onde vale revisar</h2>
               </div>
               {reviewConcepts.length > 0 && <span className="concept-count review">{reviewConcepts.length} para revisar</span>}
             </div>
@@ -162,7 +164,7 @@ export function Dashboard({
                     <div className="review-copy">
                       <span className="concept-state">↻ VALE REVISAR</span>
                       <h3>{concept.skill}</h3>
-                      <p>Você encontrou dificuldade {concept.failures} vezes em {concept.attempts} tentativas. Isso não é fracasso — é um sinal de onde podemos reforçar a base.</p>
+                      <p>Você encontrou dificuldade {concept.failures} vezes em {concept.attempts} tentativas. Uma nova passada pode ajudar a consolidar essa habilidade.</p>
                     </div>
                     <button className="btn ghost" onClick={() => handleReviewConcept(concept)}>Revisar →</button>
                   </article>
@@ -233,13 +235,16 @@ export function Dashboard({
 
           <section className="continue-grid">
             <article className="continue-card">
-              <div className="section-kicker">CONTINUE SUA JORNADA</div>
+              <div className="section-kicker">PRÓXIMA MISSÃO</div>
               <div className="continue-title-row">
                 <div>
                   <h2>{activeLevel.tag} · {activeLevel.name}</h2>
                   <p>{activeLevel.exercises ? `${activeLevelDone} de ${activeLevelTotal} desafios concluídos.` : 'O próximo nível da jornada está sendo preparado.'}</p>
                 </div>
                 <span className="continue-badge">{activeLevel.exercises ? `${activeLevelDone}/${activeLevelTotal}` : 'EM BREVE'}</span>
+                {continueExercise && (
+                  <span className="continue-next">Próximo: <b>{continueExercise.title}</b></span>
+                )}
               </div>
               <div className="progress-bar large">
                 <span style={{ width: `${activeLevelTotal ? (activeLevelDone / activeLevelTotal) * 100 : 0}%` }} />
