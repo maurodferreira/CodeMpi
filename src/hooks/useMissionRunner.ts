@@ -1,13 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { Exercise } from '../levels';
-import type { LastTest, StoreData } from '../types';
+import type { ConsoleLog, LastTest, LearningFeedback, StoreData } from '../types';
 import { calculateExerciseXp } from '../utils/xp';
-
-export interface ConsoleLog {
-  tag: string;
-  msg: string;
-  ok?: boolean;
-}
 
 interface UseMissionRunnerParams {
   currentExercise: Exercise | null;
@@ -342,7 +336,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function getLearningFeedback(lastTest: LastTest | null, currentExercise: Exercise | null) {
+function getLearningFeedback(lastTest: LastTest | null, currentExercise: Exercise | null): LearningFeedback | null {
   if (!lastTest || !currentExercise) return null;
 
   if (lastTest.passed === lastTest.total) {
