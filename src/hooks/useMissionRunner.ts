@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { Exercise } from '../data/levels';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData } from '../types';
 import { calculateExerciseXp } from '../utils/xp';
@@ -41,28 +41,20 @@ export function useMissionRunner({
   const [freeResult, setFreeResult] = useState<FreeResult | null>(null);
   const [showFreeTest, setShowFreeTest] = useState(false);
 
-  useEffect(() => {
-    if (!currentExercise) return;
-
-    setCode(currentExercise.starter);
+  const resetMissionState = (exercise: Exercise | null) => {
+    setCode(exercise?.starter || '');
     setConsoleLogs([]);
     setIsPassed(false);
     setLastTest(null);
-    setFreeInputs(currentExercise.tests[0]?.args.map(formatInput) || []);
+    setFreeInputs(exercise?.tests[0]?.args.map(formatInput) || []);
     setFreeResult(null);
     setShowFreeTest(false);
-  }, [currentExercise, setCode]);
+  };
 
   const handleResetCode = () => {
     if (!currentExercise) return;
 
-    setCode(currentExercise.starter);
-    setConsoleLogs([]);
-    setIsPassed(false);
-    setLastTest(null);
-    setFreeInputs(currentExercise.tests[0]?.args.map(formatInput) || []);
-    setFreeResult(null);
-    setShowFreeTest(false);
+    resetMissionState(currentExercise);
   };
 
   const handleFreeTest = () => {
@@ -305,6 +297,7 @@ export function useMissionRunner({
     showFreeTest,
     setShowFreeTest,
     learningFeedback,
+    resetMissionState,
     handleEvaluate,
     handleResetCode,
     handleFreeTest,
