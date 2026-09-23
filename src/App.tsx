@@ -56,6 +56,7 @@ export default function App() {
   const [completionLevel, setCompletionLevel] = useState<number | null>(null);
   const [freeInputs, setFreeInputs] = useState<string[]>([]);
   const [freeResult, setFreeResult] = useState<{ ok: boolean; value?: string; error?: string } | null>(null);
+  const [showFreeTest, setShowFreeTest] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
@@ -69,6 +70,7 @@ export default function App() {
       setLastTest(null);
       setFreeInputs((currentExercise?.tests[0]?.args || []).map((arg) => JSON.stringify(arg)));
       setFreeResult(null);
+      setShowFreeTest(false);
     }
   }, [levelIndex, exerciseIndex, currentExercise]);
 
@@ -271,6 +273,7 @@ export default function App() {
     setLastTest(null);
     setFreeInputs((currentExercise.tests[0]?.args || []).map((arg) => JSON.stringify(arg)));
     setFreeResult(null);
+    setShowFreeTest(false);
   };
 
   const handleFreeTest = () => {
@@ -1132,6 +1135,15 @@ export default function App() {
                     <div className="actions">
                       <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
                       <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
+                      <button
+                        className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
+                        onClick={() => {
+                          setShowFreeTest((prev) => !prev);
+                          setFreeResult(null);
+                        }}
+                      >
+                        ◇ Teste de mesa
+                      </button>
                       <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
                         {hintsShown >= currentExercise.hints.length
                           ? 'Todas as dicas exibidas'
@@ -1190,7 +1202,8 @@ export default function App() {
                     )}
                   </div>
 
-                  <section className="free-test-panel">
+                                    {showFreeTest && (
+<section className="free-test-panel">
                     <div className="free-test-head">
                       <div>
                         <span>LABORATÓRIO</span>
@@ -1226,6 +1239,7 @@ export default function App() {
                       </div>
                     )}
                   </section>
+                  )}
 
                   <div className="section-label">
                     Resultados dos testes
