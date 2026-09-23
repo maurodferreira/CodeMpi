@@ -194,19 +194,12 @@ export default function App() {
 
   const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
-  const handleReviewConcept = (concept: (typeof concepts)[number]) => {
+  const handleReviewConcept = (concept: ConceptSummary) => {
     setLevelIndex(concept.levelIndex);
     setExerciseIndex(concept.exerciseIndex);
     setLessonStep(0);
     setQuizAnswer(null);
     setView('mission');
-  };
-
-  const registerActivity = () => {
-    setStore((prev) => ({
-      ...prev,
-      activityDates: addTodayActivity(prev.activityDates || []),
-    }));
   };
 
   const openMission = (li: number, ei?: number) => {
