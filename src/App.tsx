@@ -7,6 +7,7 @@ import { LessonPage } from './components/LessonPage';
 import { MissionPage } from './components/MissionPage';
 import { SettingsPage } from './components/SettingsPage';
 import { useMissionRunner } from './hooks/useMissionRunner';
+import { useLearningProgress } from './hooks/useLearningProgress';
 import { useProgressStore } from './hooks/useProgressStore';
 import { useTheme } from './hooks/useTheme';
 import { LEVELS } from './levels';
@@ -30,11 +31,32 @@ export default function App() {
   const [completionLevel, setCompletionLevel] = useState<number | null>(null);
   const { theme, setTheme } = useTheme();
 
-  const getKey = (li: number, ei: number) => `${li}-${ei}`;
+  const {
+    getKey,
+    levelDoneCount,
+    levelComplete,
+    levelUnlocked,
+    exUnlocked,
+    getMult,
+    totalEarned,
+    totalMax,
+    levelsDoneTotal,
+    completedExercises,
+    continuePoint,
+    activeLevel,
+    activeLevelDone,
+    activeLevelTotal,
+    lessonsEarnedXp,
+    concepts,
+    masteredConcepts,
+    reviewConcepts,
+    reviewTarget,
+  } = useLearningProgress(store);
+
   const hintsShown = store.hints[getKey(levelIndex, exerciseIndex)] || 0;
   const alreadyDoneXP = store.done[getKey(levelIndex, exerciseIndex)];
 
-  const { 
+  const {
     consoleLogs,
     isPassed,
     lastTest,
@@ -60,139 +82,6 @@ export default function App() {
     registerActivity,
     getKey,
   });
-
-  const levelDoneCount = (li: number) => {
-    const level = LEVELS[li];
-    if (!level.exercises) return 0;
-    return level.exercises.filter((_, ei) => store.done[getKey(li, ei)]).length;
-  };
-
-  const levelComplete = (li: number) => {
-    const level = LEVELS[li];
-    return Boolean(level.exercises?.length && levelDoneCount(li) === level.exercises.length);
-  };
-
-  const levelUnlocked = (li: number) => li === 0 || levelComplete(li - 1);
-
-  const exUnlocked = (li: number, ei: number) => {
-    if (!levelUnlocked(li)) return false;
-    if (ei === 0) return true;
-    return Boolean(store.done[getKey(li, ei - 1)]);
-  };
-
-  const getMult = (li: number, ei: number) => {
-    const shown = Math.min(store.hints[getKey(li, ei)] || 0, 3);
-    return getHintMultiplier(shown);
-  };
-
-  const calcTotalXp = () => {
-    let earned = 0;
-    let max = 0;
-
-    LEVELS.forEach((level, li) => {
-      level.exercises?.forEach((exercise, ei) => {
-        max += exercise.xp;
-        const doneXp = store.done[getKey(li, ei)];
-        if (doneXp) earned += doneXp;
-      });
-    });
-
-    Object.entries(LEVEL_LESSONS).forEach(([li, lesson]) => {
-      max += lesson.rewardXp || 0;
-      if (store.lessonDone[Number(li)]) earned += lesson.rewardXp || 0;
-    });
-
-    return { earned, max };
-  };
-
-  const { earned: totalEarned, max: totalMax } = calcTotalXp();
-  const levelsDoneTotal = LEVELS.filter((_, index) => levelComplete(index)).length;
-  const completedExercises = Object.keys(store.done).length;
-
-  const findContinuePoint = () => {
-    for (let li = 0; li < LEVELS.length; li += 1) {
-      if (!levelUnlocked(li) || !LEVELS[li].exercises?.length) continue;
-
-      for (let ei = 0; ei < LEVELS[li].exercises!.length; ei += 1) {
-        if (!store.done[getKey(li, ei)]) return { li, ei };
-      }
-    }
-
-    const lastBuilt = LEVELS.reduce((last, level, index) => (level.exercises?.length ? index : last), 0);
-    return { li: lastBuilt, ei: Math.max(0, (LEVELS[lastBuilt].exercises?.length || 1) - 1) };
-  };
-
-  const continuePoint = findContinuePoint();
-  const activeLevel = LEVELS[continuePoint.li];
-  const activeLevelDone = levelDoneCount(continuePoint.li);
-  const activeLevelTotal = activeLevel.exercises?.length || 0;
-  const currentLesson = LEVEL_LESSONS[levelIndex];
-  const currentLessonStep = currentLesson?.steps[lessonStep];
-  const lessonReward = currentLesson?.rewardXp || 25;
-  const lessonsEarnedXp = Object.entries(store.lessonDone).reduce((sum, [li, done]) => {
-    if (!done) return sum;
-    return sum + (LEVEL_LESSONS[Number(li)]?.rewardXp || 0);
-  }, 0);
-  const lessonCompletion = currentLesson ? Boolean(store.lessonDone[levelIndex]) : false;
-  const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
-  const activityStreak = getActivityStreak(store.activityDates || []);
-  const todayKey = getLocalDateKey();
-
-  const conceptStats = LEVELS.flatMap((level, li) =>
-    (level.exercises || []).map((exercise, ei) => ({
-      skill: exercise.skill || level.name,
-      title: exercise.title,
-      levelIndex: li,
-      exerciseIndex: ei,
-      done: Boolean(store.done[getKey(li, ei)]),
-      performance: store.performance[getKey(li, ei)] || { attempts: 0, failures: 0 },
-    })),
-  ).reduce<Record<string, {
-    skill: string;
-    completed: number;
-    total: number;
-    failures: number;
-    attempts: number;
-    levelIndex: number;
-    exerciseIndex: number;
-    title: string;
-  }>>((acc, item) => {
-    const current = acc[item.skill] || {
-      skill: item.skill,
-      completed: 0,
-      total: 0,
-      failures: 0,
-      attempts: 0,
-      levelIndex: item.levelIndex,
-      exerciseIndex: item.exerciseIndex,
-      title: item.title,
-    };
-
-    current.total += 1;
-    current.completed += item.done ? 1 : 0;
-    current.failures += item.performance.failures;
-    current.attempts += item.performance.attempts;
-
-    if (item.levelIndex < current.levelIndex || (item.levelIndex === current.levelIndex && item.exerciseIndex < current.exerciseIndex)) {
-      current.levelIndex = item.levelIndex;
-      current.exerciseIndex = item.exerciseIndex;
-      current.title = item.title;
-    }
-
-    acc[item.skill] = current;
-    return acc;
-  }, {});
-
-  const concepts = Object.values(conceptStats);
-  const masteredConcepts = concepts.filter((concept) => concept.completed === concept.total && concept.failures < 2);
-  const reviewConcepts = concepts
-    .filter((concept) => concept.failures >= 2 && concept.completed < concept.total || concept.failures >= 3)
-    .sort((a, b) => b.failures - a.failures);
-  const inProgressConcepts = concepts
-    .filter((concept) => concept.completed > 0 && concept.completed < concept.total)
-    .sort((a, b) => b.completed - a.completed);
-
-  const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
   const handleReviewConcept = (concept: ConceptSummary) => {
     setLevelIndex(concept.levelIndex);
