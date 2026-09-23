@@ -42,6 +42,7 @@ export default function App() {
   const [isPassed, setIsPassed] = useState(false);
   const [lessonStep, setLessonStep] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
+  const [lastTest, setLastTest] = useState<{ passed: number; total: number; firstFailure?: { args: string; got: string; expected: string; error?: string } } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
@@ -52,6 +53,7 @@ export default function App() {
       setCode(currentExercise.starter);
       setConsoleLogs([]);
       setIsPassed(false);
+      setLastTest(null);
     }
   }, [levelIndex, exerciseIndex, currentExercise]);
 
@@ -176,6 +178,7 @@ export default function App() {
     setCode(currentExercise.starter);
     setConsoleLogs([]);
     setIsPassed(false);
+    setLastTest(null);
   };
 
   const handleEvaluate = () => {
@@ -196,29 +199,31 @@ export default function App() {
         error: () => {},
       });
     } catch (error: any) {
-      setConsoleLogs([
-        {
-          tag: 'erro',
-          msg: 'Seu código não pôde ser interpretado: ' + error.message,
-          ok: false,
-        },
-      ]);
+      const message = error?.message || 'Erro de sintaxe';
+      setConsoleLogs([{ tag: 'sintaxe', msg: 'O JavaScript encontrou um problema antes de conseguir executar sua função.', ok: false }]);
+      setLastTest({
+        passed: 0,
+        total: currentExercise.tests.length,
+        firstFailure: { args: '', got: '', expected: '', error: message },
+      });
       setIsPassed(false);
       return;
     }
 
     if (typeof userFn !== 'function') {
-      setConsoleLogs([
-        {
-          tag: 'dica',
-          msg: `Crie a função ${currentExercise.fn} exatamente como ela aparece na missão.`,
-        },
-      ]);
+      const expectedFn = currentExercise.fn;
+      setConsoleLogs([{ tag: 'estrutura', msg: `Ainda não encontrei uma função chamada ${expectedFn}. Confira o nome e a estrutura pedidos na missão.`, ok: false }]);
+      setLastTest({
+        passed: 0,
+        total: currentExercise.tests.length,
+        firstFailure: { args: '', got: '', expected: '', error: `Função ${expectedFn} não encontrada.` },
+      });
       setIsPassed(false);
       return;
     }
 
-    let allPass = true;
+    let passed = 0;
+    let firstFailure: { args: string; got: string; expected: string; error?: string } | undefined;
 
     currentExercise.tests.forEach((test, index) => {
       let result: any;
@@ -227,37 +232,47 @@ export default function App() {
       try {
         result = userFn(...test.args);
       } catch (caught: any) {
-        error = caught.message;
+        error = caught?.message || 'Erro durante a execução';
       }
 
       const argsStr = test.args.map((arg) => JSON.stringify(arg)).join(', ');
+      const expectedStr = JSON.stringify(test.exp);
 
       if (error) {
-        allPass = false;
         logs.push({
           tag: `teste ${index + 1}`,
-          msg: `${currentExercise.fn}(${argsStr}) lançou um erro: ${error}`,
+          msg: `${currentExercise.fn}(${argsStr}) encontrou um erro durante a execução.`,
           ok: false,
         });
+        if (!firstFailure) firstFailure = { args: argsStr, got: '', expected: expectedStr, error };
         return;
       }
 
-      const pass = JSON.stringify(result) === JSON.stringify(test.exp);
-      if (!pass) allPass = false;
+      const gotStr = JSON.stringify(result);
+      const pass = gotStr === expectedStr;
+      if (pass) {
+        passed += 1;
+      } else if (!firstFailure) {
+        firstFailure = { args: argsStr, got: gotStr, expected: expectedStr };
+      }
 
       logs.push({
         tag: `teste ${index + 1}`,
-        msg: `${currentExercise.fn}(${argsStr}) → obtido ${JSON.stringify(result)}, esperado ${JSON.stringify(test.exp)}`,
+        msg: pass
+          ? `${currentExercise.fn}(${argsStr}) → resultado correto: ${gotStr}`
+          : `${currentExercise.fn}(${argsStr}) → seu resultado: ${gotStr}; esperado: ${expectedStr}`,
         ok: pass,
       });
     });
 
-    if (allPass) {
+    setLastTest({ passed, total: currentExercise.tests.length, firstFailure });
+
+    if (passed === currentExercise.tests.length) {
       const earnedXp = Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex));
 
       logs.push({
         tag: 'info',
-        msg: `${currentExercise.tests.length} de ${currentExercise.tests.length} testes passaram.`,
+        msg: `${passed} de ${currentExercise.tests.length} testes passaram. Você dominou este desafio.`,
       });
 
       if (!store.done[getKey(levelIndex, exerciseIndex)]) {
@@ -274,6 +289,41 @@ export default function App() {
 
     setConsoleLogs(logs);
   };
+
+  const getLearningFeedback = () => {
+    if (!lastTest || !currentExercise) return null;
+    if (lastTest.passed === lastTest.total) {
+      return {
+        tone: 'success',
+        title: 'Você acertou a lógica.',
+        body: 'Os testes confirmaram o comportamento esperado. Observe o que você fez funcionar — esse padrão vai aparecer de novo em desafios mais difíceis.',
+      };
+    }
+
+    const failure = lastTest.firstFailure;
+    if (!failure) {
+      return {
+        tone: 'focus',
+        title: 'Você está perto.',
+        body: 'Alguns testes ainda não passaram. Compare seu código com o que a missão pede e tente novamente.',
+      };
+    }
+
+    if (failure.error) {
+      return {
+        tone: 'error',
+        title: 'O problema aconteceu durante a execução.',
+        body: `O teste ${failure.args ? `com os valores ${failure.args}` : ''} encontrou: ${failure.error}. Procure a linha que pode estar usando uma variável ou operação de forma diferente do que você imaginou.`,
+      };
+    }
+
+    return {
+      tone: 'focus',
+      title: 'A lógica ainda precisa de um ajuste.',
+      body: `Para a entrada ${failure.args}, seu código devolveu ${failure.got}, mas a missão espera ${failure.expected}. Isso significa que a função executou, mas a regra que transforma a entrada em resultado ainda não está correta.`,
+    };
+  };
+
 
   const handleLessonFinish = () => {
     if (!store.lessonDone[levelIndex] && currentLesson) {
@@ -783,6 +833,16 @@ export default function App() {
                       ) : (
                         <button className="btn primary" disabled>Circuito completo 🎉</button>
                       )}
+                    </div>
+                  )}
+
+                  {getLearningFeedback() && (
+                    <div className={`learning-feedback ${getLearningFeedback()!.tone}`}>
+                      <span className="learning-feedback-icon">{getLearningFeedback()!.tone === 'success' ? '✓' : getLearningFeedback()!.tone === 'error' ? '!' : '↻'}</span>
+                      <div>
+                        <strong>{getLearningFeedback()!.title}</strong>
+                        <p>{getLearningFeedback()!.body}</p>
+                      </div>
                     </div>
                   )}
 
