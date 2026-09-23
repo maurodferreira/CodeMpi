@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { LEVELS } from '../data/levels';
 import { getActivityStreak } from '../utils/progress';
+import { LearningMemory } from './LearningMemory';
 import type { ConceptSummary, View } from '../types';
 
 interface DashboardProps {
@@ -13,6 +14,7 @@ interface DashboardProps {
   activeLevelTotal: number;
   masteredConcepts: ConceptSummary[];
   reviewConcepts: ConceptSummary[];
+  concepts: ConceptSummary[];
   reviewTarget: ConceptSummary | null;
   activityStreak: ReturnType<typeof getActivityStreak>;
   todayKey: string;
@@ -35,6 +37,7 @@ export function Dashboard({
   activeLevelTotal,
   masteredConcepts,
   reviewConcepts,
+  concepts,
   reviewTarget,
   activityStreak,
   todayKey,
@@ -127,69 +130,7 @@ export function Dashboard({
             </article>
           </section>
 
-          <section className="concepts-section">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
-                <h2>Habilidades já praticadas</h2>
-              </div>
-              <span className="concept-count">{masteredConcepts.length} dominados</span>
-            </div>
-
-            <div className="concepts-grid">
-              {masteredConcepts.length > 0 ? masteredConcepts.slice(0, 6).map((concept) => (
-                <article className="concept-card mastered" key={concept.skill}>
-                  <div className="concept-card-top">
-                    <span className="concept-state">✓ PRATICADO</span>
-                    <span>{concept.completed}/{concept.total}</span>
-                  </div>
-                  <h3>{concept.skill}</h3>
-                  <p>Você já concluiu os desafios registrados nessa habilidade.</p>
-                </article>
-              )) : (
-                <div className="concept-empty">
-                  <span>◎</span>
-                  <div>
-                    <strong>Seu primeiro conceito está esperando.</strong>
-                    <p>Conclua uma missão para começar a construir seu histórico de domínio.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="concepts-section review-section">
-            <div className="section-heading">
-              <div>
-                <span className="section-kicker">ATENÇÃO DE APRENDIZADO</span>
-                <h2>Onde vale revisar</h2>
-              </div>
-              {reviewConcepts.length > 0 && <span className="concept-count review">{reviewConcepts.length} para revisar</span>}
-            </div>
-
-            {reviewConcepts.length > 0 ? (
-              <div className="review-list">
-                {reviewConcepts.slice(0, 4).map((concept) => (
-                  <article className="review-card" key={concept.skill}>
-                    <div className="review-copy">
-                      <span className="concept-state">↻ VALE REVISAR</span>
-                      <h3>{concept.skill}</h3>
-                      <p>Você encontrou dificuldade {concept.failures} vezes em {concept.attempts} tentativas. Uma nova passada pode ajudar a consolidar essa habilidade.</p>
-                    </div>
-                    <button className="btn ghost" onClick={() => handleReviewConcept(concept)}>Revisar →</button>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="review-clear">
-                <span>✦</span>
-                <div>
-                  <strong>Nenhum conceito precisa de revisão agora.</strong>
-                  <p>Continue praticando. O CodeMpi observa sua evolução e avisa quando algum assunto merece uma nova passada.</p>
-                </div>
-              </div>
-            )}
-          </section>
+          <LearningMemory concepts={concepts} onReview={handleReviewConcept} />
 
           <section className="daily-grid">
             <article className={`streak-card ${activityStreak.activeToday ? 'active' : ''}`}>
