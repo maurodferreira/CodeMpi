@@ -9,8 +9,6 @@ const DIFF_LABEL: Record<string, string> = {
   boss: 'BOSS'
 };
 
-const HINT_MULT = [1, 0.9, 0.75, 0.5];
-
 interface StoreData {
   done: Record<string, number>;
   hints: Record<string, number>;
@@ -96,11 +94,6 @@ export default function App() {
   const { earned: totalEarned, max: totalMax } = calcTotalXp();
   const levelsDoneTotal = LEVELS.filter((_, i) => levelComplete(i)).length;
 
-  const getMult = (li: number, ei: number) => {
-    const shown = Math.min(store.hints[getKey(li, ei)] || 0, 3);
-    return HINT_MULT[shown];
-  };
-
   // Funções de Ação (Rodar testes, Dicas, Next, Reset)
   const handleShowHint = () => {
     if (!currentExercise || hintsShown >= currentExercise.hints.length) return;
@@ -178,7 +171,7 @@ export default function App() {
       });
 
       if (!store.done[exKey]) {
-        const earnedXp = Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex));
+        const earnedXp = currentExercise.xp;
         setStore(prev => ({
           ...prev,
           done: { ...prev.done, [exKey]: earnedXp }
@@ -235,7 +228,7 @@ export default function App() {
               <span className="dot"></span> SISTEMA ONLINE · TRILHA DE PROGRAMAÇÃO
             </div>
             <div className="tagline">
-              Uma trilha de 10 níveis para treinar lógica de programação escrevendo JavaScript de verdade. Resolva, rode os testes, ganhe XP, avance no circuito.
+              Aprenda programação na prática, sem medo de errar. Resolva desafios, ganhe XP e avance no seu ritmo.
             </div>
           </div>
         </div>
@@ -249,7 +242,9 @@ export default function App() {
           <div className="score-value" id="score">
             {totalEarned}
           </div>
-          <div className="score-track" aria-hidden={true}></div>
+          <div className="score-track" aria-hidden={true}>
+            <span style={{ width: `${totalMax ? Math.min(100, (totalEarned / totalMax) * 100) : 0}%` }} />
+          </div>
           <div className="sub" id="lvlprog">
             {levelsDoneTotal} / {LEVELS.length} níveis fechados
           </div>
@@ -313,7 +308,7 @@ export default function App() {
                     {DIFF_LABEL[currentExercise.difficulty]}
                   </span>
                   <span className="badge xp" id="xpBadge">
-                    XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}
+                    XP {currentExercise.xp} / {currentExercise.xp}
                   </span>
                   <span className="sig">{currentExercise.sig}</span>
                 </>
@@ -365,6 +360,11 @@ export default function App() {
               <div className="editor-wrap">
                 <CodeEditor code={code} onChange={setCode} />
 
+                <div className="learning-note">
+                  <span>💡</span>
+                  <span>Errar faz parte. Você pode testar quantas vezes precisar — XP só entra quando você conclui.</span>
+                </div>
+
                 <div className="actions">
                   <button className="btn primary" id="run" onClick={handleEvaluate}>
                     ▶ Rodar testes
@@ -380,15 +380,11 @@ export default function App() {
                   >
                     {!currentExercise || hintsShown >= currentExercise.hints.length
                       ? 'Todas as dicas exibidas'
-                      : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(
-                          HINT_MULT[hintsShown + 1] * 100
-                        )}%`}
+                      : `Mostrar pista (${hintsShown + 1}/${currentExercise.hints.length})`}
                   </button>
                   <span className="xp-live" id="xpLive">
                     {!alreadyDoneXP && hintsShown > 0
-                      ? `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(
-                          getMult(levelIndex, exerciseIndex) * 100
-                        )}%`
+                      ? `${hintsShown} pista(s) usada(s) — pedir ajuda faz parte do aprendizado.`
                       : ''}
                   </span>
                 </div>
@@ -410,9 +406,7 @@ export default function App() {
                   <span>
                     {alreadyDoneXP
                       ? `Exercício já concluído — você ganhou ${alreadyDoneXP} XP aqui.`
-                      : `Todos os testes passaram! Você ganhou ${Math.round(
-                          currentExercise!.xp * getMult(levelIndex, exerciseIndex)
-                        )} XP.`}
+                      : `Boa! Todos os testes passaram. Você ganhou ${currentExercise!.xp} XP.`}
                   </span>
                   {exerciseIndex < currentLevel.exercises!.length - 1 || levelIndex < LEVELS.length - 1 ? (
                     <button className="btn primary" id="nextBtn" onClick={handleNext}>
