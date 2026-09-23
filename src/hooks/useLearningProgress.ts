@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { LEVELS } from '../data/levels';
 import { LEVEL_LESSONS } from '../data/lessons';
+import { getConcept } from '../data/concepts';
 import { getHintMultiplier } from '../utils/xp';
 import type { ConceptSummary, StoreData } from '../types';
 
@@ -129,21 +130,34 @@ export function useLearningProgress(store: StoreData) {
 
   const conceptStats = useMemo<Record<string, ConceptSummary>>(() => {
     const stats = LEVELS.flatMap((level, levelIndex) =>
-      (level.exercises || []).map((exercise, exerciseIndex) => ({
-        skill: exercise.skill || level.name,
-        title: exercise.title,
-        levelIndex,
-        exerciseIndex,
-        done: Boolean(store.done[getProgressKey(levelIndex, exerciseIndex)]),
-        performance: store.performance[getProgressKey(levelIndex, exerciseIndex)] || { attempts: 0, failures: 0 },
-      })),
+      (level.exercises || []).flatMap((exercise, exerciseIndex) => {
+        const ids = exercise.conceptIds?.length ? exercise.conceptIds : [`skill:${exercise.skill}`];
+
+        return ids.map((conceptId) => ({
+          conceptId,
+          title: exercise.title,
+          levelIndex,
+          exerciseIndex,
+          done: Boolean(store.done[getProgressKey(levelIndex, exerciseIndex)]),
+          performance: store.performance[getProgressKey(levelIndex, exerciseIndex)] || { attempts: 0, failures: 0 },
+        }));
+      }),
     ).reduce<Record<string, ConceptSummary>>((acc, item) => {
-      const current = acc[item.skill] || {
-        skill: item.skill,
+      const definition = item.conceptId.startsWith('skill:')
+        ? getConcept(undefined, item.conceptId.replace('skill:', ''))
+        : getConcept(item.conceptId);
+
+      const current = acc[item.conceptId] || {
+        id: item.conceptId,
+        skill: definition.name,
+        name: definition.name,
+        description: definition.description,
+        state: 'new',
         completed: 0,
         total: 0,
         failures: 0,
         attempts: 0,
+        progress: 0,
         levelIndex: item.levelIndex,
         exerciseIndex: item.exerciseIndex,
         title: item.title,
@@ -163,7 +177,19 @@ export function useLearningProgress(store: StoreData) {
         current.title = item.title;
       }
 
-      acc[item.skill] = current;
+      current.progress = current.total ? Math.round((current.completed / current.total) * 100) : 0;
+
+      if (current.failures >= 3 || (current.failures >= 2 && current.completed < current.total)) {
+        current.state = 'review';
+      } else if (current.completed === current.total && current.total > 0) {
+        current.state = 'solid';
+      } else if (current.completed > 0) {
+        current.state = 'developing';
+      } else {
+        current.state = 'new';
+      }
+
+      acc[item.conceptId] = current;
       return acc;
     }, {});
 
@@ -172,20 +198,17 @@ export function useLearningProgress(store: StoreData) {
 
   const concepts = Object.values(conceptStats);
 
-  const masteredConcepts = concepts.filter(
-    (concept) => concept.completed === concept.total && concept.failures < 2,
-  );
+  const masteredConcepts = concepts
+    .filter((concept) => concept.state === 'solid')
+    .sort((a, b) => b.progress - a.progress);
 
   const reviewConcepts = concepts
-    .filter((concept) => (
-      (concept.failures >= 2 && concept.completed < concept.total) ||
-      concept.failures >= 3
-    ))
+    .filter((concept) => concept.state === 'review')
     .sort((a, b) => b.failures - a.failures);
 
   const inProgressConcepts = concepts
-    .filter((concept) => concept.completed > 0 && concept.completed < concept.total)
-    .sort((a, b) => b.completed - a.completed);
+    .filter((concept) => concept.state === 'developing')
+    .sort((a, b) => b.progress - a.progress);
 
   const reviewTarget = reviewConcepts[0] || inProgressConcepts[0] || masteredConcepts[0] || null;
 
