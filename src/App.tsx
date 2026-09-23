@@ -54,6 +54,8 @@ export default function App() {
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [lastTest, setLastTest] = useState<{ passed: number; total: number; firstFailure?: { args: string; got: string; expected: string; error?: string } } | null>(null);
   const [completionLevel, setCompletionLevel] = useState<number | null>(null);
+  const [freeInputs, setFreeInputs] = useState<string[]>([]);
+  const [freeResult, setFreeResult] = useState<{ ok: boolean; value?: string; error?: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
@@ -65,6 +67,8 @@ export default function App() {
       setConsoleLogs([]);
       setIsPassed(false);
       setLastTest(null);
+      setFreeInputs((currentExercise?.tests[0]?.args || []).map((arg) => JSON.stringify(arg)));
+      setFreeResult(null);
     }
   }, [levelIndex, exerciseIndex, currentExercise]);
 
@@ -265,6 +269,60 @@ export default function App() {
     setConsoleLogs([]);
     setIsPassed(false);
     setLastTest(null);
+    setFreeInputs((currentExercise.tests[0]?.args || []).map((arg) => JSON.stringify(arg)));
+    setFreeResult(null);
+  };
+
+  const handleFreeTest = () => {
+    if (!currentExercise) return;
+
+    let userFn: any;
+
+    try {
+      const wrapper = new Function(
+        code + `\nreturn typeof ${currentExercise.fn} === "function" ? ${currentExercise.fn} : undefined;`,
+      );
+
+      userFn = wrapper({
+        log: () => {},
+        warn: () => {},
+        error: () => {},
+      });
+    } catch (error: any) {
+      setFreeResult({
+        ok: false,
+        error: error?.message || 'Erro de sintaxe no código.',
+      });
+      return;
+    }
+
+    if (typeof userFn !== 'function') {
+      setFreeResult({
+        ok: false,
+        error: `Função ${currentExercise.fn} não encontrada.`,
+      });
+      return;
+    }
+
+    try {
+      const args = freeInputs.map((raw) => {
+        const trimmed = raw.trim();
+        if (!trimmed) return undefined;
+        try {
+          return JSON.parse(trimmed);
+        } catch {
+          return trimmed;
+        }
+      });
+
+      const result = userFn(...args);
+      setFreeResult({ ok: true, value: JSON.stringify(result) });
+    } catch (error: any) {
+      setFreeResult({
+        ok: false,
+        error: error?.message || 'Erro durante a execução.',
+      });
+    }
   };
 
   const handleEvaluate = () => {
@@ -1131,6 +1189,43 @@ export default function App() {
                       <span>Pronto para testar seu código</span>
                     )}
                   </div>
+
+                  <section className="free-test-panel">
+                    <div className="free-test-head">
+                      <div>
+                        <span>LABORATÓRIO</span>
+                        <strong>Teste com seus próprios valores</strong>
+                      </div>
+                      <small>não afeta XP nem o progresso</small>
+                    </div>
+
+                    <div className="free-test-grid">
+                      {freeInputs.map((value, index) => (
+                        <label className="free-input" key={index}>
+                          <span>{currentExercise.tests[0]?.args.length > 1 ? String.fromCharCode(97 + index) : 'valor'}</span>
+                          <input
+                            value={value}
+                            onChange={(event) => {
+                              const nextInputs = [...freeInputs];
+                              nextInputs[index] = event.target.value;
+                              setFreeInputs(nextInputs);
+                              setFreeResult(null);
+                            }}
+                            spellCheck={false}
+                            aria-label={`Valor da entrada ${index + 1}`}
+                          />
+                        </label>
+                      ))}
+                      <button className="btn secondary free-test-button" onClick={handleFreeTest}>Testar entrada →</button>
+                    </div>
+
+                    {freeResult && (
+                      <div className={`free-result ${freeResult.ok ? 'ok' : 'error'}`}>
+                        <span>{freeResult.ok ? 'RESULTADO' : 'ERRO'}</span>
+                        <strong>{freeResult.ok ? freeResult.value : freeResult.error}</strong>
+                      </div>
+                    )}
+                  </section>
 
                   <div className="section-label">
                     Resultados dos testes
