@@ -179,11 +179,11 @@ export function useLearningProgress(store: StoreData) {
 
       current.progress = current.total ? Math.round((current.completed / current.total) * 100) : 0;
 
-      if (current.failures >= 3 || (current.failures >= 2 && current.completed < current.total)) {
+      if (current.failures >= 2) {
         current.state = 'review';
       } else if (current.completed === current.total && current.total > 0) {
         current.state = 'solid';
-      } else if (current.completed > 0) {
+      } else if (current.completed > 0 || current.attempts > 0) {
         current.state = 'developing';
       } else {
         current.state = 'new';
