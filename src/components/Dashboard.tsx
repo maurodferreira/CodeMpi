@@ -2,9 +2,11 @@ import type { Dispatch, SetStateAction } from 'react';
 import { LEVELS } from '../data/levels';
 import { getActivityStreak } from '../utils/progress';
 import { LearningMemory } from './LearningMemory';
+import type { StoreData } from '../types';
 import type { ConceptSummary, View } from '../types';
 
 interface DashboardProps {
+  store: StoreData;
   completedExercises: number;
   totalEarned: number;
   levelsDoneTotal: number;
@@ -27,6 +29,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({
+  store,
   completedExercises,
   totalEarned,
   levelsDoneTotal,
@@ -128,7 +131,7 @@ export function Dashboard({
             </article>
           </section>
 
-          <LearningMemory concepts={concepts} onReview={handleReviewConcept} />
+          <LearningMemory concepts={concepts} store={store} onReview={handleReviewConcept} />
 
           <section className="daily-grid">
             <article className={`streak-card ${activityStreak.activeToday ? 'active' : ''}`}>
