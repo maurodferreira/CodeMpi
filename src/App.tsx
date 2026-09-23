@@ -13,7 +13,16 @@ const DIFF_LABEL: Record<string, string> = {
 
 const HINT_MULT = [1, 0.9, 0.75, 0.5];
 
-type View = 'dashboard' | 'map' | 'lesson' | 'mission' | 'completion';
+type View = 'dashboard' | 'map' | 'lesson' | 'mission' | 'completion' | 'settings';
+type ThemeKey = 'green' | 'carbon' | 'violet' | 'crimson' | 'ocean';
+
+const THEMES: Array<{ id: ThemeKey; name: string; description: string; colors: string[] }> = [
+  { id: 'green', name: 'Code Green', description: 'A identidade original do CodeMpi.', colors: ['#07110F', '#35E875', '#FFB84D'] },
+  { id: 'carbon', name: 'Carbon', description: 'Preto quase absoluto e contraste limpo.', colors: ['#050505', '#FFFFFF', '#AAAAAA'] },
+  { id: 'violet', name: 'Violet', description: 'Roxo escuro com uma energia mais futurista.', colors: ['#0E0A16', '#8F5CFF', '#CFAAFF'] },
+  { id: 'crimson', name: 'Crimson', description: 'Vermelho profundo com personalidade forte.', colors: ['#120809', '#FF404F', '#FFBE66'] },
+  { id: 'ocean', name: 'Ocean', description: 'Azul escuro, técnico e mais frio.', colors: ['#07101A', '#2E95FF', '#65B7FF'] },
+];
 
 interface PerformanceData {
   attempts: number;
@@ -57,10 +66,26 @@ export default function App() {
   const [freeInputs, setFreeInputs] = useState<string[]>([]);
   const [freeResult, setFreeResult] = useState<{ ok: boolean; value?: string; error?: string } | null>(null);
   const [showFreeTest, setShowFreeTest] = useState(false);
+  const [theme, setTheme] = useState<ThemeKey>(() => {
+    try {
+      const saved = localStorage.getItem('codempi_settings_v1');
+      const parsed = saved ? JSON.parse(saved) : null;
+      return parsed?.theme || 'green';
+    } catch {
+      return 'green';
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
   }, [store]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('codempi_settings_v1', JSON.stringify({ theme }));
+  }, [theme]);
+
+
 
   useEffect(() => {
     if (currentExercise) {
@@ -569,6 +594,10 @@ export default function App() {
           </button>
         </nav>
 
+        <button className="settings-trigger" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
+          ⚙
+        </button>
+
         <div className="score-box">
           <div className="score-meta">
             <span className="score-label">XP TOTAL</span>
@@ -585,6 +614,93 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {view === 'settings' && (
+        <main className="settings-page">
+          <div className="settings-toolbar">
+            <button className="text-action" onClick={() => setView('dashboard')}>← Voltar para o início</button>
+            <span>CONFIGURAÇÕES</span>
+          </div>
+
+          <section className="settings-shell">
+            <div className="settings-intro">
+              <span className="eyebrow">CODEMPI / PREFERÊNCIAS</span>
+              <h1>Deixe a jornada com a sua cara.</h1>
+              <p>Escolha um tema para mudar a atmosfera do CodeMpi. Suas escolhas ficam salvas neste navegador.</p>
+            </div>
+
+            <section className="settings-section">
+              <div className="settings-section-head">
+                <div>
+                  <span className="section-kicker">APARÊNCIA</span>
+                  <h2>Tema da interface</h2>
+                </div>
+                <span className="settings-meta">{THEMES.find((item) => item.id === theme)?.name}</span>
+              </div>
+
+              <div className="theme-grid">
+                {THEMES.map((item) => {
+                  const selected = theme === item.id;
+
+                  return (
+                    <button
+                      key={item.id}
+                      className={`theme-card ${selected ? 'selected' : ''} theme-${item.id}`}
+                      onClick={() => setTheme(item.id)}
+                    >
+                      <div className="theme-preview">
+                        <div className="theme-preview-top">
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                        <div className="theme-preview-body">
+                          <div className="theme-preview-main" />
+                          <div className="theme-preview-side">
+                            <i />
+                            <i />
+                            <i />
+                          </div>
+                        </div>
+                        <div className="theme-swatches">
+                          {item.colors.map((color) => <span key={color} style={{ background: color }} />)}
+                        </div>
+                      </div>
+
+                      <div className="theme-copy">
+                        <div>
+                          <strong>{item.name}</strong>
+                          {selected && <span className="theme-selected">✓ ATIVO</span>}
+                        </div>
+                        <p>{item.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="settings-section account-preview">
+              <div className="settings-section-head">
+                <div>
+                  <span className="section-kicker">PRÓXIMA FASE</span>
+                  <h2>Conta e sincronização</h2>
+                </div>
+                <span className="coming-badge">EM BREVE</span>
+              </div>
+
+              <div className="account-preview-card">
+                <div className="account-placeholder">◌</div>
+                <div>
+                  <strong>Leve seu progresso com você.</strong>
+                  <p>Futuramente, uma conta CodeMpi permitirá sincronizar XP, níveis, histórico e preferências entre dispositivos.</p>
+                </div>
+                <span className="account-arrow">→</span>
+              </div>
+            </section>
+          </section>
+        </main>
+      )}
 
       {view === 'dashboard' && (
         <main className="dashboard">
