@@ -109,50 +109,102 @@ export function ConceptVisualizer({
   }
 
   if (levelIndex === 1) {
-    const condition = exerciseTitle.toLowerCase().includes('par')
-      ? `n % 2 === 0`
-      : exerciseTitle.toLowerCase().includes('senha')
-        ? `senha.length >= 8`
-        : exerciseTitle.toLowerCase().includes('frete')
-          ? `valor >= 200 || assinante`
-          : 'condição';
+    const title = exerciseTitle.toLowerCase();
+    let rule = 'regra';
+    let paths = ['SIM', 'NÃO'];
+
+    if (title.includes('par')) {
+      rule = 'n % 2 === 0';
+      paths = ['PAR', 'ÍMPAR'];
+    } else if (title.includes('positivo')) {
+      rule = 'n > 0';
+      paths = ['POSITIVO', 'NEGATIVO / ZERO'];
+    } else if (title.includes('maior')) {
+      rule = 'a > b';
+      paths = ['A É MAIOR', 'B OU EMPATE'];
+    } else if (title.includes('dirigir')) {
+      rule = 'idade >= 18';
+      paths = ['PODE DIRIGIR', 'NÃO PODE'];
+    } else if (title.includes('aprovado')) {
+      rule = 'nota >= 7';
+      paths = ['APROVADO', 'REPROVADO'];
+    } else if (title.includes('desconto')) {
+      rule = 'valor >= 100';
+      paths = ['DESCONTO', 'PREÇO NORMAL'];
+    } else if (title.includes('temperatura')) {
+      rule = 't < 15 / t < 30';
+      paths = ['FRIO', 'AGRADÁVEL / QUENTE'];
+    } else if (title.includes('senha')) {
+      rule = 'senha.length >= 8 && senha !== 12345678';
+      paths = ['VÁLIDA', 'INVÁLIDA'];
+    } else if (title.includes('frete')) {
+      rule = 'valor >= 200 || assinante';
+      paths = ['GRÁTIS', 'PAGO'];
+    } else if (title.includes('boss')) {
+      rule = '!ativo → admin → usuario';
+      paths = ['BLOQUEADO / ADMIN', 'USUÁRIO'];
+    }
+
+    const inputs = firstTest?.args || [];
+    const expected = firstTest?.exp;
+    const progress = total ? (passed / total) * 100 : 0;
 
     return (
-      <section className={`concept-lab conditional-lab ${isPassed ? 'solved' : ''}`}>
-        <div className="lab-header">
+      <section className={`concept-lab decision-core ${isPassed ? 'solved' : ''}`}>
+        <div className="decision-head">
           <div>
-            <span className="lab-eyebrow">CODEMPI LAB · VISUALIZADOR</span>
-            <h3>Veja a decisão antes de pensar no código.</h3>
+            <span>CODEMPI LAB · N2</span>
+            <strong>Decision Core</strong>
           </div>
-          <span className="lab-status">{isPassed ? '✓ DECISÃO RESOLVIDA' : '● SIMULANDO'}</span>
+          <span className="decision-status">
+            {isPassed ? '✓ RESOLVIDO' : 'DECISÃO ATIVA'}
+          </span>
         </div>
 
-        <div className="decision-flow">
-          <div className="lab-node input-node">
-            <span className="lab-node-label">ENTRADA</span>
-            <strong>{displayValue(firstTest?.args[0])}</strong>
-            {firstTest?.args[1] !== undefined && <small>+ {displayValue(firstTest.args[1])}</small>}
-          </div>
-
-          <div className="flow-line"><span /></div>
-
-          <div className="lab-gate">
-            <span className="gate-shape" />
-            <div>
-              <span>REGRA</span>
-              <strong>{condition}</strong>
+        <div className="decision-board">
+          <div className="decision-scenario">
+            <span>CENÁRIO</span>
+            <div className="scenario-values">
+              {inputs.map((value, index) => (
+                <div key={index}>
+                  <small>{inputs.length > 1 ? String.fromCharCode(97 + index) : 'entrada'}</small>
+                  <strong>{displayValue(value)}</strong>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="branch-lines">
-            <div className="branch true-branch"><i /> <span>TRUE</span></div>
-            <div className="branch false-branch"><i /> <span>FALSE</span></div>
+          <div className="decision-symbol">
+            <span>?</span>
           </div>
 
-          <div className="decision-results">
-            <div><span>SAÍDA A</span><strong>seguir caminho</strong></div>
-            <div><span>SAÍDA B</span><strong>seguir outro caminho</strong></div>
+          <div className="decision-rule">
+            <span>DECISÃO</span>
+            <strong>{rule}</strong>
+            <small>uma regra, caminhos diferentes</small>
           </div>
+        </div>
+
+        <div className="decision-paths">
+          {paths.map((path, index) => (
+            <div className={`decision-path ${index === 0 ? 'primary-path' : ''}`} key={path}>
+              <span className="path-index">0{index + 1}</span>
+              <div>
+                <small>CAMINHO {index === 0 ? 'A' : 'B'}</small>
+                <strong>{path}</strong>
+              </div>
+            </div>
+          ))}
+          <div className="decision-result">
+            <small>RESULTADO DO CENÁRIO</small>
+            <strong>{displayValue(expected)}</strong>
+          </div>
+        </div>
+
+        <div className="decision-footer">
+          <span>DIAGNÓSTICO</span>
+          <b>{passed}/{total}</b>
+          <div><span style={{ width: `${progress}%` }} /></div>
         </div>
       </section>
     );
