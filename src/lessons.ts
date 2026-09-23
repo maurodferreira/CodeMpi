@@ -65,7 +65,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         quiz: {
           question: 'Depois deste código, qual será o valor de total?',
           options: ['10', '15', '20', '25'],
-          answer: 2,
+          answer: 1,
           explanation: 'total começa em 10 e depois recebe 10 + 5. Portanto, o resultado é 15.',
         },
       },
