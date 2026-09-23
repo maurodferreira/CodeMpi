@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from './levels';
 
@@ -6,8 +6,12 @@ const DIFF_LABEL: Record<string, string> = {
   facil: 'FÁCIL',
   medio: 'MÉDIO',
   dificil: 'DIFÍCIL',
-  boss: 'BOSS'
+  boss: 'BOSS',
 };
+
+const HINT_MULT = [1, 0.9, 0.75, 0.5];
+
+type View = 'dashboard' | 'map' | 'mission';
 
 interface StoreData {
   done: Record<string, number>;
@@ -15,9 +19,9 @@ interface StoreData {
 }
 
 export default function App() {
-  // 1. Estados principais do jogo
-  const [levelIndex, setLevelIndex] = useState<number>(0);
-  const [exerciseIndex, setExerciseIndex] = useState<number>(0);
+  const [view, setView] = useState<View>('dashboard');
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [exerciseIndex, setExerciseIndex] = useState(0);
   const [store, setStore] = useState<StoreData>(() => {
     try {
       const saved = localStorage.getItem('circuito_v2');
@@ -28,48 +32,41 @@ export default function App() {
   });
 
   const currentLevel = LEVELS[levelIndex];
-  const hasExercises = Boolean(currentLevel.exercises && currentLevel.exercises.length > 0);
+  const hasExercises = Boolean(currentLevel.exercises?.length);
   const currentExercise = hasExercises ? currentLevel.exercises![exerciseIndex] : null;
 
-  const [code, setCode] = useState<string>(currentExercise?.starter || '');
+  const [code, setCode] = useState(currentExercise?.starter || '');
   const [consoleLogs, setConsoleLogs] = useState<Array<{ tag: string; msg: string; ok?: boolean }>>([]);
-  const [isPassed, setIsPassed] = useState<boolean>(false);
+  const [isPassed, setIsPassed] = useState(false);
 
-  // Persistence no localStorage
   useEffect(() => {
     localStorage.setItem('circuito_v2', JSON.stringify(store));
   }, [store]);
 
-  // Atualiza o editor quando o usuário troca de exercício
   useEffect(() => {
     if (currentExercise) {
       setCode(currentExercise.starter);
       setConsoleLogs([]);
       setIsPassed(false);
     }
-  }, [levelIndex, exerciseIndex]);
-
-  // Helpers de chaves e métricas
-  const exKey = `${levelIndex}-${exerciseIndex}`;
-  const hintsShown = store.hints[exKey] || 0;
-  const alreadyDoneXP = store.done[exKey];
+  }, [levelIndex, exerciseIndex, currentExercise]);
 
   const getKey = (li: number, ei: number) => `${li}-${ei}`;
+  const hintsShown = store.hints[getKey(levelIndex, exerciseIndex)] || 0;
+  const alreadyDoneXP = store.done[getKey(levelIndex, exerciseIndex)];
 
   const levelDoneCount = (li: number) => {
-    const lvl = LEVELS[li];
-    if (!lvl.exercises) return 0;
-    return lvl.exercises.filter((_, ei) => store.done[getKey(li, ei)]).length;
+    const level = LEVELS[li];
+    if (!level.exercises) return 0;
+    return level.exercises.filter((_, ei) => store.done[getKey(li, ei)]).length;
   };
 
   const levelComplete = (li: number) => {
-    const lvl = LEVELS[li];
-    return Boolean(lvl.exercises && levelDoneCount(li) === lvl.exercises.length);
+    const level = LEVELS[li];
+    return Boolean(level.exercises?.length && levelDoneCount(li) === level.exercises.length);
   };
 
-  const levelUnlocked = (li: number) => {
-    return li === 0 || levelComplete(li - 1);
-  };
+  const levelUnlocked = (li: number) => li === 0 || levelComplete(li - 1);
 
   const exUnlocked = (li: number, ei: number) => {
     if (!levelUnlocked(li)) return false;
@@ -77,38 +74,91 @@ export default function App() {
     return Boolean(store.done[getKey(li, ei - 1)]);
   };
 
+  const getMult = (li: number, ei: number) => {
+    const shown = Math.min(store.hints[getKey(li, ei)] || 0, 3);
+    return HINT_MULT[shown];
+  };
+
   const calcTotalXp = () => {
     let earned = 0;
     let max = 0;
-    LEVELS.forEach((lvl, li) => {
-      if (!lvl.exercises) return;
-      lvl.exercises.forEach((ex, ei) => {
-        max += ex.xp;
-        const d = store.done[getKey(li, ei)];
-        if (d) earned += d;
+
+    LEVELS.forEach((level, li) => {
+      level.exercises?.forEach((exercise, ei) => {
+        max += exercise.xp;
+        const doneXp = store.done[getKey(li, ei)];
+        if (doneXp) earned += doneXp;
       });
     });
+
     return { earned, max };
   };
 
   const { earned: totalEarned, max: totalMax } = calcTotalXp();
-  const levelsDoneTotal = LEVELS.filter((_, i) => levelComplete(i)).length;
+  const levelsDoneTotal = LEVELS.filter((_, index) => levelComplete(index)).length;
+  const completedExercises = Object.keys(store.done).length;
 
-  // Funções de Ação (Rodar testes, Dicas, Next, Reset)
+  const findContinuePoint = () => {
+    for (let li = 0; li < LEVELS.length; li += 1) {
+      if (!levelUnlocked(li) || !LEVELS[li].exercises?.length) continue;
+
+      for (let ei = 0; ei < LEVELS[li].exercises!.length; ei += 1) {
+        if (!store.done[getKey(li, ei)]) return { li, ei };
+      }
+    }
+
+    const lastBuilt = LEVELS.reduce((last, level, index) => (level.exercises?.length ? index : last), 0);
+    return { li: lastBuilt, ei: Math.max(0, (LEVELS[lastBuilt].exercises?.length || 1) - 1) };
+  };
+
+  const continuePoint = findContinuePoint();
+  const activeLevel = LEVELS[continuePoint.li];
+  const activeLevelDone = levelDoneCount(continuePoint.li);
+  const activeLevelTotal = activeLevel.exercises?.length || 0;
+  const overallProgress = totalMax ? (totalEarned / totalMax) * 100 : 0;
+
+  const openMission = (li: number, ei?: number) => {
+    if (!levelUnlocked(li)) return;
+
+    setLevelIndex(li);
+
+    const level = LEVELS[li];
+    if (!level.exercises?.length) {
+      setExerciseIndex(0);
+      setView('mission');
+      return;
+    }
+
+    let target = ei ?? 0;
+    if (ei === undefined) {
+      target = 0;
+      for (let i = 0; i < level.exercises.length; i += 1) {
+        if (!store.done[getKey(li, i)]) {
+          target = i;
+          break;
+        }
+        target = i;
+      }
+    }
+
+    setExerciseIndex(target);
+    setView('mission');
+  };
+
   const handleShowHint = () => {
     if (!currentExercise || hintsShown >= currentExercise.hints.length) return;
-    setStore(prev => ({
+
+    setStore((prev) => ({
       ...prev,
-      hints: { ...prev.hints, [exKey]: hintsShown + 1 }
+      hints: { ...prev.hints, [getKey(levelIndex, exerciseIndex)]: hintsShown + 1 },
     }));
   };
 
   const handleResetCode = () => {
-    if (currentExercise) {
-      setCode(currentExercise.starter);
-      setConsoleLogs([]);
-      setIsPassed(false);
-    }
+    if (!currentExercise) return;
+    setCode(currentExercise.starter);
+    setConsoleLogs([]);
+    setIsPassed(false);
   };
 
   const handleEvaluate = () => {
@@ -120,63 +170,86 @@ export default function App() {
     try {
       const wrapper = new Function(
         'console',
-        code + `\nreturn typeof ${currentExercise.fn} === "function" ? ${currentExercise.fn} : undefined;`
+        code + `\nreturn typeof ${currentExercise.fn} === "function" ? ${currentExercise.fn} : undefined;`,
       );
-      userFn = wrapper({ log: () => {}, warn: () => {}, error: () => {} });
-    } catch (e: any) {
-      setConsoleLogs([{ tag: 'erro', msg: 'Seu código não pôde ser interpretado: ' + e.message, ok: false }]);
+
+      userFn = wrapper({
+        log: () => {},
+        warn: () => {},
+        error: () => {},
+      });
+    } catch (error: any) {
+      setConsoleLogs([
+        {
+          tag: 'erro',
+          msg: 'Seu código não pôde ser interpretado: ' + error.message,
+          ok: false,
+        },
+      ]);
       setIsPassed(false);
       return;
     }
 
     if (typeof userFn !== 'function') {
-      setConsoleLogs([]);
+      setConsoleLogs([
+        {
+          tag: 'dica',
+          msg: `Crie a função ${currentExercise.fn} exatamente como ela aparece na missão.`,
+        },
+      ]);
       setIsPassed(false);
       return;
     }
 
     let allPass = true;
-    currentExercise.tests.forEach((t, idx) => {
+
+    currentExercise.tests.forEach((test, index) => {
       let result: any;
       let error: string | null = null;
+
       try {
-        result = userFn(...t.args);
-      } catch (e: any) {
-        error = e.message;
+        result = userFn(...test.args);
+      } catch (caught: any) {
+        error = caught.message;
       }
 
-      const argsStr = t.args.map(a => JSON.stringify(a)).join(', ');
+      const argsStr = test.args.map((arg) => JSON.stringify(arg)).join(', ');
+
       if (error) {
         allPass = false;
         logs.push({
-          tag: `teste ${idx + 1}`,
+          tag: `teste ${index + 1}`,
           msg: `${currentExercise.fn}(${argsStr}) lançou um erro: ${error}`,
-          ok: false
+          ok: false,
         });
-      } else {
-        const pass = JSON.stringify(result) === JSON.stringify(t.exp);
-        if (!pass) allPass = false;
-        logs.push({
-          tag: `teste ${idx + 1}`,
-          msg: `${currentExercise.fn}(${argsStr}) → obtido ${JSON.stringify(result)}, esperado ${JSON.stringify(t.exp)}`,
-          ok: pass
-        });
+        return;
       }
+
+      const pass = JSON.stringify(result) === JSON.stringify(test.exp);
+      if (!pass) allPass = false;
+
+      logs.push({
+        tag: `teste ${index + 1}`,
+        msg: `${currentExercise.fn}(${argsStr}) → obtido ${JSON.stringify(result)}, esperado ${JSON.stringify(test.exp)}`,
+        ok: pass,
+      });
     });
 
     if (allPass) {
+      const earnedXp = Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex));
+
       logs.push({
         tag: 'info',
-        msg: `${currentExercise.tests.length} de ${currentExercise.tests.length} testes passaram.`
+        msg: `${currentExercise.tests.length} de ${currentExercise.tests.length} testes passaram.`,
       });
 
-      if (!store.done[exKey]) {
-        const earnedXp = currentExercise.xp;
-        setStore(prev => ({
+      if (!store.done[getKey(levelIndex, exerciseIndex)]) {
+        setStore((prev) => ({
           ...prev,
-          done: { ...prev.done, [exKey]: earnedXp }
+          done: { ...prev.done, [getKey(levelIndex, exerciseIndex)]: earnedXp },
         }));
       }
+
       setIsPassed(true);
     } else {
       setIsPassed(false);
@@ -187,51 +260,53 @@ export default function App() {
 
   const handleNext = () => {
     if (!currentLevel.exercises) return;
+
     const isLastInLevel = exerciseIndex === currentLevel.exercises.length - 1;
+
     if (!isLastInLevel) {
-      setExerciseIndex(prev => prev + 1);
-    } else if (levelIndex < LEVELS.length - 1) {
-      setLevelIndex(prev => prev + 1);
+      setExerciseIndex((prev) => prev + 1);
+      return;
+    }
+
+    if (levelIndex < LEVELS.length - 1) {
+      setLevelIndex((prev) => prev + 1);
       setExerciseIndex(0);
     }
   };
 
-  const handleSelectLevel = (li: number) => {
-    if (!levelUnlocked(li)) return;
-    setLevelIndex(li);
-    const lvl = LEVELS[li];
-    if (!lvl.exercises) return;
-
-    let targetEi = 0;
-    for (let i = 0; i < lvl.exercises.length; i++) {
-      if (!store.done[getKey(li, i)]) {
-        targetEi = i;
-        break;
-      }
-      if (i === lvl.exercises.length - 1) targetEi = i;
-    }
-    setExerciseIndex(targetEi);
-  };
-
   return (
     <div className="wrap">
-      {/* HEADER SUPERIOR */}
-      <header className="top">
-        <div className="top-brand">
-          <div className="logo-shell">
-            <div className="logo">
-              <img src="../codempi-assets/logo/codempi-logo.png" alt="CodeMpi" />
+      <header className="top app-header">
+        <button className="header-brand-button" onClick={() => setView('dashboard')} aria-label="Ir para o início">
+          <div className="top-brand">
+            <div className="logo-shell">
+              <div className="logo">
+                <img src="/codempi-assets/logo/codempi-logo.png" alt="CodeMpi" />
+              </div>
+            </div>
+            <div className="brand-copy">
+              <div className="brand-status">
+                <span className="dot" /> SISTEMA ONLINE · TRILHA DE PROGRAMAÇÃO
+              </div>
+              <div className="tagline">
+                Aprenda programação na prática, sem medo de errar. Resolva desafios, ganhe XP e avance no seu ritmo.
+              </div>
             </div>
           </div>
-          <div className="brand-copy">
-            <div className="brand-status">
-              <span className="dot"></span> SISTEMA ONLINE · TRILHA DE PROGRAMAÇÃO
-            </div>
-            <div className="tagline">
-              Aprenda programação na prática, sem medo de errar. Resolva desafios, ganhe XP e avance no seu ritmo.
-            </div>
-          </div>
-        </div>
+        </button>
+
+        <nav className="main-nav" aria-label="Navegação principal">
+          <button className={`nav-link ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
+            Início
+          </button>
+          <button className={`nav-link ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
+            Jornada
+          </button>
+          <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
+            Missão
+          </button>
+        </nav>
+
         <div className="score-box">
           <div className="score-meta">
             <span className="score-label">XP TOTAL</span>
@@ -239,11 +314,9 @@ export default function App() {
               META <span id="maxscore">{totalMax}</span>
             </span>
           </div>
-          <div className="score-value" id="score">
-            {totalEarned}
-          </div>
+          <div className="score-value" id="score">{totalEarned}</div>
           <div className="score-track" aria-hidden={true}>
-            <span style={{ width: `${totalMax ? Math.min(100, (totalEarned / totalMax) * 100) : 0}%` }} />
+            <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
           </div>
           <div className="sub" id="lvlprog">
             {levelsDoneTotal} / {LEVELS.length} níveis fechados
@@ -251,204 +324,363 @@ export default function App() {
         </div>
       </header>
 
-      {/* GRID DA APLICAÇÃO */}
-      <div className="grid">
-        {/* BARRA LATERAL (CIRCUITO DE NÍVEIS) */}
-        <nav className="circuit" id="circuit" aria-label="Mapa de progressão dos níveis">
-          {LEVELS.map((lvl, li) => {
-            const unlocked = levelUnlocked(li);
-            const built = Boolean(lvl.exercises);
-            const done = built && levelComplete(li);
-            const prog = built
-              ? `${levelDoneCount(li)}/${lvl.exercises!.length}`
-              : unlocked
-              ? 'em breve'
-              : 'bloqueado';
+      {view === 'dashboard' && (
+        <main className="dashboard">
+          <section className="dashboard-hero">
+            <div className="hero-copy">
+              <span className="eyebrow">CODEMPI / LEARNING SYSTEM</span>
+              <h1>Aprenda a programar.<br /><em>Um desafio por vez.</em></h1>
+              <p>
+                Uma jornada do básico ao pensamento algorítmico, feita para você praticar, errar,
+                entender e continuar.
+              </p>
+              <div className="hero-actions">
+                <button className="btn primary hero-button" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
+                  {completedExercises === 0 ? 'Começar minha jornada →' : 'Continuar de onde parei →'}
+                </button>
+                <button className="btn ghost hero-button" onClick={() => setView('map')}>
+                  Ver mapa da jornada
+                </button>
+              </div>
+              <div className="hero-microcopy">
+                <span>✓ sem pressão</span>
+                <span>✓ feedback imediato</span>
+                <span>✓ progresso salvo</span>
+              </div>
+            </div>
 
-            const nodeClass = [
-              'node',
-              done ? 'done' : '',
-              li === levelIndex ? 'active' : '',
-              !unlocked ? 'locked' : '',
-              unlocked && !built ? 'soon' : ''
-            ]
-              .filter(Boolean)
-              .join(' ');
+            <div className="hero-console">
+              <div className="hero-console-head">
+                <span><i /> codempi-session</span>
+                <span>ONLINE</span>
+              </div>
+              <div className="hero-console-body">
+                <div><span className="prompt">&gt;</span> init learning_path</div>
+                <div className="success">✓ 10 níveis carregados</div>
+                <div className="success">✓ {completedExercises} desafios concluídos</div>
+                <div><span className="prompt">&gt;</span> current_level</div>
+                <div className="current-line">{activeLevel.tag} / {activeLevel.name}</div>
+                <div><span className="prompt">&gt;</span> status</div>
+                <div className="status-line">READY<span className="cursor" /></div>
+              </div>
+            </div>
+          </section>
 
-            return (
-              <button
-                key={lvl.tag}
-                className={nodeClass}
-                onClick={() => handleSelectLevel(li)}
-              >
-                <span className="lvl-title">
-                  {lvl.tag}. {lvl.name}
-                </span>
-                <span className="lvl-tag">{prog}</span>
+          <section className="stats-grid" aria-label="Estatísticas do jogador">
+            <article className="stat-card">
+              <span className="stat-icon">✦</span>
+              <div>
+                <span className="stat-label">XP acumulado</span>
+                <strong>{totalEarned}</strong>
+                <small>de {totalMax} XP disponíveis</small>
+              </div>
+            </article>
+            <article className="stat-card">
+              <span className="stat-icon">◎</span>
+              <div>
+                <span className="stat-label">Desafios concluídos</span>
+                <strong>{completedExercises}</strong>
+                <small>missões resolvidas</small>
+              </div>
+            </article>
+            <article className="stat-card">
+              <span className="stat-icon">◇</span>
+              <div>
+                <span className="stat-label">Níveis concluídos</span>
+                <strong>{levelsDoneTotal}/{LEVELS.length}</strong>
+                <small>sua jornada até aqui</small>
+              </div>
+            </article>
+          </section>
+
+          <section className="continue-grid">
+            <article className="continue-card">
+              <div className="section-kicker">CONTINUE SUA JORNADA</div>
+              <div className="continue-title-row">
+                <div>
+                  <h2>{activeLevel.tag} · {activeLevel.name}</h2>
+                  <p>{activeLevel.exercises ? `${activeLevelDone} de ${activeLevelTotal} desafios concluídos.` : 'O próximo nível da jornada está sendo preparado.'}</p>
+                </div>
+                <span className="continue-badge">{activeLevel.exercises ? `${activeLevelDone}/${activeLevelTotal}` : 'EM BREVE'}</span>
+              </div>
+              <div className="progress-bar large">
+                <span style={{ width: `${activeLevelTotal ? (activeLevelDone / activeLevelTotal) * 100 : 0}%` }} />
+              </div>
+              <button className="text-action" onClick={() => openMission(continuePoint.li, continuePoint.ei)}>
+                {activeLevel.exercises ? 'Abrir próxima missão →' : 'Ver detalhes do nível →'}
               </button>
-            );
-          })}
-        </nav>
+            </article>
 
-        {/* PAINEL CENTRAL (EXERCÍCIO ATUAL OU MENSAGEM 'EM BREVE') */}
-        <main className="panel">
-          <div className="panel-head">
-            <div className="kicker" id="kicker">
-              {currentLevel.tag} · {currentLevel.name}
-              {currentExercise ? ` · EXERCÍCIO ${exerciseIndex + 1}/${currentLevel.exercises!.length}` : ''}
+            <article className="philosophy-card">
+              <div className="section-kicker">COMO O CODEMPI FUNCIONA</div>
+              <h2>Errar não tira você do caminho.</h2>
+              <p>Os testes mostram onde sua lógica precisa melhorar. As pistas ajudam sem entregar tudo. Você tenta de novo, entende e segue.</p>
+              <div className="mini-steps">
+                <span>01 · entender</span>
+                <span>02 · tentar</span>
+                <span>03 · corrigir</span>
+                <span>04 · dominar</span>
+              </div>
+            </article>
+          </section>
+
+          <section className="dashboard-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-kicker">PRÓXIMAS ETAPAS</span>
+                <h2>Sua jornada de programação</h2>
+              </div>
+              <button className="text-action" onClick={() => setView('map')}>Abrir mapa completo →</button>
             </div>
-            <h2 id="lvl-title">{currentExercise ? currentExercise.title : currentLevel.name}</h2>
-            <p id="lvl-desc">
-              {currentExercise ? currentExercise.desc : 'Este nível ainda está sendo construído — chegando em breve.'}
-            </p>
-            <div className="badges" id="badges">
-              {currentExercise && (
-                <>
-                  <span className={`badge diff-${currentExercise.difficulty}`}>
-                    {DIFF_LABEL[currentExercise.difficulty]}
-                  </span>
-                  <span className="badge xp" id="xpBadge">
-                    XP {currentExercise.xp} / {currentExercise.xp}
-                  </span>
-                  <span className="sig">{currentExercise.sig}</span>
-                </>
-              )}
+
+            <div className="path-preview">
+              {LEVELS.slice(0, 5).map((level, index) => {
+                const unlocked = levelUnlocked(index);
+                const complete = levelComplete(index);
+                const inProgress = unlocked && !complete && Boolean(level.exercises?.length);
+
+                return (
+                  <button
+                    key={level.tag}
+                    className={`path-card ${complete ? 'complete' : ''} ${inProgress ? 'current' : ''} ${!unlocked ? 'locked' : ''}`}
+                    onClick={() => unlocked && openMission(index)}
+                    disabled={!unlocked}
+                  >
+                    <span className="path-number">{complete ? '✓' : level.tag}</span>
+                    <span className="path-name">{level.name}</span>
+                    <span className="path-meta">
+                      {level.exercises ? `${levelDoneCount(index)}/${level.exercises.length} desafios` : 'Em breve'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+          </section>
+        </main>
+      )}
+
+      {view === 'map' && (
+        <main className="map-page">
+          <section className="map-hero">
+            <div>
+              <span className="eyebrow">CODEMPI / JOURNEY MAP</span>
+              <h1>Sua jornada começa no básico.<br /><em>E fica mais interessante a cada nível.</em></h1>
+              <p>Complete um nível para liberar o próximo. Cada etapa introduz uma ideia nova e aumenta o desafio gradualmente.</p>
+            </div>
+            <div className="map-summary">
+              <span>PROGRESSO GERAL</span>
+              <strong>{Math.round(overallProgress)}%</strong>
+              <div className="progress-bar"><span style={{ width: `${Math.min(100, overallProgress)}%` }} /></div>
+              <small>{completedExercises} desafios · {levelsDoneTotal} níveis</small>
+            </div>
+          </section>
+
+          <section className="level-map" aria-label="Mapa de progressão dos níveis">
+            {LEVELS.map((level, li) => {
+              const unlocked = levelUnlocked(li);
+              const complete = levelComplete(li);
+              const inProgress = unlocked && !complete && Boolean(level.exercises?.length);
+              const built = Boolean(level.exercises?.length);
+              const progress = built ? levelDoneCount(li) / level.exercises!.length : 0;
+
+              return (
+                <div className={`map-level-row ${complete ? 'complete' : ''} ${inProgress ? 'current' : ''} ${!unlocked ? 'locked' : ''} ${!built ? 'soon' : ''}`} key={level.tag}>
+                  <div className="map-connector" />
+                  <div className="map-node">
+                    <span>{complete ? '✓' : unlocked ? level.tag : '×'}</span>
+                  </div>
+                  <button
+                    className="map-level-card"
+                    onClick={() => unlocked && openMission(li)}
+                    disabled={!unlocked}
+                  >
+                    <div className="map-level-top">
+                      <span className="map-level-tag">{level.tag}</span>
+                      <span className={`map-status ${complete ? 'done' : inProgress ? 'current' : !unlocked ? 'locked' : 'soon'}`}>
+                        {complete ? 'CONCLUÍDO' : inProgress ? 'EM ANDAMENTO' : unlocked ? 'EM BREVE' : 'BLOQUEADO'}
+                      </span>
+                    </div>
+                    <h2>{level.name}</h2>
+                    <p>{built ? `${level.exercises!.length} desafios para dominar este tema.` : 'Conteúdo planejado para a próxima etapa do CodeMpi.'}</p>
+                    {built ? (
+                      <div className="map-progress-row">
+                        <div className="progress-bar"><span style={{ width: `${progress * 100}%` }} /></div>
+                        <span>{levelDoneCount(li)}/{level.exercises!.length}</span>
+                      </div>
+                    ) : (
+                      <div className="map-topics">{level.topics}</div>
+                    )}
+                    <span className="map-action">{unlocked ? (built ? 'Abrir nível →' : 'Explorar nível →') : 'Complete o nível anterior para liberar'}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </section>
+        </main>
+      )}
+
+      {view === 'mission' && (
+        <main className="mission-shell">
+          <div className="mission-toolbar">
+            <button className="text-action" onClick={() => setView('map')}>← Voltar para o mapa</button>
+            <span>MISSÃO ATUAL · {currentLevel.tag}</span>
           </div>
 
-          {!hasExercises ? (
-            <div className="soon-panel">
-              <div className="big">🔧 {currentLevel.count} exercícios em construção</div>
-              Temas planejados:
-              <div className="topics">{currentLevel.topics}</div>
-            </div>
-          ) : (
-            <div id="exBody">
-              {/* BARRINHA DE SELEÇÃO DE EXERCÍCIO (BOLINHAS/DOTS) */}
-              <div className="ex-strip">
-                {currentLevel.exercises!.map((ex, ei) => {
-                  const isDone = Boolean(store.done[getKey(levelIndex, ei)]);
-                  const isUnlocked = exUnlocked(levelIndex, ei);
-                  const isActive = ei === exerciseIndex;
+          <div className="grid">
+            <nav className="circuit" id="circuit" aria-label="Mapa de níveis da missão">
+              {LEVELS.map((level, li) => {
+                const unlocked = levelUnlocked(li);
+                const built = Boolean(level.exercises?.length);
+                const done = built && levelComplete(li);
+                const progressLabel = built ? `${levelDoneCount(li)}/${level.exercises!.length}` : unlocked ? 'em breve' : 'bloqueado';
 
-                  const dotClass = [
-                    'ex-dot',
-                    `diff-${ex.difficulty}`,
-                    isDone ? 'done' : '',
-                    isActive ? 'active' : '',
-                    !isUnlocked ? 'locked' : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ');
+                const nodeClass = [
+                  'node',
+                  done ? 'done' : '',
+                  li === levelIndex ? 'active' : '',
+                  !unlocked ? 'locked' : '',
+                  unlocked && !built ? 'soon' : '',
+                ].filter(Boolean).join(' ');
 
-                  return (
-                    <div
-                      key={ei}
-                      className={dotClass}
-                      title={ex.title}
-                      onClick={() => {
-                        if (isUnlocked) setExerciseIndex(ei);
-                      }}
-                    >
-                      {isDone ? '✓' : ei + 1}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* EDITOR CODEMIRROR SUBSTUINDO O TEXTAREA */}
-              <div className="editor-wrap">
-                <CodeEditor code={code} onChange={setCode} />
-
-                <div className="learning-note">
-                  <span>💡</span>
-                  <span>Errar faz parte. Você pode testar quantas vezes precisar — XP só entra quando você conclui.</span>
-                </div>
-
-                <div className="actions">
-                  <button className="btn primary" id="run" onClick={handleEvaluate}>
-                    ▶ Rodar testes
+                return (
+                  <button key={level.tag} className={nodeClass} onClick={() => unlocked && openMission(li)}>
+                    <span className="lvl-title">{level.tag}. {level.name}</span>
+                    <span className="lvl-tag">{progressLabel}</span>
                   </button>
-                  <button className="btn ghost" id="reset" onClick={handleResetCode}>
-                    Reiniciar código
-                  </button>
-                  <button
-                    className="btn ghost"
-                    id="hint"
-                    onClick={handleShowHint}
-                    disabled={!currentExercise || hintsShown >= currentExercise.hints.length}
-                  >
-                    {!currentExercise || hintsShown >= currentExercise.hints.length
-                      ? 'Todas as dicas exibidas'
-                      : `Mostrar pista (${hintsShown + 1}/${currentExercise.hints.length})`}
-                  </button>
-                  <span className="xp-live" id="xpLive">
-                    {!alreadyDoneXP && hintsShown > 0
-                      ? `${hintsShown} pista(s) usada(s) — pedir ajuda faz parte do aprendizado.`
-                      : ''}
-                  </span>
-                </div>
+                );
+              })}
+            </nav>
 
-                {/* CAIXA DE DICAS */}
-                <div className="hints-box" id="hintsBox">
-                  {currentExercise &&
-                    currentExercise.hints.slice(0, hintsShown).map((hintText, idx) => (
-                      <div key={idx} className="hint-line">
-                        <b>Dica {idx + 1}</b> {hintText}
-                      </div>
-                    ))}
+            <section className="panel">
+              <div className="panel-head">
+                <div className="kicker">
+                  {currentLevel.tag} · {currentLevel.name}
+                  {currentExercise ? ` · EXERCÍCIO ${exerciseIndex + 1}/${currentLevel.exercises!.length}` : ''}
                 </div>
-              </div>
+                <h2>{currentExercise ? currentExercise.title : currentLevel.name}</h2>
+                <p>{currentExercise ? currentExercise.desc : 'Este nível ainda está sendo construído — chegando em breve.'}</p>
 
-              {/* BANNER DE VITÓRIA */}
-              {(isPassed || alreadyDoneXP) && (
-                <div className="win-banner show" id="winBanner">
-                  <span>
-                    {alreadyDoneXP
-                      ? `Exercício já concluído — você ganhou ${alreadyDoneXP} XP aqui.`
-                      : `Boa! Todos os testes passaram. Você ganhou ${currentExercise!.xp} XP.`}
-                  </span>
-                  {exerciseIndex < currentLevel.exercises!.length - 1 || levelIndex < LEVELS.length - 1 ? (
-                    <button className="btn primary" id="nextBtn" onClick={handleNext}>
-                      {exerciseIndex === currentLevel.exercises!.length - 1
-                        ? 'Próximo nível →'
-                        : 'Próximo exercício →'}
-                    </button>
-                  ) : (
-                    <button className="btn primary" disabled>
-                      Circuito completo 🎉
-                    </button>
+                <div className="badges">
+                  {currentExercise && (
+                    <>
+                      <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
+                      <span className="badge xp">XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}</span>
+                      <span className="sig">{currentExercise.sig}</span>
+                    </>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* CONSOLE DE RESULTADOS */}
-              <div className="section-label">
-                Resultados dos testes{' '}
-                <span style={{ color: 'var(--muted-2)', fontWeight: 'normal' }}>
-                  — rode para verificar a resposta
-                </span>
-              </div>
-              <div className="console" id="console">
-                {consoleLogs.length === 0 ? (
-                  <div className="console-empty">
-                    // o resultado dos testes aparece aqui<span className="cursor"></span>
+              {!hasExercises ? (
+                <div className="soon-panel">
+                  <div className="big">🔧 {currentLevel.count} exercícios em construção</div>
+                  Temas planejados:
+                  <div className="topics">{currentLevel.topics}</div>
+                  <button className="btn ghost soon-back" onClick={() => setView('map')}>Voltar para a jornada</button>
+                </div>
+              ) : (
+                <div id="exBody">
+                  <div className="ex-strip">
+                    {currentLevel.exercises!.map((exercise, ei) => {
+                      const isDone = Boolean(store.done[getKey(levelIndex, ei)]);
+                      const isUnlocked = exUnlocked(levelIndex, ei);
+                      const isActive = ei === exerciseIndex;
+
+                      const dotClass = [
+                        'ex-dot',
+                        `diff-${exercise.difficulty}`,
+                        isDone ? 'done' : '',
+                        isActive ? 'active' : '',
+                        !isUnlocked ? 'locked' : '',
+                      ].filter(Boolean).join(' ');
+
+                      return (
+                        <button
+                          key={ei}
+                          className={dotClass}
+                          title={exercise.title}
+                          onClick={() => isUnlocked && setExerciseIndex(ei)}
+                          disabled={!isUnlocked}
+                        >
+                          {isDone ? '✓' : ei + 1}
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : (
-                  consoleLogs.map((log, i) => (
-                    <div key={i} className="row">
-                      <span className={`tag ${log.ok === undefined ? 'info' : log.ok ? 'ok' : 'err'}`}>
-                        {log.tag}
-                      </span>
-                      <span className="msg">{log.msg}</span>
+
+                  <div className="editor-wrap">
+                    <CodeEditor code={code} onChange={setCode} />
+
+                    <div className="learning-note">
+                      <span>💡</span>
+                      <span>Errar faz parte. Você pode testar quantas vezes precisar. As dicas reduzem o XP, mas não impedem seu progresso.</span>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+
+                    <div className="actions">
+                      <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
+                      <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
+                      <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
+                        {hintsShown >= currentExercise.hints.length
+                          ? 'Todas as dicas exibidas'
+                          : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(HINT_MULT[hintsShown + 1] * 100)}%`}
+                      </button>
+                      <span className="xp-live">
+                        {!alreadyDoneXP && hintsShown > 0
+                          ? `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
+                          : ''}
+                      </span>
+                    </div>
+
+                    <div className="hints-box">
+                      {currentExercise.hints.slice(0, hintsShown).map((hintText, index) => (
+                        <div key={index} className="hint-line">
+                          <b>Dica {index + 1}</b> {hintText}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {(isPassed || alreadyDoneXP) && (
+                    <div className="win-banner show">
+                      <span>
+                        {alreadyDoneXP
+                          ? `Exercício já concluído — você ganhou ${alreadyDoneXP} XP aqui.`
+                          : `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`}
+                      </span>
+
+                      {exerciseIndex < currentLevel.exercises!.length - 1 || levelIndex < LEVELS.length - 1 ? (
+                        <button className="btn primary" onClick={handleNext}>
+                          {exerciseIndex === currentLevel.exercises!.length - 1 ? 'Próximo nível →' : 'Próximo exercício →'}
+                        </button>
+                      ) : (
+                        <button className="btn primary" disabled>Circuito completo 🎉</button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="section-label">
+                    Resultados dos testes
+                    <span style={{ color: 'var(--muted-2)', fontWeight: 'normal' }}>— rode para verificar a resposta</span>
+                  </div>
+
+                  <div className="console">
+                    {consoleLogs.length === 0 ? (
+                      <div className="console-empty">// o resultado dos testes aparece aqui<span className="cursor" /></div>
+                    ) : (
+                      consoleLogs.map((log, index) => (
+                        <div key={index} className="row">
+                          <span className={`tag ${log.ok === undefined ? 'info' : log.ok ? 'ok' : 'err'}`}>{log.tag}</span>
+                          <span className="msg">{log.msg}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
+          </div>
         </main>
-      </div>
+      )}
 
       <footer className="note">
         seu progresso (XP, dicas usadas e exercícios concluídos) fica salvo neste navegador
