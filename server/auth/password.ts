@@ -1,11 +1,9 @@
 import {
   randomBytes,
-  scrypt as scryptCallback,
+  scrypt,
   timingSafeEqual,
+  type ScryptOptions,
 } from 'node:crypto';
-import { promisify } from 'node:util';
-
-const scrypt = promisify(scryptCallback);
 
 const SCRYPT_N = 16_384;
 const SCRYPT_R = 8;
@@ -18,10 +16,34 @@ export interface PasswordHasher {
   verify(password: string, encodedHash: string): Promise<boolean>;
 }
 
+function deriveKey(
+  password: string,
+  salt: Buffer,
+  keyLength: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(
+      password,
+      salt,
+      keyLength,
+      options,
+      (error, derivedKey) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(derivedKey);
+      },
+    );
+  });
+}
+
 export const passwordHasher: PasswordHasher = {
   async hash(password) {
     const salt = randomBytes(SALT_LENGTH);
-    const derivedKey = await scrypt(
+    const derivedKey = await deriveKey(
       password,
       salt,
       KEY_LENGTH,
@@ -30,7 +52,7 @@ export const passwordHasher: PasswordHasher = {
         r: SCRYPT_R,
         p: SCRYPT_P,
       },
-    ) as Buffer;
+    );
 
     return [
       'scrypt',
@@ -86,12 +108,12 @@ export const passwordHasher: PasswordHasher = {
         return false;
       }
 
-      const actualKey = await scrypt(
+      const actualKey = await deriveKey(
         password,
         salt,
         expectedKey.length,
         { N, r, p },
-      ) as Buffer;
+      );
 
       return timingSafeEqual(actualKey, expectedKey);
     } catch {
