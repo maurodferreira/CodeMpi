@@ -578,7 +578,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         body: 'Quando você tem muitas pessoas, produtos ou jogadores do mesmo tipo, pode colocar os objetos dentro de um array e percorrê-los com o for que aprendeu antes. Quando nenhum objeto atende à busca, null pode representar que não houve resultado.',
         code: 'const alunos = [\n  { id: 1, nome: "Ana", nota: 8 },\n  { id: 2, nome: "Bruno", nota: 6 }\n];\n\nfunction encontrarAluno(alunos, id) {\n  for (let i = 0; i < alunos.length; i++) {\n    if (alunos[i].id === id) return alunos[i];\n  }\n\n  return null;\n}',
         explanation: 'alunos[i] é um objeto. Você pode acessar propriedades como alunos[i].nome e também comparar uma propriedade, como alunos[i].id, para encontrar o objeto certo. O return null representa o caso em que a busca terminou sem encontrar um resultado.',
-      },,
+      },
       {
         id: 'object-validation',
         type: 'example',
