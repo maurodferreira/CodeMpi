@@ -21,7 +21,7 @@ const STATE_META = {
   },
   solid: {
     label: 'DOMINADO',
-    short: 'concluído com consistência',
+    short: 'todos os desafios concluídos',
   },
   new: {
     label: 'AINDA NÃO PRATICADO',
