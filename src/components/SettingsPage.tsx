@@ -9,6 +9,9 @@ interface SettingsPageProps {
   preferences: AppPreferences;
   setPreferences: Dispatch<SetStateAction<AppPreferences>>;
   setView: Dispatch<SetStateAction<View>>;
+  canInstall: boolean;
+  isInstalled: boolean;
+  onInstall: () => Promise<boolean>;
 }
 
 const interfaceOptions: Array<{ value: InterfaceScale; label: string; description: string }> = [
@@ -34,6 +37,9 @@ export function SettingsPage({
   preferences,
   setPreferences,
   setView,
+  canInstall,
+  isInstalled,
+  onInstall,
 }: SettingsPageProps) {
   const updatePreference = <K extends keyof AppPreferences>(key: K, value: AppPreferences[K]) => {
     setPreferences((current) => ({ ...current, [key]: value }));
@@ -295,6 +301,50 @@ export function SettingsPage({
                 {preferences.confirmReset ? 'Ativado' : 'Desativado'}
               </button>
             </div>
+          </div>
+        </section>
+
+        <section className="settings-section app-install-section">
+          <div className="settings-section-head">
+            <div>
+              <span className="section-kicker">APLICATIVO</span>
+              <h2>Instale o CodeMpi</h2>
+            </div>
+            <span className={`install-status-badge ${isInstalled ? 'installed' : canInstall ? 'available' : ''}`}>
+              {isInstalled ? 'INSTALADO' : canInstall ? 'DISPONÍVEL' : 'NESTE NAVEGADOR'}
+            </span>
+          </div>
+
+          <div className="app-install-card">
+            <div className="app-install-mark" aria-hidden="true">⌁</div>
+            <div className="app-install-copy">
+              <strong>
+                {isInstalled
+                  ? 'CodeMpi instalado neste dispositivo.'
+                  : 'Use o CodeMpi como um aplicativo.'}
+              </strong>
+              <p>
+                {isInstalled
+                  ? 'Abra pelo atalho do sistema para usar a experiência standalone e continuar com seu progresso local.'
+                  : canInstall
+                    ? 'Instale para abrir em uma janela própria e manter acesso ao conteúdo que já foi carregado mesmo sem conexão.'
+                    : 'Quando o navegador disponibilizar a instalação, o botão aparecerá aqui automaticamente.'}
+              </p>
+            </div>
+
+            {canInstall && !isInstalled && (
+              <button
+                type="button"
+                className="btn primary app-install-button"
+                onClick={() => void onInstall()}
+              >
+                Instalar aplicativo
+              </button>
+            )}
+
+            {isInstalled && (
+              <span className="app-install-ready">✓ PRONTO</span>
+            )}
           </div>
         </section>
 
