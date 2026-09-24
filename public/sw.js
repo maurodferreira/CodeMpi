@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'codempi-';
-const CACHE_NAME = 'codempi-shell-v1';
+const CACHE_NAME = 'codempi-shell-v2';
 
 const APP_SHELL = [
   '/',
