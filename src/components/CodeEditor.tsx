@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { javascript } from '@codemirror/lang-javascript';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
@@ -33,6 +33,15 @@ const MOBILE_CODE_TOOLS = [
   { label: '=', insert: ' = ', cursorOffset: 3, ariaLabel: 'Inserir sinal de igualdade' },
 ] as const;
 
+const MOBILE_CODE_SNIPPETS = [
+  { label: 'const', insert: 'const ', cursorOffset: 6, ariaLabel: 'Inserir const' },
+  { label: 'let', insert: 'let ', cursorOffset: 4, ariaLabel: 'Inserir let' },
+  { label: 'return', insert: 'return ', cursorOffset: 7, ariaLabel: 'Inserir return' },
+  { label: 'if', insert: 'if () {}', cursorOffset: 4, ariaLabel: 'Inserir estrutura if' },
+  { label: 'else', insert: 'else {}', cursorOffset: 6, ariaLabel: 'Inserir estrutura else' },
+  { label: 'for', insert: 'for () {}', cursorOffset: 5, ariaLabel: 'Inserir estrutura for' },
+] as const;
+
 export function CodeEditor({
   code,
   onChange,
@@ -46,6 +55,7 @@ export function CodeEditor({
 }: CodeEditorProps) {
   const editorFontSize = EDITOR_FONT_SIZES[fontSize];
   const editorViewRef = useRef<EditorView | null>(null);
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
 
   const insertText = (text: string, cursorOffset = text.length) => {
     const view = editorViewRef.current;
@@ -184,7 +194,37 @@ export function CodeEditor({
           >
             →
           </button>
+
+          <button
+            type="button"
+            className={`mobile-code-more-button ${showAdvancedTools ? 'active' : ''}`}
+            aria-expanded={showAdvancedTools}
+            aria-controls="mobile-code-toolbar-extra"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setShowAdvancedTools((previous) => !previous)}
+          >
+            {showAdvancedTools ? '× Fechar' : '+ Mais'}
+          </button>
         </div>
+
+        {showAdvancedTools && (
+          <div className="mobile-code-toolbar-extra" id="mobile-code-toolbar-extra">
+            <span className="mobile-code-toolbar-extra-label">ESTRUTURAS</span>
+            <div className="mobile-code-toolbar-extra-scroll">
+              {MOBILE_CODE_SNIPPETS.map((snippet) => (
+                <button
+                  key={snippet.label}
+                  type="button"
+                  aria-label={snippet.ariaLabel}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => insertText(snippet.insert, snippet.cursorOffset)}
+                >
+                  {snippet.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
