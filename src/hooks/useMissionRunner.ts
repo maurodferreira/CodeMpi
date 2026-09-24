@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { Exercise } from '../data/levels';
-import { browserCodeExecutor } from '../services/codeExecutor';
+import { browserCodeExecutor, type CodeExecutor } from '../services/codeExecutor';
 import type { ConsoleLog, LastTest, StoreData } from '../types';
 import { getLearningFeedback } from '../utils/learningFeedback';
 import { calculateExerciseXp } from '../utils/xp';
@@ -16,6 +16,7 @@ interface UseMissionRunnerParams {
   setStore: Dispatch<SetStateAction<StoreData>>;
   registerActivity: () => void;
   getKey: (li: number, ei: number) => string;
+  executor?: CodeExecutor;
 }
 
 interface FreeResult {
@@ -35,6 +36,7 @@ export function useMissionRunner({
   setStore,
   registerActivity,
   getKey,
+  executor = browserCodeExecutor,
 }: UseMissionRunnerParams) {
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([]);
   const [isPassed, setIsPassed] = useState(false);
@@ -63,7 +65,7 @@ export function useMissionRunner({
     if (!currentExercise) return;
 
     const args = freeInputs.map(parseInput);
-    const execution = browserCodeExecutor.runFunction(
+    const execution = executor.runFunction(
       code,
       currentExercise.fn,
       args,
@@ -100,7 +102,7 @@ export function useMissionRunner({
       },
     }));
 
-    const execution = browserCodeExecutor.runTests(
+    const execution = executor.runTests(
       code,
       currentExercise.fn,
       currentExercise.tests,
