@@ -98,7 +98,7 @@ export default function App() {
   });
 
   const handleReviewConcept = (concept: ConceptSummary) => {
-    const target = findConceptMissionTarget(concept, store);
+    const target = findConceptMissionTarget(concept, store, exUnlocked);
 
     if (!target) {
       resetMissionState(null);
@@ -129,6 +129,8 @@ export default function App() {
       return;
     }
 
+    if (ei !== undefined && (!level.exercises[ei] || !exUnlocked(li, ei))) return;
+
     const target = ei ?? getNextExerciseIndex(li, store);
 
     resetMissionState(level.exercises[target] || null);
@@ -137,6 +139,10 @@ export default function App() {
     setLessonStep(0);
     setQuizAnswer(null);
     setView(LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
+  };
+
+  const handleOpenMissionNavigation = () => {
+    openMission(levelIndex);
   };
 
   const handleShowHint = () => {
@@ -196,6 +202,7 @@ export default function App() {
         totalMax={totalMax}
         overallProgress={overallProgress}
         levelsDoneTotal={levelsDoneTotal}
+        onOpenMission={handleOpenMissionNavigation}
       />
 
       {view === 'settings' && (
@@ -329,7 +336,7 @@ export default function App() {
         />
       )}
 
-      <AppFooter view={view} setView={setView} />
+      <AppFooter view={view} setView={setView} onOpenMission={handleOpenMissionNavigation} />
     </div>
   );
 }
