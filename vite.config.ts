@@ -10,7 +10,12 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
-              name: 'codemirror-core',
+              name: 'codemirror-runtime',
+              test: /node_modules[\\/]@codemirror[\\/](state|view|commands|language)[\\/]/,
+              priority: 35,
+            },
+            {
+              name: 'codemirror-features',
               test: /node_modules[\\/]@codemirror[\\/]/,
               priority: 30,
             },
