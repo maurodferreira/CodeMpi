@@ -93,6 +93,16 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
 
   const selectedMeta = selectedConcept ? STATE_META[selectedConcept.state] : null;
   const selectedExercises = selectedConcept ? getRelatedExercises(selectedConcept) : [];
+  const recommendedConcept = orderedConcepts.find((concept) => concept.state !== 'new') || null;
+  const recommendedReason = recommendedConcept
+    ? recommendedConcept.failures >= 2
+      ? `${recommendedConcept.failures} erros em ${recommendedConcept.attempts} tentativas — este conceito merece uma nova passada.`
+      : recommendedConcept.failures === 1
+        ? 'Houve um erro durante a prática. Uma revisão curta pode ajudar a fixar o padrão.'
+        : recommendedConcept.completed > 0
+          ? 'Você já praticou este conceito. Reforçar enquanto ele ainda está fresco ajuda a consolidar.'
+          : 'Você começou a praticar este conceito, mas ainda há espaço para avançar.'
+    : null;
 
   const handleReview = () => {
     if (!selectedConcept) return;
@@ -122,46 +132,28 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
           </div>
         </div>
 
-        {(() => {
-          const reviewTarget = orderedConcepts[0] && orderedConcepts[0].state !== 'new'
-            ? orderedConcepts[0]
-            : orderedConcepts.find((concept) => concept.state !== 'new') || null;
-
-          if (!reviewTarget) {
-            return (
-              <div className="memory-recommendation memory-recommendation-empty">
-                <div className="memory-recommendation-icon">◎</div>
-                <div className="memory-recommendation-copy">
-                  <span className="section-kicker">REVISÃO INTELIGENTE</span>
-                  <strong>Faça alguns desafios para começar a personalizar suas revisões.</strong>
-                  <p>O CodeMpi vai usar suas tentativas e erros para identificar o próximo conceito que merece atenção.</p>
-                </div>
-              </div>
-            );
-          }
-
-          const reviewReason = reviewTarget.failures >= 2
-            ? `${reviewTarget.failures} erros em ${reviewTarget.attempts} tentativas — este conceito merece uma nova passada.`
-            : reviewTarget.failures === 1
-              ? 'Houve um erro durante a prática. Uma revisão curta pode ajudar a fixar o padrão.'
-              : reviewTarget.completed > 0
-                ? 'Você já praticou este conceito. Reforçar enquanto ele ainda está fresco ajuda a consolidar.'
-                : 'Você começou a praticar este conceito, mas ainda há espaço para avançar.';
-
-          return (
-            <div className={`memory-recommendation state-${reviewTarget.state}`}>
-              <div className="memory-recommendation-icon">↻</div>
-              <div className="memory-recommendation-copy">
-                <span className="section-kicker">REVISÃO INTELIGENTE · PRÓXIMO FOCO</span>
-                <strong>{reviewTarget.name}</strong>
-                <p>{reviewReason}</p>
-              </div>
-              <button type="button" className="memory-recommendation-action" onClick={() => onReview(reviewTarget)}>
-                Revisar agora →
-              </button>
+        {recommendedConcept ? (
+          <div className={`memory-recommendation state-${recommendedConcept.state}`}>
+            <div className="memory-recommendation-icon">↻</div>
+            <div className="memory-recommendation-copy">
+              <span className="section-kicker">REVISÃO INTELIGENTE · PRÓXIMO FOCO</span>
+              <strong>{recommendedConcept.name}</strong>
+              <p>{recommendedReason}</p>
             </div>
-          );
-        })()}
+            <button type="button" className="memory-recommendation-action" onClick={() => onReview(recommendedConcept)}>
+              Revisar agora →
+            </button>
+          </div>
+        ) : (
+          <div className="memory-recommendation memory-recommendation-empty">
+            <div className="memory-recommendation-icon">◎</div>
+            <div className="memory-recommendation-copy">
+              <span className="section-kicker">REVISÃO INTELIGENTE</span>
+              <strong>Faça alguns desafios para começar a personalizar suas revisões.</strong>
+              <p>O CodeMpi vai usar suas tentativas e erros para identificar o próximo conceito que merece atenção.</p>
+            </div>
+          </div>
+        )}
 
         <div className="memory-summary" aria-label="Resumo da memória de aprendizado">
           <span className="memory-summary-item review"><b>{counts.review}</b><span>para revisar</span></span>
