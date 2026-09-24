@@ -293,37 +293,55 @@ LIMIT 1;
 
       const result = await database.query<ProgressSnapshotRow>(
         `
-INSERT INTO codempi_progress_snapshots (
-  user_id,
-  snapshot_version,
-  revision,
-  source_local_user_id,
-  progress,
-  preferences,
-  theme
+WITH updated AS (
+  UPDATE codempi_progress_snapshots
+  SET
+    snapshot_version = $2,
+    revision = codempi_progress_snapshots.revision + 1,
+    source_local_user_id = $3,
+    progress = $4::jsonb,
+    preferences = $5::jsonb,
+    theme = $6,
+    updated_at = NOW()
+  WHERE user_id = $1
+    AND (
+      $7::bigint IS NULL
+      OR revision = $7::bigint
+    )
+  RETURNING ${SNAPSHOT_COLUMNS}
+),
+inserted AS (
+  INSERT INTO codempi_progress_snapshots (
+    user_id,
+    snapshot_version,
+    revision,
+    source_local_user_id,
+    progress,
+    preferences,
+    theme
+  )
+  SELECT
+    $1,
+    $2,
+    1,
+    $3,
+    $4::jsonb,
+    $5::jsonb,
+    $6
+  WHERE
+    ($7::bigint IS NULL OR $7::bigint = 0)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM codempi_progress_snapshots
+      WHERE user_id = $1
+    )
+  ON CONFLICT (user_id) DO NOTHING
+  RETURNING ${SNAPSHOT_COLUMNS}
 )
-SELECT
-  $1,
-  $2,
-  1,
-  $3,
-  $4::jsonb,
-  $5::jsonb,
-  $6
-WHERE $7::bigint IS NULL OR $7::bigint = 0
-ON CONFLICT (user_id) DO UPDATE
-SET
-  snapshot_version = EXCLUDED.snapshot_version,
-  revision = codempi_progress_snapshots.revision + 1,
-  source_local_user_id = EXCLUDED.source_local_user_id,
-  progress = EXCLUDED.progress,
-  preferences = EXCLUDED.preferences,
-  theme = EXCLUDED.theme,
-  updated_at = NOW()
-WHERE
-  $7::bigint IS NULL
-  OR codempi_progress_snapshots.revision = $7::bigint
-RETURNING ${SNAPSHOT_COLUMNS};
+SELECT * FROM updated
+UNION ALL
+SELECT * FROM inserted
+LIMIT 1;
 `.trim(),
         [
           input.userId,
