@@ -41,6 +41,9 @@ export function AppHeader({
         <button className={`nav-link ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
           Início
         </button>
+        <button className={`nav-link ${view === 'search' ? 'active' : ''}`} onClick={() => setView('search')}>
+          Buscar
+        </button>
         <button className={`nav-link ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
           Jornada
         </button>
