@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from '../data/levels';
+import { calculateExerciseXp } from '../utils/xp';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
 
 const DIFF_LABEL: Record<string, string> = {
@@ -145,7 +146,7 @@ export function MissionPage({
 
                       <div className="challenge-badges">
                         <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
-                        <span className="badge xp">XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}</span>
+                        <span className="badge xp">XP {calculateExerciseXp(currentExercise.xp, hintsShown)} / {currentExercise.xp}</span>
                       </div>
                     </div>
 
@@ -228,8 +229,8 @@ export function MissionPage({
                       <span className="xp-live">
                         {!alreadyDoneXP && hintsShown > 0
                           ? hintsShown >= 4
-                            ? `Solução completa usada — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
-                            : `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
+                            ? `Solução completa usada — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
+                            : `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
                           : ''}
                       </span>
                     </div>
@@ -248,7 +249,7 @@ export function MissionPage({
                     <div className="win-banner show">
                       <span>
                         {isPassed
-                          ? `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`
+                          ? `Todos os testes passaram! Você ganhou ${calculateExerciseXp(currentExercise.xp, hintsShown)} XP.`
                           : `Exercício já concluído — este desafio valeu ${alreadyDoneXP} XP.`}
                       </span>
 
