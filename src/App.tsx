@@ -271,7 +271,6 @@ export default function App() {
           showFreeTest={showFreeTest}
           hMult={HINT_MULTIPLIERS}
           getKey={getKey}
-          getMult={getMult}
           levelUnlocked={levelUnlocked}
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
