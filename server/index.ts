@@ -1,4 +1,6 @@
 import { loadEnvFile } from 'node:process';
+import { createAuthService } from './auth/authService.js';
+import { createPostgresAuthDataStore } from './auth/authDataStore.js';
 import { readApiConfig } from './config.js';
 import { createPostgresDatabase } from './database/postgres.js';
 import { createApiServer } from './server.js';
@@ -31,8 +33,16 @@ const database = config.databaseUrl
     })
   : null;
 
+const auth = database
+  ? createAuthService({
+      store: createPostgresAuthDataStore(database),
+      sessionTtlHours: config.sessionTtlHours,
+    })
+  : null;
+
 const server = createApiServer(config, {
   database,
+  auth,
 });
 
 server.listen(config.port, config.host, () => {
