@@ -4921,3 +4921,144 @@ html[data-ui-scale="large"] .settings-toggle {
     min-width: 51px;
   }
 }
+
+/* Mobile mission editor — touch-first layout */
+@media (max-width: 700px) {
+  .mission-shell .code-editor-shell {
+    border-radius: 13px;
+  }
+
+  .mission-shell .code-editor-topbar {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 9px;
+  }
+
+  .mission-shell .code-editor .cm-editor {
+    height: clamp(300px, 48vh, 420px) !important;
+    min-height: 0;
+  }
+
+  .mission-shell .code-editor .cm-content {
+    padding: 14px 10px 22px;
+  }
+
+  .mission-shell .code-editor .cm-line {
+    line-height: 1.72;
+  }
+
+  .mission-shell .learning-note {
+    align-items: flex-start;
+    margin-bottom: 9px;
+    padding: 8px 10px;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  .mission-shell .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 11px;
+  }
+
+  .mission-shell .actions-main,
+  .mission-shell .actions-secondary {
+    width: 100%;
+  }
+
+  .mission-shell .actions-main .btn.primary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 10.5px;
+  }
+
+  .mission-shell .actions-secondary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mission-shell .actions-secondary .btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 9px;
+    font-size: 9.5px;
+    line-height: 1.35;
+  }
+
+  .mission-shell .actions-secondary .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .mission-shell .xp-live {
+    width: 100%;
+    margin-left: 0;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 420px) {
+  .mission-shell .code-editor-topbar {
+    height: 38px;
+  }
+
+  .mission-shell .code-editor .cm-content {
+    padding-inline: 8px;
+  }
+
+  .mission-shell .actions-secondary {
+    gap: 6px;
+  }
+
+  .mission-shell .actions-secondary .btn {
+    min-height: 43px;
+    padding-inline: 7px;
+    font-size: 8.7px;
+  }
+}
+
+@media (max-width: 700px) and (orientation: landscape) {
+  .mission-shell .code-editor .cm-editor {
+    height: min(55vh, 320px) !important;
+  }
+
+  .mission-shell .code-editor .cm-content {
+    padding-top: 11px;
+    padding-bottom: 18px;
+  }
+
+  .mission-shell .learning-note {
+    margin-bottom: 7px;
+    padding-block: 7px;
+    font-size: 8.5px;
+  }
+
+  .mission-shell .actions {
+    grid-template-columns: minmax(180px, .8fr) minmax(0, 1.45fr);
+    align-items: stretch;
+    gap: 9px;
+  }
+
+  .mission-shell .actions-main {
+    grid-column: 1;
+  }
+
+  .mission-shell .actions-secondary {
+    grid-column: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mission-shell .actions-main .btn.primary {
+    height: 100%;
+    min-height: 46px;
+  }
+
+  .mission-shell .actions-secondary .btn {
+    min-height: 42px;
+  }
+
+  .mission-shell .xp-live {
+    grid-column: 1 / -1;
+  }
+}
