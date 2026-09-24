@@ -344,7 +344,12 @@ function areValuesEqual(actual: unknown, expected: unknown): boolean {
       ));
   }
 
-  return Number.isNaN(actual) && Number.isNaN(expected);
+  return (
+    typeof actual === 'number' &&
+    typeof expected === 'number' &&
+    Number.isNaN(actual) &&
+    Number.isNaN(expected)
+  );
 }
 
 function formatInput(value: unknown): string {
