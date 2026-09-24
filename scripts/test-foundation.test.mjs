@@ -42,6 +42,9 @@ const apiRouterModule = await vite.ssrLoadModule('/server/router.ts');
 const apiServerModule = await vite.ssrLoadModule('/server/server.ts');
 const databaseMigrationsModule = await vite.ssrLoadModule('/server/database/migrations.ts');
 const postgresRepositoriesModule = await vite.ssrLoadModule('/server/database/postgresRepositories.ts');
+const authPasswordModule = await vite.ssrLoadModule('/server/auth/password.ts');
+const authTokenModule = await vite.ssrLoadModule('/server/auth/token.ts');
+const authServiceModule = await vite.ssrLoadModule('/server/auth/authService.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -856,37 +859,37 @@ test('api client exposes API errors with status and payload', async () => {
   );
 });
 
-test('auth repository maps authentication operations to API endpoints', async () => {
+test('auth repository maps sign-up sign-in current user and sign-out endpoints', async () => {
   const calls = [];
+
+  const authResult = {
+    user: {
+      id: 'cloud_1',
+      kind: 'cloud',
+      email: 'teste@codempi.dev',
+      createdAt: '2026-09-24T19:00:00.000Z',
+    },
+    session: {
+      userId: 'cloud_1',
+      kind: 'cloud',
+      accessToken: 'access-token',
+      expiresAt: '2026-09-24T20:00:00.000Z',
+    },
+  };
 
   const api = {
     async request(path, options = {}) {
       calls.push({ path, options });
 
-      if (path === 'auth/sign-in') {
-        return {
-          user: {
-            id: 'cloud_1',
-            kind: 'cloud',
-            email: 'teste@codempi.dev',
-            createdAt: '2026-09-24T19:00:00.000Z',
-          },
-          session: {
-            userId: 'cloud_1',
-            kind: 'cloud',
-            accessToken: 'access-token',
-            expiresAt: '2026-09-24T20:00:00.000Z',
-          },
-        };
+      if (
+        path === 'auth/sign-up'
+        || path === 'auth/sign-in'
+      ) {
+        return authResult;
       }
 
       if (path === 'me') {
-        return {
-          id: 'cloud_1',
-          kind: 'cloud',
-          email: 'teste@codempi.dev',
-          createdAt: '2026-09-24T19:00:00.000Z',
-        };
+        return authResult.user;
       }
 
       return undefined;
@@ -894,6 +897,13 @@ test('auth repository maps authentication operations to API endpoints', async ()
   };
 
   const repository = authRepositoryModule.createAuthRepository(api);
+
+  await repository.signUp({
+    email: 'teste@codempi.dev',
+    password: 'senha-segura',
+    displayName: 'Teste',
+  });
+
   const auth = await repository.signIn({
     email: 'teste@codempi.dev',
     password: 'senha-segura',
@@ -903,6 +913,17 @@ test('auth repository maps authentication operations to API endpoints', async ()
   await repository.signOut(auth.session.accessToken);
 
   assert.deepEqual(calls, [
+    {
+      path: 'auth/sign-up',
+      options: {
+        method: 'POST',
+        body: {
+          email: 'teste@codempi.dev',
+          password: 'senha-segura',
+          displayName: 'Teste',
+        },
+      },
+    },
     {
       path: 'auth/sign-in',
       options: {
@@ -1221,6 +1242,365 @@ test('cloud session repository rejects mismatched user and session IDs', () => {
 });
 
 
+
+test('password hasher verifies the correct password and rejects invalid hashes', async () => {
+  const encoded = await authPasswordModule.passwordHasher.hash(
+    'uma-senha-de-teste',
+  );
+
+  assert.match(encoded, /^scrypt\$/);
+  assert.equal(
+    await authPasswordModule.passwordHasher.verify(
+      'uma-senha-de-teste',
+      encoded,
+    ),
+    true,
+  );
+  assert.equal(
+    await authPasswordModule.passwordHasher.verify(
+      'senha-incorreta',
+      encoded,
+    ),
+    false,
+  );
+  assert.equal(
+    await authPasswordModule.passwordHasher.verify(
+      'uma-senha-de-teste',
+      'hash-invalido',
+    ),
+    false,
+  );
+});
+
+test('access tokens are random-looking values stored through SHA-256 hashes', () => {
+  const token = authTokenModule.createAccessToken();
+  const hash = authTokenModule.hashAccessToken(token);
+
+  assert.ok(token.length >= 40);
+  assert.match(hash, /^[a-f0-9]{64}$/);
+  assert.notEqual(hash, token);
+  assert.equal(
+    authTokenModule.hashAccessToken(token),
+    hash,
+  );
+});
+
+test('auth service signs up atomically and stores only the token hash', async () => {
+  const users = new Map();
+  const sessions = new Map();
+  let transactionCount = 0;
+
+  const makeRepositories = () => ({
+    users: {
+      async create(input) {
+        const user = {
+          id: input.id,
+          email: input.email,
+          passwordHash: input.passwordHash,
+          displayName: input.displayName ?? null,
+          createdAt: '2026-09-24T19:00:00.000Z',
+          updatedAt: '2026-09-24T19:00:00.000Z',
+        };
+        users.set(user.id, user);
+        return user;
+      },
+      async findById(id) {
+        return users.get(id) ?? null;
+      },
+      async findByEmail(email) {
+        return [...users.values()].find(
+          (user) => user.email === email,
+        ) ?? null;
+      },
+    },
+    sessions: {
+      async create(input) {
+        const session = {
+          ...input,
+          createdAt: '2026-09-24T19:00:00.000Z',
+          revokedAt: null,
+        };
+        sessions.set(session.id, session);
+        return session;
+      },
+      async findActiveByTokenHash(hash) {
+        return [...sessions.values()].find(
+          (session) => (
+            session.tokenHash === hash
+            && session.revokedAt === null
+          ),
+        ) ?? null;
+      },
+      async revoke(id, revokedAt) {
+        const session = sessions.get(id);
+        if (session) session.revokedAt = revokedAt;
+      },
+    },
+  });
+
+  const repositories = makeRepositories();
+  const store = {
+    ...repositories,
+    async transaction(work) {
+      transactionCount += 1;
+      return work(repositories);
+    },
+  };
+
+  const service = authServiceModule.createAuthService({
+    store,
+    sessionTtlHours: 24,
+    hasher: {
+      async hash(password) {
+        return `hashed:${password}`;
+      },
+      async verify(password, encodedHash) {
+        return encodedHash === `hashed:${password}`;
+      },
+    },
+    now: () => new Date('2026-09-24T19:00:00.000Z'),
+    createId: (() => {
+      const ids = ['user-1', 'session-1'];
+      return () => ids.shift();
+    })(),
+    createToken: () => 'raw-access-token',
+  });
+
+  const result = await service.signUp({
+    email: '  ALUNO@CODEMPI.DEV ',
+    password: 'senha-segura',
+    displayName: ' Aluno ',
+  });
+
+  assert.equal(transactionCount, 1);
+  assert.equal(result.user.email, 'aluno@codempi.dev');
+  assert.equal(result.user.displayName, 'Aluno');
+  assert.equal(result.session.accessToken, 'raw-access-token');
+  assert.equal(
+    result.session.expiresAt,
+    '2026-09-25T19:00:00.000Z',
+  );
+
+  const storedSession = sessions.get('session-1');
+  assert.notEqual(
+    storedSession.tokenHash,
+    'raw-access-token',
+  );
+  assert.equal(
+    storedSession.tokenHash,
+    authTokenModule.hashAccessToken('raw-access-token'),
+  );
+});
+
+test('auth service rejects duplicate accounts invalid credentials and revoked sessions', async () => {
+  const user = {
+    id: 'user-1',
+    email: 'aluno@codempi.dev',
+    passwordHash: 'hashed:senha-segura',
+    displayName: null,
+    createdAt: '2026-09-24T19:00:00.000Z',
+    updatedAt: '2026-09-24T19:00:00.000Z',
+  };
+
+  const sessions = new Map();
+  let sessionIndex = 0;
+
+  const repositories = {
+    users: {
+      async create() {
+        throw new Error('should not create duplicate');
+      },
+      async findById(id) {
+        return id === user.id ? user : null;
+      },
+      async findByEmail(email) {
+        return email === user.email ? user : null;
+      },
+    },
+    sessions: {
+      async create(input) {
+        const session = {
+          ...input,
+          createdAt: '2026-09-24T19:00:00.000Z',
+          revokedAt: null,
+        };
+        sessions.set(input.id, session);
+        return session;
+      },
+      async findActiveByTokenHash(hash) {
+        return [...sessions.values()].find(
+          (session) => (
+            session.tokenHash === hash
+            && session.revokedAt === null
+          ),
+        ) ?? null;
+      },
+      async revoke(id, revokedAt) {
+        const session = sessions.get(id);
+        if (session) session.revokedAt = revokedAt;
+      },
+    },
+  };
+
+  const store = {
+    ...repositories,
+    transaction(work) {
+      return work(repositories);
+    },
+  };
+
+  const service = authServiceModule.createAuthService({
+    store,
+    sessionTtlHours: 24,
+    hasher: {
+      async hash(password) {
+        return `hashed:${password}`;
+      },
+      async verify(password, encodedHash) {
+        return encodedHash === `hashed:${password}`;
+      },
+    },
+    now: () => new Date('2026-09-24T19:00:00.000Z'),
+    createId: () => `session-${++sessionIndex}`,
+    createToken: () => `token-${sessionIndex}`,
+  });
+
+  await assert.rejects(
+    () => service.signUp({
+      email: user.email,
+      password: 'senha-segura',
+    }),
+    (error) => error.code === 'EMAIL_ALREADY_EXISTS',
+  );
+
+  await assert.rejects(
+    () => service.signIn({
+      email: user.email,
+      password: 'senha-errada',
+    }),
+    (error) => error.code === 'INVALID_CREDENTIALS',
+  );
+
+  const signedIn = await service.signIn({
+    email: user.email,
+    password: 'senha-segura',
+  });
+
+  const currentUser = await service.getCurrentUser(
+    signedIn.session.accessToken,
+  );
+
+  assert.equal(currentUser.id, user.id);
+
+  await service.signOut(signedIn.session.accessToken);
+
+  await assert.rejects(
+    () => service.getCurrentUser(
+      signedIn.session.accessToken,
+    ),
+    (error) => error.code === 'UNAUTHORIZED',
+  );
+});
+
+test('auth routes delegate to the configured service and require bearer sessions', async () => {
+  const calls = [];
+
+  const auth = {
+    async signUp(input) {
+      calls.push(['signUp', input]);
+      return {
+        user: {
+          id: 'cloud-1',
+          kind: 'cloud',
+          email: input.email,
+          createdAt: '2026-09-24T19:00:00.000Z',
+        },
+        session: {
+          userId: 'cloud-1',
+          kind: 'cloud',
+          accessToken: 'token',
+          expiresAt: '2026-09-25T19:00:00.000Z',
+        },
+      };
+    },
+    async signIn(input) {
+      calls.push(['signIn', input]);
+      return {
+        user: {
+          id: 'cloud-1',
+          kind: 'cloud',
+          email: input.email,
+          createdAt: '2026-09-24T19:00:00.000Z',
+        },
+        session: {
+          userId: 'cloud-1',
+          kind: 'cloud',
+          accessToken: 'token',
+          expiresAt: '2026-09-25T19:00:00.000Z',
+        },
+      };
+    },
+    async getCurrentUser(token) {
+      calls.push(['getCurrentUser', token]);
+      return {
+        id: 'cloud-1',
+        kind: 'cloud',
+        email: 'aluno@codempi.dev',
+        createdAt: '2026-09-24T19:00:00.000Z',
+      };
+    },
+    async signOut(token) {
+      calls.push(['signOut', token]);
+    },
+  };
+
+  const signUp = await apiRouterModule.routeApiRequest(
+    {
+      method: 'POST',
+      pathname: '/auth/sign-up',
+      requestId: 'req-sign-up',
+      body: {
+        email: 'aluno@codempi.dev',
+        password: 'senha-segura',
+      },
+    },
+    { auth },
+  );
+
+  const me = await apiRouterModule.routeApiRequest(
+    {
+      method: 'GET',
+      pathname: '/me',
+      requestId: 'req-me',
+      authorization: 'Bearer token',
+    },
+    { auth },
+  );
+
+  const signOut = await apiRouterModule.routeApiRequest(
+    {
+      method: 'POST',
+      pathname: '/auth/sign-out',
+      requestId: 'req-sign-out',
+      authorization: 'Bearer token',
+    },
+    { auth },
+  );
+
+  assert.equal(signUp.status, 201);
+  assert.equal(me.status, 200);
+  assert.equal(signOut.status, 200);
+  assert.deepEqual(calls, [
+    ['signUp', {
+      email: 'aluno@codempi.dev',
+      password: 'senha-segura',
+      displayName: undefined,
+    }],
+    ['getCurrentUser', 'token'],
+    ['signOut', 'token'],
+  ]);
+});
+
 test('backend config uses safe local defaults and validates invalid values', () => {
   assert.deepEqual(
     apiServerConfigModule.readApiConfig({}),
@@ -1231,6 +1611,7 @@ test('backend config uses safe local defaults and validates invalid values', () 
       bodyLimitBytes: 65536,
       nodeEnv: 'development',
       databaseUrl: null,
+      sessionTtlHours: 24,
     },
   );
 
@@ -1261,6 +1642,19 @@ test('backend config uses safe local defaults and validates invalid values', () 
     /CODEMPI_DATABASE_URL/,
   );
 
+  assert.equal(
+    apiServerConfigModule.readApiConfig({
+      CODEMPI_SESSION_TTL_HOURS: '48',
+    }).sessionTtlHours,
+    48,
+  );
+
+  assert.throws(
+    () => apiServerConfigModule.readApiConfig({
+      CODEMPI_SESSION_TTL_HOURS: '0',
+    }),
+    /CODEMPI_SESSION_TTL_HOURS/,
+  );
 });
 
 test('backend router exposes health and explicit unconfigured cloud endpoints', () => {
@@ -1303,8 +1697,8 @@ test('backend router exposes health and explicit unconfigured cloud endpoints', 
     },
   });
 
-  assert.equal(auth.status, 501);
-  assert.equal(auth.body.error.code, 'AUTH_NOT_CONFIGURED');
+  assert.equal(auth.status, 503);
+  assert.equal(auth.body.error.code, 'AUTH_UNAVAILABLE');
 
   const sync = apiRouterModule.routeApiRequest({
     method: 'GET',
