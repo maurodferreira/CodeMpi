@@ -343,7 +343,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 function getLearningFeedback(lastTest: LastTest | null, currentExercise: Exercise | null): LearningFeedback | null {
   if (!lastTest || !currentExercise) return null;
 
-  const conceptId = currentExercise.conceptIds?.[0];
+  const conceptId = currentExercise.conceptIds?.find((id) => id !== 'return') || currentExercise.conceptIds?.[0];
   const concept = getConcept(conceptId, currentExercise.skill);
   const guidance = getConceptLearningGuidance(conceptId);
 
@@ -397,6 +397,13 @@ function getExecutionFeedback(error: string, args: string): Pick<LearningFeedbac
     return {
       title: 'Uma variável ainda não está disponível.',
       body: `O JavaScript não encontrou "${undefinedMatch[1]}"${errorContext}. Verifique onde esse valor é criado e em qual trecho do código ele pode ser usado.`,
+    };
+  }
+
+  if (normalized.includes('função ') && normalized.includes('não encontrada')) {
+    return {
+      title: 'A função pedida ainda não foi encontrada.',
+      body: `Os testes precisam localizar a função esperada antes de verificar a lógica${errorContext}. Confira se o nome da função e sua declaração estão exatamente como a assinatura da missão.`,
     };
   }
 
