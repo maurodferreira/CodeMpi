@@ -132,7 +132,7 @@ export default function App() {
     setExerciseIndex(target);
     setLessonStep(0);
     setQuizAnswer(null);
-    setView(ei === undefined && LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
+    setView(LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
   };
 
   const handleShowHint = () => {
