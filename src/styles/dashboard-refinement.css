@@ -1607,6 +1607,24 @@
   background: rgba(16,34,28,.78);
 }
 
+.search-result-card.locked,
+.search-result-card:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.search-result-card.locked:hover,
+.search-result-card:disabled:hover {
+  transform: none;
+  border-color: var(--line);
+  background: rgba(16,34,28,.56);
+}
+
+.search-result-card.locked .search-result-action,
+.search-result-card:disabled .search-result-action {
+  color: var(--muted-2);
+}
+
 .search-result-type {
   grid-area: type;
   align-self: start;
