@@ -30,6 +30,7 @@ export function AppFooter({ view, setView }: AppFooterProps) {
           <div>
             <button type="button" className={view === 'dashboard' ? 'active' : ''} onClick={() => goTo('dashboard')}>Início</button>
             <button type="button" className={view === 'map' ? 'active' : ''} onClick={() => goTo('map')}>Jornada</button>
+            <button type="button" className={view === 'memory' ? 'active' : ''} onClick={() => goTo('memory')}>Memória</button>
             <button type="button" className={view === 'mission' ? 'active' : ''} onClick={() => goTo('mission')}>Missão</button>
             <button type="button" className={view === 'settings' ? 'active' : ''} onClick={() => goTo('settings')}>Configurações</button>
           </div>
