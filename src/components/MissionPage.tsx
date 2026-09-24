@@ -29,7 +29,6 @@ interface MissionPageProps {
   showFreeTest: boolean;
   hMult: readonly number[];
   getKey: (li: number, ei: number) => string;
-  getMult: (li: number, ei: number) => number;
   levelUnlocked: (li: number) => boolean;
   levelComplete: (li: number) => boolean;
   levelDoneCount: (li: number) => number;
@@ -66,7 +65,6 @@ export function MissionPage({
   showFreeTest,
   hMult,
   getKey,
-  getMult,
   levelUnlocked,
   levelComplete,
   levelDoneCount,
