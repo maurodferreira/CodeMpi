@@ -27,6 +27,7 @@ const progressRepositoryModule = await vite.ssrLoadModule('/src/services/progres
 const preferencesRepositoryModule = await vite.ssrLoadModule('/src/services/preferencesRepository.ts');
 const themeRepositoryModule = await vite.ssrLoadModule('/src/services/themeRepository.ts');
 const codeExecutorModule = await vite.ssrLoadModule('/src/services/codeExecutor.ts');
+const workerExecutorModule = await vite.ssrLoadModule('/src/services/workerCodeExecutor.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -522,8 +523,8 @@ test('theme repository validates stored themes and saves through the adapter', (
 });
 
 
-test('code executor reports syntax errors before running tests', () => {
-  const result = codeExecutorModule.browserCodeExecutor.runTests(
+test('code executor reports syntax errors before running tests', async () => {
+  const result = await codeExecutorModule.browserCodeExecutor.runTests(
     'function somar(a, b) { return a + ; }',
     'somar',
     [{ args: [1, 2], exp: 3 }],
@@ -534,8 +535,8 @@ test('code executor reports syntax errors before running tests', () => {
   assert.equal(result.total, 1);
 });
 
-test('code executor reports a missing expected function', () => {
-  const result = codeExecutorModule.browserCodeExecutor.runTests(
+test('code executor reports a missing expected function', async () => {
+  const result = await codeExecutorModule.browserCodeExecutor.runTests(
     'function outra() { return 1; }',
     'somar',
     [{ args: [1, 2], exp: 3 }],
@@ -546,8 +547,8 @@ test('code executor reports a missing expected function', () => {
   assert.equal(result.total, 1);
 });
 
-test('code executor captures runtime errors without stopping the suite', () => {
-  const result = codeExecutorModule.browserCodeExecutor.runTests(
+test('code executor captures runtime errors without stopping the suite', async () => {
+  const result = await codeExecutorModule.browserCodeExecutor.runTests(
     'function executar(valor) { if (valor === 2) throw new Error("falhou"); return valor; }',
     'executar',
     [
@@ -566,7 +567,7 @@ test('code executor captures runtime errors without stopping the suite', () => {
   assert.equal(result.cases[2].passed, true);
 });
 
-test('code executor isolates mutable test arguments', () => {
+test('code executor isolates mutable test arguments', async () => {
   const original = { estoque: 5, vendas: 0 };
   const tests = [
     {
@@ -575,7 +576,7 @@ test('code executor isolates mutable test arguments', () => {
     },
   ];
 
-  const result = codeExecutorModule.browserCodeExecutor.runTests(
+  const result = await codeExecutorModule.browserCodeExecutor.runTests(
     'function vender(produto, quantidade) { produto.estoque -= quantidade; produto.vendas += quantidade; return produto; }',
     'vender',
     tests,
@@ -586,8 +587,8 @@ test('code executor isolates mutable test arguments', () => {
   assert.deepEqual(original, { estoque: 5, vendas: 0 });
 });
 
-test('free execution returns values and runtime errors through the executor', () => {
-  const success = codeExecutorModule.browserCodeExecutor.runFunction(
+test('free execution returns values and runtime errors through the executor', async () => {
+  const success = await codeExecutorModule.browserCodeExecutor.runFunction(
     'function dobro(n) { return n * 2; }',
     'dobro',
     [6],
@@ -598,7 +599,7 @@ test('free execution returns values and runtime errors through the executor', ()
     value: 12,
   });
 
-  const failure = codeExecutorModule.browserCodeExecutor.runFunction(
+  const failure = await codeExecutorModule.browserCodeExecutor.runFunction(
     'function falhar() { throw new Error("erro livre"); }',
     'falhar',
     [],
@@ -608,7 +609,104 @@ test('free execution returns values and runtime errors through the executor', ()
   assert.match(failure.error, /erro livre/);
 });
 
-test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', () => {
+
+test('worker executor returns worker results and terminates the worker', async () => {
+  let worker;
+
+  const executor = workerExecutorModule.createWorkerCodeExecutor({
+    timeoutMs: 100,
+    workerFactory: () => {
+      worker = {
+        onmessage: null,
+        onerror: null,
+        terminated: false,
+        postMessage(request) {
+          queueMicrotask(() => {
+            worker.onmessage?.({
+              data: request.kind === 'tests'
+                ? {
+                    kind: 'tests',
+                    result: {
+                      status: 'completed',
+                      passed: request.tests.length,
+                      total: request.tests.length,
+                      cases: request.tests.map((testCase, index) => ({
+                        index,
+                        args: testCase.args,
+                        expected: testCase.exp,
+                        result: testCase.exp,
+                        passed: true,
+                      })),
+                    },
+                  }
+                : {
+                    kind: 'function',
+                    result: {
+                      status: 'success',
+                      value: 42,
+                    },
+                  },
+            });
+          });
+        },
+        terminate() {
+          this.terminated = true;
+        },
+      };
+
+      return worker;
+    },
+  });
+
+  const result = await executor.runFunction(
+    'function resposta() { return 42; }',
+    'resposta',
+    [],
+  );
+
+  assert.deepEqual(result, {
+    status: 'success',
+    value: 42,
+  });
+  assert.equal(worker.terminated, true);
+});
+
+test('worker executor interrupts an execution that exceeds the timeout', async () => {
+  let worker;
+
+  const executor = workerExecutorModule.createWorkerCodeExecutor({
+    timeoutMs: 5,
+    workerFactory: () => {
+      worker = {
+        onmessage: null,
+        onerror: null,
+        terminated: false,
+        postMessage() {
+          // Simula um código que nunca devolve resposta.
+        },
+        terminate() {
+          this.terminated = true;
+        },
+      };
+
+      return worker;
+    },
+  });
+
+  const result = await executor.runTests(
+    'function travar() { while (true) {} }',
+    'travar',
+    [{ args: [], exp: true }],
+  );
+
+  assert.equal(result.status, 'timeout');
+  assert.match(result.error, /demorou demais/i);
+  assert.equal(result.passed, 0);
+  assert.equal(result.total, 1);
+  assert.equal(worker.terminated, true);
+});
+
+test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {
   const builtLevels = levelsModule.LEVELS.filter((level) => level.exercises?.length);
 
   assert.equal(builtLevels.length, 7);
@@ -626,7 +724,7 @@ test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', ()
       assert.ok(exercise.conceptIds?.length);
 
       const solution = exercise.hints[3];
-      const execution = codeExecutorModule.browserCodeExecutor.runTests(
+      const execution = await codeExecutorModule.browserCodeExecutor.runTests(
         solution,
         exercise.fn,
         exercise.tests,
