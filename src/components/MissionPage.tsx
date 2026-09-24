@@ -307,7 +307,7 @@ export function MissionPage({
                       aria-live="polite"
                     >
                       <span className="learning-feedback-icon">
-                        {learningFeedback.tone === 'success' ? '✓' : learningFeedback.tone === 'error' ? '!' : '↻'}
+                        {learningFeedback.tone === 'error' ? '!' : '↻'}
                       </span>
 
                       <div className="learning-feedback-content">
@@ -338,7 +338,7 @@ export function MissionPage({
                           )
                         )}
 
-                        {learningFeedback.tone !== 'success' && (
+                        <>
                           <>
                             <div className="diagnostic-tip">
                               <span>O QUE OBSERVAR</span>
@@ -381,7 +381,7 @@ export function MissionPage({
                               </button>
                             </div>
                           </>
-                        )}
+                        </> 
                       </div>
                     </div>
                   )}
