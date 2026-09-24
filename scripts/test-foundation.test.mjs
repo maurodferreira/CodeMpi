@@ -33,6 +33,7 @@ const apiClientModule = await vite.ssrLoadModule('/src/services/apiClient.ts');
 const authRepositoryModule = await vite.ssrLoadModule('/src/services/authRepository.ts');
 const syncRepositoryModule = await vite.ssrLoadModule('/src/services/syncRepository.ts');
 const cloudMigrationModule = await vite.ssrLoadModule('/src/services/cloudMigration.ts');
+const cloudAccountServiceModule = await vite.ssrLoadModule('/src/services/cloudAccountService.ts');
 const cloudDomainModule = await vite.ssrLoadModule('/src/domain/cloud.ts');
 const cloudConfigModule = await vite.ssrLoadModule('/src/config/cloud.ts');
 const cloudServicesModule = await vite.ssrLoadModule('/src/services/cloudServices.ts');
@@ -1921,6 +1922,250 @@ test('sync routes delegate bearer sessions and expose revision conflicts', async
     ['bootstrap', 'token-1', { version: 1 }],
     ['download', 'token-2'],
   ]);
+});
+
+test('cloud account authenticates before persisting session and bootstrapping local progress', async () => {
+  const calls = [];
+  let bootstrapPayload = null;
+
+  const timestamp = '2026-09-24T20:00:00.000Z';
+  const identity = {
+    user: {
+      id: 'cloud-1',
+      kind: 'cloud',
+      email: 'aluno@codempi.dev',
+      displayName: 'Aluno',
+      createdAt: timestamp,
+    },
+    session: {
+      userId: 'cloud-1',
+      kind: 'cloud',
+      accessToken: 'token-1',
+      expiresAt: '2026-09-25T20:00:00.000Z',
+    },
+  };
+
+  const progress = {
+    ...storeMigration.createEmptyStore(),
+    done: { '0-0': 100 },
+  };
+  const preferences = preferencesRepositoryModule.createPreferencesRepository({
+    read: () => null,
+    write: () => true,
+    remove: () => true,
+  }).load();
+  const progressBefore = structuredClone(progress);
+  const preferencesBefore = structuredClone(preferences);
+
+  const services = {
+    auth: {
+      async signUp(credentials) {
+        calls.push(['auth', credentials]);
+        return identity;
+      },
+      async signIn() {
+        throw new Error('signIn should not run');
+      },
+      async signOut() {},
+      async getCurrentUser() {
+        return identity.user;
+      },
+    },
+    session: {
+      load: () => null,
+      save(savedIdentity) {
+        calls.push(['session', savedIdentity.session.accessToken]);
+        return true;
+      },
+      clear: () => true,
+    },
+    sync: {
+      async bootstrapLocalProfile(accessToken, payload) {
+        calls.push(['bootstrap', accessToken]);
+        bootstrapPayload = payload;
+
+        return {
+          version: 1,
+          revision: 1,
+          userId: identity.user.id,
+          sourceLocalUserId: payload.sourceLocalUserId,
+          progress: payload.progress,
+          preferences: payload.preferences,
+          theme: payload.theme,
+          updatedAt: timestamp,
+        };
+      },
+      async downloadSnapshot() {
+        throw new Error('download should not run');
+      },
+      async uploadSnapshot() {
+        throw new Error('upload should not run');
+      },
+    },
+    api: {},
+  };
+
+  const result = await cloudAccountServiceModule.connectCloudAccount({
+    mode: 'sign-up',
+    email: 'aluno@codempi.dev',
+    password: 'senha-segura',
+    displayName: ' Aluno ',
+    services,
+    localIdentity: {
+      user: {
+        id: 'local-1',
+        kind: 'local',
+        createdAt: timestamp,
+      },
+      session: {
+        userId: 'local-1',
+        kind: 'local',
+        startedAt: timestamp,
+      },
+    },
+    progress,
+    preferences,
+    theme: 'green',
+  });
+
+  assert.deepEqual(
+    calls.map(([step]) => step),
+    ['auth', 'session', 'bootstrap'],
+  );
+  assert.equal(calls[0][1].displayName, 'Aluno');
+  assert.equal(bootstrapPayload.sourceLocalUserId, 'local-1');
+  assert.deepEqual(progress, progressBefore);
+  assert.deepEqual(preferences, preferencesBefore);
+  assert.notEqual(bootstrapPayload.progress, progress);
+  assert.notEqual(bootstrapPayload.preferences, preferences);
+  assert.equal(result.identity.user.id, 'cloud-1');
+  assert.equal(result.snapshot.revision, 1);
+  assert.equal(result.syncError, null);
+});
+
+test('cloud account keeps authenticated session when bootstrap is temporarily unavailable', async () => {
+  const timestamp = '2026-09-24T20:00:00.000Z';
+  let saved = false;
+
+  const identity = {
+    user: {
+      id: 'cloud-2',
+      kind: 'cloud',
+      email: 'existente@codempi.dev',
+      createdAt: timestamp,
+    },
+    session: {
+      userId: 'cloud-2',
+      kind: 'cloud',
+      accessToken: 'token-2',
+      expiresAt: '2026-09-25T20:00:00.000Z',
+    },
+  };
+
+  const services = {
+    auth: {
+      async signUp() {
+        throw new Error('signUp should not run');
+      },
+      async signIn() {
+        return identity;
+      },
+      async signOut() {},
+      async getCurrentUser() {
+        return identity.user;
+      },
+    },
+    session: {
+      load: () => null,
+      save() {
+        saved = true;
+        return true;
+      },
+      clear: () => true,
+    },
+    sync: {
+      async bootstrapLocalProfile() {
+        throw new Error('sync offline');
+      },
+      async downloadSnapshot() {
+        throw new Error('download should not run');
+      },
+      async uploadSnapshot() {
+        throw new Error('upload should not run');
+      },
+    },
+    api: {},
+  };
+
+  const result = await cloudAccountServiceModule.connectCloudAccount({
+    mode: 'sign-in',
+    email: identity.user.email,
+    password: 'senha-segura',
+    services,
+    localIdentity: {
+      user: {
+        id: 'local-2',
+        kind: 'local',
+        createdAt: timestamp,
+      },
+      session: {
+        userId: 'local-2',
+        kind: 'local',
+        startedAt: timestamp,
+      },
+    },
+    progress: storeMigration.createEmptyStore(),
+    preferences: preferencesRepositoryModule.createPreferencesRepository({
+      read: () => null,
+      write: () => true,
+      remove: () => true,
+    }).load(),
+    theme: 'carbon',
+  });
+
+  assert.equal(saved, true);
+  assert.equal(result.identity.session.accessToken, 'token-2');
+  assert.equal(result.snapshot, null);
+  assert.match(result.syncError.message, /sync offline/);
+});
+
+test('cloud account sign-out clears the local cloud session even if remote revocation fails', async () => {
+  let cleared = false;
+
+  const services = {
+    auth: {
+      async signOut() {
+        throw new Error('network down');
+      },
+    },
+    session: {
+      clear() {
+        cleared = true;
+        return true;
+      },
+    },
+  };
+
+  const error = await cloudAccountServiceModule.disconnectCloudAccount(
+    services,
+    {
+      user: {
+        id: 'cloud-3',
+        kind: 'cloud',
+        email: 'aluno@codempi.dev',
+        createdAt: '2026-09-24T20:00:00.000Z',
+      },
+      session: {
+        userId: 'cloud-3',
+        kind: 'cloud',
+        accessToken: 'token-3',
+        expiresAt: '2026-09-25T20:00:00.000Z',
+      },
+    },
+  );
+
+  assert.equal(cleared, true);
+  assert.match(error.message, /network down/);
 });
 
 test('backend config uses safe local defaults and validates invalid values', () => {

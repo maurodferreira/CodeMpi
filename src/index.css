@@ -3079,6 +3079,203 @@ button.btn.secondary:hover {
   right:11px;
 }
 
+.account-cloud-panel {
+  margin-top:10px;
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(124,255,155,.045),transparent 34%),
+    rgba(7,17,15,.24);
+}
+
+.account-cloud-panel.connected {
+  border-color:rgba(124,255,155,.17);
+}
+
+.account-cloud-panel-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+
+.account-cloud-panel-head > div {
+  min-width:0;
+}
+
+.account-cloud-panel-head strong {
+  display:block;
+  color:var(--text);
+  font-family:var(--font-head);
+  font-size:13px;
+  line-height:1.35;
+}
+
+.account-cloud-panel-head p {
+  max-width:680px;
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.6;
+}
+
+.account-mode-switch {
+  display:inline-flex;
+  gap:4px;
+  margin-top:14px;
+  padding:3px;
+  border:1px solid var(--line-soft);
+  border-radius:9px;
+  background:rgba(4,12,10,.32);
+}
+
+.account-mode-switch button {
+  min-height:32px;
+  padding:7px 12px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:var(--muted-2);
+  cursor:pointer;
+  font-family:var(--font-mono);
+  font-size:7.5px;
+}
+
+.account-mode-switch button.active {
+  background:rgba(124,255,155,.09);
+  color:var(--accent);
+}
+
+.account-form {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+.account-form label {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:6px;
+}
+
+.account-form label > span {
+  color:var(--muted-2);
+  font-size:7px;
+  font-weight:700;
+  letter-spacing:.08em;
+}
+
+.account-form label > span small {
+  color:var(--muted-2);
+  font-size:6px;
+  font-weight:400;
+  letter-spacing:0;
+}
+
+.account-form input {
+  width:100%;
+  min-height:40px;
+  padding:9px 11px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  outline:none;
+  background:rgba(4,12,10,.48);
+  color:var(--text);
+  font:inherit;
+  font-size:9px;
+}
+
+.account-form input:focus {
+  border-color:rgba(124,255,155,.38);
+  box-shadow:0 0 0 2px rgba(124,255,155,.055);
+}
+
+.account-form input::placeholder {
+  color:var(--muted-2);
+}
+
+.account-submit-button {
+  grid-column:1 / -1;
+  justify-self:start;
+  min-height:39px;
+}
+
+.account-form input:disabled,
+.account-form button:disabled,
+.account-signout-button:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.account-sync-summary {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:13px;
+}
+
+.account-sync-summary > div {
+  padding:10px 11px;
+  border:1px solid var(--line-soft);
+  border-radius:9px;
+  background:rgba(4,12,10,.26);
+}
+
+.account-sync-summary span {
+  display:block;
+  color:var(--muted-2);
+  font-size:6px;
+  letter-spacing:.1em;
+}
+
+.account-sync-summary strong {
+  display:block;
+  margin-top:4px;
+  color:var(--text);
+  font-size:9px;
+}
+
+.account-cloud-explanation {
+  max-width:760px;
+  margin:12px 0;
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.65;
+}
+
+.account-signout-button {
+  min-height:37px;
+}
+
+.account-notice {
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:rgba(7,17,15,.26);
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.55;
+}
+
+.account-notice.success {
+  border-color:rgba(124,255,155,.2);
+  color:var(--accent);
+}
+
+.account-notice.warning {
+  border-color:rgba(255,184,77,.2);
+  color:var(--amber);
+}
+
+.account-notice.error {
+  border-color:rgba(255,104,116,.2);
+  color:var(--danger);
+}
+
 @media (max-width:900px) {
   .theme-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -3109,6 +3306,27 @@ button.btn.secondary:hover {
     position:static;
     display:inline-flex;
     margin-top:9px;
+  }
+
+  .account-cloud-panel-head {
+    flex-direction:column;
+  }
+  .account-mode-switch {
+    display:flex;
+    width:100%;
+  }
+  .account-mode-switch button {
+    flex:1 1 0;
+  }
+  .account-form {
+    grid-template-columns:1fr;
+  }
+  .account-submit-button,
+  .account-signout-button {
+    width:100%;
+  }
+  .account-sync-summary {
+    grid-template-columns:1fr;
   }
 }
 

@@ -1,7 +1,8 @@
 import { THEMES } from '../data/themes';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import type { AppPreferences, EditorFontSize, InterfaceScale, IndentSize } from '../domain/preferences';
 import type { LocalUserProfile, UserSession } from '../domain/user';
+import type { CloudAccountController } from '../hooks/useCloudAccount';
 import type { ThemeKey, View } from '../types';
 
 interface SettingsPageProps {
@@ -15,6 +16,7 @@ interface SettingsPageProps {
   onInstall: () => Promise<boolean>;
   user: LocalUserProfile;
   session: UserSession;
+  cloudAccount: CloudAccountController;
 }
 
 const interfaceOptions: Array<{ value: InterfaceScale; label: string; description: string }> = [
@@ -45,9 +47,32 @@ export function SettingsPage({
   onInstall,
   user,
   session,
+  cloudAccount,
 }: SettingsPageProps) {
   const updatePreference = <K extends keyof AppPreferences>(key: K, value: AppPreferences[K]) => {
     setPreferences((current) => ({ ...current, [key]: value }));
+  };
+
+  const [accountMode, setAccountMode] = useState<'sign-up' | 'sign-in'>('sign-up');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountDisplayName, setAccountDisplayName] = useState('');
+
+  const handleAccountSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    await cloudAccount.connect(accountMode, {
+      email: accountEmail,
+      password: accountPassword,
+      ...(accountMode === 'sign-up' && accountDisplayName.trim()
+        ? { displayName: accountDisplayName.trim() }
+        : {}),
+    });
+  };
+
+  const changeAccountMode = (mode: 'sign-up' | 'sign-in') => {
+    setAccountMode(mode);
+    cloudAccount.clearNotice();
   };
 
   return (
@@ -359,18 +384,18 @@ export function SettingsPage({
           <div className="settings-section-head">
             <div>
               <span className="section-kicker">SEUS DADOS</span>
-              <h2>Perfil local</h2>
+              <h2>Perfil e conta</h2>
             </div>
-            <span className="install-status-badge installed">ATIVO</span>
+            <span className="install-status-badge installed">LOCAL ATIVO</span>
           </div>
 
           <div className="account-preview-card">
             <div className="account-placeholder">⌁</div>
             <div>
-              <strong>Este dispositivo já possui uma identidade CodeMpi.</strong>
+              <strong>Seu progresso local continua protegido neste dispositivo.</strong>
               <p>
-                Seu perfil local foi criado em {new Date(user.createdAt).toLocaleDateString('pt-BR')}.
-                O progresso continua salvo neste dispositivo por enquanto.
+                O perfil local foi criado em {new Date(user.createdAt).toLocaleDateString('pt-BR')}.
+                Entrar ou criar uma conta não apaga nem substitui automaticamente o que você já conquistou aqui.
               </p>
               <small className="account-session-note">
                 Sessão local iniciada em {new Date(session.startedAt).toLocaleDateString('pt-BR')}.
@@ -379,14 +404,165 @@ export function SettingsPage({
             <span className="account-arrow">✓</span>
           </div>
 
-          <div className="account-cloud-note">
-            <strong>Conta e sincronização vêm depois.</strong>
-            <p>
-              Esta identidade local será a base para conectar autenticação, recuperação de progresso
-              e sincronização entre dispositivos sem apagar o que você já conquistou.
-            </p>
-            <span className="coming-badge">EM BREVE</span>
-          </div>
+          {!cloudAccount.enabled && (
+            <div className="account-cloud-note">
+              <strong>Conta online desativada nesta instalação.</strong>
+              <p>
+                O CodeMpi continua funcionando normalmente no modo local. Quando a cloud for habilitada,
+                esta mesma área permitirá entrar ou criar uma conta sem apagar o progresso deste dispositivo.
+              </p>
+              <span className="coming-badge">LOCAL-FIRST</span>
+            </div>
+          )}
+
+          {cloudAccount.enabled && cloudAccount.identity && (
+            <div className="account-cloud-panel connected">
+              <div className="account-cloud-panel-head">
+                <div>
+                  <span className="section-kicker">CONTA CODEMPI</span>
+                  <strong>
+                    {cloudAccount.identity.user.displayName || cloudAccount.identity.user.email}
+                  </strong>
+                  <p>{cloudAccount.identity.user.email}</p>
+                </div>
+                <span className="install-status-badge installed">CONECTADA</span>
+              </div>
+
+              <div className="account-sync-summary">
+                <div>
+                  <span>PROGRESSO LOCAL</span>
+                  <strong>Preservado</strong>
+                </div>
+                <div>
+                  <span>SNAPSHOT CLOUD</span>
+                  <strong>
+                    {cloudAccount.snapshot
+                      ? `REV. ${cloudAccount.snapshot.revision}`
+                      : 'PENDENTE'}
+                  </strong>
+                </div>
+              </div>
+
+              <p className="account-cloud-explanation">
+                A conta está autenticada, mas esta etapa não baixa nem substitui automaticamente
+                o progresso local. O bootstrap apenas cria o primeiro snapshot quando a conta ainda
+                não possui um ou devolve o snapshot existente sem sobrescrevê-lo.
+              </p>
+
+              <button
+                type="button"
+                className="btn account-signout-button"
+                disabled={cloudAccount.isBusy}
+                onClick={() => void cloudAccount.signOut()}
+              >
+                {cloudAccount.isBusy ? 'Desconectando…' : 'Sair desta conta'}
+              </button>
+            </div>
+          )}
+
+          {cloudAccount.enabled && !cloudAccount.identity && (
+            <div className="account-cloud-panel">
+              <div className="account-cloud-panel-head">
+                <div>
+                  <span className="section-kicker">CONTA CODEMPI</span>
+                  <strong>Leve seu progresso para a cloud com segurança.</strong>
+                  <p>
+                    Primeiro autenticamos sua conta. Só depois o CodeMpi envia um bootstrap do
+                    progresso local, sem apagar os dados deste dispositivo.
+                  </p>
+                </div>
+                <span className="coming-badge">OPCIONAL</span>
+              </div>
+
+              <div className="account-mode-switch" role="tablist" aria-label="Acesso à conta">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={accountMode === 'sign-up'}
+                  className={accountMode === 'sign-up' ? 'active' : ''}
+                  onClick={() => changeAccountMode('sign-up')}
+                >
+                  Criar conta
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={accountMode === 'sign-in'}
+                  className={accountMode === 'sign-in' ? 'active' : ''}
+                  onClick={() => changeAccountMode('sign-in')}
+                >
+                  Entrar
+                </button>
+              </div>
+
+              <form className="account-form" onSubmit={(event) => void handleAccountSubmit(event)}>
+                {accountMode === 'sign-up' && (
+                  <label>
+                    <span>Nome de exibição <small>opcional</small></span>
+                    <input
+                      type="text"
+                      value={accountDisplayName}
+                      maxLength={80}
+                      autoComplete="name"
+                      onChange={(event) => setAccountDisplayName(event.target.value)}
+                      placeholder="Como quer aparecer no CodeMpi"
+                      disabled={cloudAccount.isBusy}
+                    />
+                  </label>
+                )}
+
+                <label>
+                  <span>E-mail</span>
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    maxLength={254}
+                    autoComplete="email"
+                    onChange={(event) => setAccountEmail(event.target.value)}
+                    placeholder="voce@exemplo.com"
+                    required
+                    disabled={cloudAccount.isBusy}
+                  />
+                </label>
+
+                <label>
+                  <span>Senha</span>
+                  <input
+                    type="password"
+                    value={accountPassword}
+                    minLength={10}
+                    maxLength={256}
+                    autoComplete={accountMode === 'sign-up' ? 'new-password' : 'current-password'}
+                    onChange={(event) => setAccountPassword(event.target.value)}
+                    placeholder="Mínimo de 10 caracteres"
+                    required
+                    disabled={cloudAccount.isBusy}
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  className="btn primary account-submit-button"
+                  disabled={cloudAccount.isBusy}
+                >
+                  {cloudAccount.isBusy
+                    ? 'Conectando…'
+                    : accountMode === 'sign-up'
+                      ? 'Criar conta e proteger progresso'
+                      : 'Entrar sem substituir progresso local'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {cloudAccount.notice && (
+            <div
+              className={`account-notice ${cloudAccount.notice.kind}`}
+              role={cloudAccount.notice.kind === 'error' ? 'alert' : 'status'}
+            >
+              {cloudAccount.notice.message}
+            </div>
+          )}
         </section>
       </section>
     </main>

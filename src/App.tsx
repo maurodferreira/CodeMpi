@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState, type Dispatch, type SetStateAction } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import './styles/dashboard-refinement.css';
 import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard';
 import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
 import { useAppPreferences } from './hooks/useAppPreferences';
+import { useCloudAccount } from './hooks/useCloudAccount';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import {
   getLessonPath,
@@ -69,6 +70,13 @@ export default function App() {
   const { preferences, setPreferences } = useAppPreferences();
   const { canInstall, isInstalled, requestInstall } = useInstallPrompt();
   const { user, session } = useUserSession();
+  const localIdentity = useMemo(() => ({ user, session }), [session, user]);
+  const cloudAccount = useCloudAccount({
+    localIdentity,
+    progress: store,
+    preferences,
+    theme,
+  });
 
   const {
     getKey,
@@ -388,6 +396,7 @@ export default function App() {
           onInstall={requestInstall}
           user={user}
           session={session}
+          cloudAccount={cloudAccount}
         />
       )}
 
