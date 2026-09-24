@@ -192,7 +192,29 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 - request ID por requisição
 - graceful shutdown
 
-A fundação da API já existe, mas autenticação, banco de dados e sincronização persistente ainda não estão conectados.
+A fundação da API já existe. O schema PostgreSQL e o sistema de migrations também já estão definidos, mas o driver de conexão, autenticação e sincronização persistente ainda não estão conectados.
+
+
+### Database Foundation
+
+O schema inicial foi desenhado para PostgreSQL e inclui:
+
+- `codempi_users`;
+- `codempi_sessions`;
+- `codempi_progress_snapshots`;
+- `codempi_schema_migrations`.
+
+Decisões importantes:
+
+- e-mail armazenado normalizado em minúsculas;
+- senha armazenada somente como `password_hash`;
+- token de sessão armazenado somente como `token_hash`;
+- relações com `ON DELETE CASCADE`;
+- progresso e preferências em `JSONB`;
+- `revision` no snapshot para preparar controle de conflitos de sincronização;
+- migrations executadas dentro de transações com `COMMIT`/`ROLLBACK`.
+
+A variável `CODEMPI_DATABASE_URL` já é validada, mas a API ainda não abre uma conexão real nesta etapa. O driver PostgreSQL entra na próxima fatia.
 
 ### Persistência atual
 
@@ -372,6 +394,7 @@ CODEMPI_API_HOST=127.0.0.1
 CODEMPI_API_PORT=3001
 CODEMPI_WEB_ORIGIN=http://localhost:5173
 CODEMPI_API_BODY_LIMIT=65536
+CODEMPI_DATABASE_URL=
 ```
 
 Para desenvolvimento futuro com uma API real, crie um arquivo `.env.local` e habilite explicitamente a integração:
@@ -537,15 +560,20 @@ Planejado:
 
 ### Fase Cloud
 
-Planejado:
+Em andamento:
 
-- autenticação;
-- conta CodeMpi;
-- banco de dados;
-- progresso sincronizado;
-- recuperação de progresso;
-- uso em múltiplos dispositivos;
-- perfil do usuário.
+- [x] contratos de autenticação e sincronização;
+- [x] sessão cloud local temporária;
+- [x] Backend Foundation;
+- [x] schema PostgreSQL inicial;
+- [x] migrations transacionais;
+- [ ] driver PostgreSQL conectado à API;
+- [ ] autenticação real;
+- [ ] conta CodeMpi;
+- [ ] progresso sincronizado;
+- [ ] recuperação de progresso;
+- [ ] uso em múltiplos dispositivos;
+- [ ] perfil do usuário.
 
 ### Conteúdo futuro
 
