@@ -174,18 +174,20 @@ function parsePerformance(
     const failures = entry.failures;
 
     if (
-      !Number.isInteger(attempts)
+      typeof attempts !== 'number'
+      || typeof failures !== 'number'
+      || !Number.isInteger(attempts)
       || !Number.isInteger(failures)
-      || (attempts as number) < 0
-      || (failures as number) < 0
-      || (failures as number) > (attempts as number)
+      || attempts < 0
+      || failures < 0
+      || failures > attempts
     ) {
       fail('performance contém tentativas/falhas inválidas.');
     }
 
     result[key] = {
-      attempts: attempts as number,
-      failures: failures as number,
+      attempts,
+      failures,
     };
   }
 
@@ -225,8 +227,9 @@ function parseProgress(
   const progressVersion = value.progressVersion;
 
   if (
-    !Number.isInteger(progressVersion)
-    || (progressVersion as number) < 1
+    typeof progressVersion !== 'number'
+    || !Number.isInteger(progressVersion)
+    || progressVersion < 1
   ) {
     fail('progressVersion é inválida.');
   }
@@ -237,7 +240,7 @@ function parseProgress(
     lessonDone: parseLessonDone(value.lessonDone),
     performance: parsePerformance(value.performance),
     activityDates: parseActivityDates(value.activityDates),
-    progressVersion: progressVersion as number,
+    progressVersion,
   };
 }
 
@@ -378,15 +381,16 @@ export function parseUpdateSyncInput(
   const revision = value.revision;
 
   if (
-    !Number.isSafeInteger(revision)
-    || (revision as number) < 1
+    typeof revision !== 'number'
+    || !Number.isSafeInteger(revision)
+    || revision < 1
   ) {
     fail('revision é inválida.');
   }
 
   return {
     version: parseVersion(value.version),
-    revision: revision as number,
+    revision,
     progress: parseProgress(value.progress),
     preferences: parsePreferences(value.preferences),
     theme: parseTheme(value.theme),
