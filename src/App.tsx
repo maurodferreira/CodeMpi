@@ -100,16 +100,11 @@ export default function App() {
   const handleReviewConcept = (concept: ConceptSummary) => {
     const target = findConceptMissionTarget(concept, store, exUnlocked);
 
-    if (!target) {
-      resetMissionState(null);
-      setLevelIndex(concept.levelIndex);
-      setExerciseIndex(concept.exerciseIndex);
-    } else {
-      resetMissionState(target.exercise);
-      setLevelIndex(target.levelIndex);
-      setExerciseIndex(target.exerciseIndex);
-    }
+    if (!target) return;
 
+    resetMissionState(target.exercise);
+    setLevelIndex(target.levelIndex);
+    setExerciseIndex(target.exerciseIndex);
     setLessonStep(0);
     setQuizAnswer(null);
     setView('mission');
