@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { View } from '../types';
 
-interface NavigationOptions {
+export interface NavigationOptions {
   replace?: boolean;
 }
 
@@ -10,6 +10,11 @@ export interface AppRoute {
   pathname: string;
   levelIndex?: number;
   exerciseIndex?: number;
+}
+
+interface UseAppRouterOptions {
+  resolveRoute?: (route: AppRoute) => AppRoute;
+  onRouteChange?: (route: AppRoute) => void;
 }
 
 const STATIC_PATHS = {
@@ -89,22 +94,6 @@ export function parseAppRoute(pathname: string): AppRoute {
     };
   }
 
-  const levelMatch = normalized.match(/^\/nivel\/n(\d+)$/i);
-
-  if (levelMatch) {
-    const levelIndex = toLevelIndex(levelMatch[1]);
-
-    if (levelIndex === undefined) {
-      return { view: 'dashboard', pathname: '/' };
-    }
-
-    return {
-      view: 'mission',
-      pathname: normalized,
-      levelIndex,
-    };
-  }
-
   const completionMatch = normalized.match(/^\/nivel\/n(\d+)\/concluido$/i);
 
   if (completionMatch) {
@@ -116,6 +105,22 @@ export function parseAppRoute(pathname: string): AppRoute {
 
     return {
       view: 'completion',
+      pathname: normalized,
+      levelIndex,
+    };
+  }
+
+  const levelMatch = normalized.match(/^\/nivel\/n(\d+)$/i);
+
+  if (levelMatch) {
+    const levelIndex = toLevelIndex(levelMatch[1]);
+
+    if (levelIndex === undefined) {
+      return { view: 'dashboard', pathname: '/' };
+    }
+
+    return {
+      view: 'mission',
       pathname: normalized,
       levelIndex,
     };
@@ -151,28 +156,43 @@ export function getCompletionPath(levelIndex: number): string {
   return `${getLevelPath(levelIndex)}/concluido`;
 }
 
-export function useAppRouter() {
-  const [route, setRoute] = useState<AppRoute>(() => parseAppRoute(window.location.pathname));
+export function useAppRouter({
+  resolveRoute = (route) => route,
+  onRouteChange,
+}: UseAppRouterOptions = {}) {
+  const resolveRouteRef = useRef(resolveRoute);
+  const onRouteChangeRef = useRef(onRouteChange);
+
+  resolveRouteRef.current = resolveRoute;
+  onRouteChangeRef.current = onRouteChange;
+
+  const [route, setRoute] = useState<AppRoute>(() => (
+    resolveRoute(parseAppRoute(window.location.pathname))
+  ));
 
   useEffect(() => {
-    const initialRoute = parseAppRoute(window.location.pathname);
-
-    if (normalizePathname(window.location.pathname) !== initialRoute.pathname) {
-      window.history.replaceState({}, '', initialRoute.pathname);
-      setRoute(initialRoute);
+    if (normalizePathname(window.location.pathname) !== route.pathname) {
+      window.history.replaceState({}, '', route.pathname);
     }
 
     const handlePopState = () => {
-      setRoute(parseAppRoute(window.location.pathname));
+      const nextRoute = resolveRouteRef.current(parseAppRoute(window.location.pathname));
+
+      if (normalizePathname(window.location.pathname) !== nextRoute.pathname) {
+        window.history.replaceState({}, '', nextRoute.pathname);
+      }
+
+      setRoute(nextRoute);
+      onRouteChangeRef.current?.(nextRoute);
     };
 
     window.addEventListener('popstate', handlePopState);
 
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [route.pathname]);
 
   const navigatePath = useCallback((pathname: string, options: NavigationOptions = {}) => {
-    const nextRoute = parseAppRoute(pathname);
+    const nextRoute = resolveRouteRef.current(parseAppRoute(pathname));
     const nextPath = nextRoute.pathname;
 
     if (window.location.pathname !== nextPath) {
@@ -184,6 +204,7 @@ export function useAppRouter() {
     }
 
     setRoute(nextRoute);
+    onRouteChangeRef.current?.(nextRoute);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
