@@ -107,7 +107,10 @@ export function LessonPage({
                   return (
                     <button
                       key={option}
+                      type="button"
                       className={`quiz-option ${selected ? 'selected' : ''} ${answered && correct ? 'correct' : ''} ${answered && selected && !correct ? 'wrong' : ''}`}
+                      aria-pressed={selected}
+                      disabled={answered}
                       onClick={() => setQuizAnswer(index)}
                     >
                       <span>{String.fromCharCode(65 + index)}</span>{option}
@@ -120,7 +123,9 @@ export function LessonPage({
                   className={`quiz-feedback ${quizAnswer === currentLessonStep.quiz.answer ? 'correct' : 'wrong'}`}
                   aria-live="polite"
                 >
-                  {quizAnswer === currentLessonStep.quiz.answer ? '✓ Acertou! ' : '↻ Ainda não. '}
+                  {quizAnswer === currentLessonStep.quiz.answer
+                    ? '✓ Acertou! '
+                    : '↻ Ainda não. Escolha outra opção para tentar novamente. '}
                   {currentLessonStep.quiz.explanation}
                 </div>
               )}
