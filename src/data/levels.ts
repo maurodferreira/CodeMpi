@@ -54,9 +54,9 @@ export const LEVELS: Level[] = [
                 tests: [{ args: [10, 2], exp: 5 }, { args: [7, 2], exp: 3.5 }, { args: [9, 3], exp: 3 }]
             },
             {
-                title: "Triplo de um número", conceptIds: ["return","multiplication"], desc: "Retorne o triplo (n × 3) do número recebido.", sig: "function triplo(n) { ... }", starter: "function triplo(n) {\n\n}", fn: "triplo", difficulty: "medio", xp: 200, skill: "usar o operador * para multiplicar o valor por 3",
-                hints: ["Pense em como transformar n no triplo.", "Multiplique n por 3 e devolva o resultado com return.", "O triplo é n multiplicado por 3. Faça essa conta e devolva o valor.", "function triplo(n) {\n  return n * 3;\n}"],
-                tests: [{ args: [2], exp: 6 }, { args: [0], exp: 0 }, { args: [-4], exp: -12 }]
+                title: "Atualizando o total", conceptIds: ["return","variables","addition"], desc: "Comece com pontos como total, adicione o bonus ao total e retorne o novo valor.", sig: "function adicionarBonus(pontos, bonus) { ... }", starter: "function adicionarBonus(pontos, bonus) {\n  let total = pontos;\n\n  // atualize total e depois retorne o resultado\n}", fn: "adicionarBonus", difficulty: "medio", xp: 200, skill: "criar uma variável e atualizar seu valor usando uma operação",
+                hints: ["Pense em uma variável que represente o valor que será atualizado.", "Crie total começando com pontos e some bonus a esse total.", "Primeiro use let total = pontos; depois atualize com total = total + bonus e retorne total.", "function adicionarBonus(pontos, bonus) {\n  let total = pontos;\n  total = total + bonus;\n\n  return total;\n}"],
+                tests: [{ args: [100, 25], exp: 125 }, { args: [0, 10], exp: 10 }, { args: [50, -5], exp: 45 }]
             },
             {
                 title: "Média de três números", conceptIds: ["return","addition","division","expressions"], desc: "Receba três números e retorne a média aritmética entre eles.", sig: "function media3(a, b, c) { ... }", starter: "function media3(a, b, c) {\n  // some os três e divida por 3\n\n}", fn: "media3", difficulty: "dificil", xp: 350, skill: "combinar soma e divisão para calcular uma média",
@@ -118,14 +118,14 @@ export const LEVELS: Level[] = [
                 tests: [{ args: [10], exp: "frio" }, { args: [15], exp: "agradavel" }, { args: [30], exp: "quente" }]
             },
             {
-                title: "Senha válida", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne true somente se a senha tiver pelo menos 8 caracteres e for diferente de '12345678'.", sig: "function senhaValida(senha) { ... }", starter: "function senhaValida(senha) {\n\n}", fn: "senhaValida", difficulty: "dificil", xp: 320, skill: "combinar condições com &&",
-                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Use && para exigir tamanho mínimo de 8 e uma senha diferente de 12345678.", "As duas regras precisam ser verdadeiras: comprimento mínimo e senha diferente de 12345678.", "function senhaValida(senha) {\n  if (senha.length >= 8 && senha !== '12345678') {\n    return true;\n  } else {\n    return false;\n  }\n}"],
-                tests: [{ args: ["codempi2026"], exp: true }, { args: ["12345678"], exp: false }, { args: ["abc"], exp: false }, { args: ["abcdefgh"], exp: true }]
+                title: "Compra aprovada", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne true somente quando o valor da compra for 50 ou mais e o pagamento estiver aprovado.", sig: "function compraAprovada(valor, pagamentoAprovado) { ... }", starter: "function compraAprovada(valor, pagamentoAprovado) {\n\n}", fn: "compraAprovada", difficulty: "dificil", xp: 320, skill: "combinar duas condições com &&",
+                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Compare o valor com 50 e use a informação sobre o pagamento aprovado.", "As duas condições precisam ser verdadeiras: valor >= 50 e pagamentoAprovado. Use && para combiná-las.", "function compraAprovada(valor, pagamentoAprovado) {\n  if (valor >= 50 && pagamentoAprovado) {\n    return true;\n  }\n\n  return false;\n}"],
+                tests: [{ args: [50, true], exp: true }, { args: [49.99, true], exp: false }, { args: [100, false], exp: false }, { args: [80, true], exp: true }]
             },
             {
                 title: "Frete grátis", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne 'gratis' se a compra for 200 ou mais ou se o cliente for assinante. Caso contrário, retorne 'pago'.", sig: "function tipoFrete(valor, assinante) { ... }", starter: "function tipoFrete(valor, assinante) {\n\n}", fn: "tipoFrete", difficulty: "dificil", xp: 350, skill: "combinar condições com ||",
                 hints: ["Pense nas duas situações que liberam o frete grátis.", "Use || porque basta a compra atingir 200 ou o cliente ser assinante.", "Como basta uma das regras, use uma condição com OR entre valor >= 200 e assinante.", "function tipoFrete(valor, assinante) {\n  if (valor >= 200 || assinante) {\n    return 'gratis';\n  } else {\n    return 'pago';\n  }\n}"],
-                tests: [{ args: [250, false], exp: "gratis" }, { args: [100, true], exp: "gratis" }, { args: [100, false], exp: "pago" }]
+                tests: [{ args: [200, false], exp: "gratis" }, { args: [250, false], exp: "gratis" }, { args: [100, true], exp: "gratis" }, { args: [100, false], exp: "pago" }]
             },
             {
                 title: "BOSS · Classificador de acesso", conceptIds: ["conditionals","comparisons","booleanLogic"], desc: "Classifique o acesso: 'bloqueado' se a conta estiver inativa; 'admin' se estiver ativa e for admin; 'usuario' nos demais casos.", sig: "function classificarAcesso(ativo, admin) { ... }", starter: "function classificarAcesso(ativo, admin) {\n  // pense na ordem das condições\n\n}", fn: "classificarAcesso", difficulty: "boss", xp: 550, skill: "ordenar múltiplas condições",
@@ -164,7 +164,7 @@ export const LEVELS: Level[] = [
             {
                 title: "Soma de uma lista", conceptIds: ["loops","accumulators","iteration"], desc: "A lista já vem pronta. Percorra seus valores e retorne a soma de todos eles.", sig: "function somarLista(valores) { ... }", starter: "function somarLista(valores) {\n  let total = 0;\n\n  // percorra a lista usando um índice\n}", fn: "somarLista", difficulty: "medio", xp: 220, skill: "percorrer uma lista com um laço",
                 hints: ["Pense em como visitar cada posição da lista e acumular os valores.", "Use um índice de 0 até antes de valores.length e some valores[i].", "Percorra os índices da lista de 0 até valores.length - 1 e acrescente cada valores[i] ao total.", "function somarLista(valores) {\n  let total = 0;\n\n  for (let i = 0; i < valores.length; i++) {\n    total += valores[i];\n  }\n\n  return total;\n}"],
-                tests: [{ args: [[2, 3, 5]], exp: 10 }, { args: [[10, -2, 4]], exp: 12 }, { args: [[7]], exp: 7 }]
+                tests: [{ args: [[]], exp: 0 }, { args: [[2, 3, 5]], exp: 10 }, { args: [[10, -2, 4]], exp: 12 }, { args: [[7]], exp: 7 }]
             },
             {
                 title: "Média da lista", conceptIds: ["loops","accumulators","iteration","division"], desc: "Retorne a média aritmética dos valores da lista. Os testes sempre fornecem pelo menos um valor.", sig: "function mediaLista(valores) { ... }", starter: "function mediaLista(valores) {\n  let total = 0;\n\n  // some os valores e depois divida pela quantidade\n}", fn: "mediaLista", difficulty: "dificil", xp: 280, skill: "combinar percurso, acumulador e divisão",
