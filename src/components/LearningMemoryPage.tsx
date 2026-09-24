@@ -22,16 +22,26 @@ export function LearningMemoryPage({ concepts, store, onReview }: LearningMemory
             render mais. Esses sinais servem para orientar o estudo, não para dar uma nota.
           </p>
         </div>
+      </section>
 
-        <aside className="memory-page-context" aria-label="Resumo da memória">
-          <span className="memory-page-context-label">VISÃO GERAL</span>
+      <section className="memory-overview-strip" aria-label="Resumo da memória">
+        <div className="memory-overview-main">
+          <span className="memory-overview-kicker">SUA MEMÓRIA</span>
           <strong>{concepts.length} conceitos</strong>
-          <small>acompanhados na sua jornada</small>
-          <div className="memory-page-context-stats">
-            <span><b>{reviewCount}</b> para revisar</span>
-            <span><b>{developingCount}</b> em desenvolvimento</span>
-          </div>
-        </aside>
+          <span>acompanhados na sua jornada</span>
+        </div>
+
+        <div className="memory-overview-stat review">
+          <span className="memory-overview-stat-label">VALE REVISAR</span>
+          <strong>{reviewCount}</strong>
+          <span>conceitos</span>
+        </div>
+
+        <div className="memory-overview-stat developing">
+          <span className="memory-overview-stat-label">EM DESENVOLVIMENTO</span>
+          <strong>{developingCount}</strong>
+          <span>conceitos</span>
+        </div>
       </section>
 
       <LearningMemory concepts={concepts} store={store} onReview={onReview} />
