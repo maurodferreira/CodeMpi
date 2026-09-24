@@ -254,12 +254,13 @@ palavra[palavra.length - 1]; // "i"',
         type: 'example',
         eyebrow: '04 · TRANSFORMANDO',
         title: 'Strings têm operações próprias',
-        body: 'Métodos como toUpperCase e toLowerCase criam uma nova versão do texto.',
+        body: 'Métodos como toUpperCase, toLowerCase e replaceAll permitem criar uma nova versão do texto ou substituir partes dele.',
         code: 'const nome = "Mauro";
 
 nome.toUpperCase(); // "MAURO"
-nome.toLowerCase(); // "mauro"',
-        explanation: 'Esses métodos transformam a forma como o texto é apresentado e devolvem outra string.',
+nome.toLowerCase(); // "mauro"
+nome.replaceAll("a", "@"); // "M@uro"',
+        explanation: 'Esses métodos devolvem uma nova string. No replaceAll, todas as ocorrências do trecho informado são substituídas.',
       },
       {
         id: 'string-loop',
@@ -275,9 +276,23 @@ for (let i = 0; i < palavra.length; i++) {
         explanation: 'O mesmo padrão usado para percorrer listas no N3 aparece aqui: índice, length e for. A diferença é que cada posição contém um caractere.',
       },
       {
+        id: 'string-comparison',
+        type: 'example',
+        eyebrow: '06 · COMPARANDO',
+        title: 'Dois textos podem ser comparados exatamente',
+        body: 'O operador === verifica se duas strings são exatamente iguais. Maiúsculas e minúsculas fazem diferença nessa comparação.',
+        code: 'const a = "CodeMpi";
+const b = "CodeMpi";
+const c = "codempi";
+
+a === b; // true
+a === c; // false',
+        explanation: 'A comparação é literal: "CodeMpi" e "codempi" não são a mesma string porque as letras maiúsculas e minúsculas são diferentes.',
+      },
+      {
         id: 'string-quiz',
         type: 'quiz',
-        eyebrow: '06 · TESTE RÁPIDO',
+        eyebrow: '07 · TESTE RÁPIDO',
         title: 'Qual caractere está nessa posição?',
         body: 'Observe o índice com atenção. Lembre que a contagem começa em zero.',
         quiz: {
@@ -291,7 +306,7 @@ for (let i = 0; i < palavra.length; i++) {
       {
         id: 'ready',
         type: 'checkpoint',
-        eyebrow: '07 · VOCÊ ESTÁ PRONTO',
+        eyebrow: '08 · VOCÊ ESTÁ PRONTO',
         title: 'Agora transforme e investigue textos',
         body: 'Você já conhece tamanho, índices, métodos básicos e o percurso caractere por caractere. As missões vão começar simples e terminar combinando essas ideias.',
         code: 'function primeiraLetra(texto) {
