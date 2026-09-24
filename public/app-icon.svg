@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title id="title">CodeMpi</title>
   <defs>
-    <linearGradient id="bolt" x1="96" y1="72" x2="404" y2="438" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bolt" x1="0" y1="0" x2="48" y2="46" gradientUnits="userSpaceOnUse">
       <stop stop-color="#7CFF9B"/>
       <stop offset="0.5" stop-color="#47BFFF"/>
       <stop offset="1" stop-color="#863BFF"/>
