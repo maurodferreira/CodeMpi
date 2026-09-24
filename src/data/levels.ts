@@ -76,7 +76,7 @@ export const LEVELS: Level[] = [
             {
                 title: "Área do círculo", conceptIds: ["return","multiplication","expressions"], desc: "Receba o raio de um círculo e retorne sua área, arredondada para 2 casas decimais. Use Math.PI.", sig: "function areaCirculo(r) { ... }", starter: "function areaCirculo(r) {\n  // área = π × r × r — arredonde para 2 casas decimais\n\n}", fn: "areaCirculo", difficulty: "boss", xp: 500, skill: "calcular a área com Math.PI e arredondar para duas casas decimais",
                 hints: ["Pense na fórmula matemática da área do círculo.", "Use Math.PI, multiplique o raio por ele mesmo e arredonde para 2 casas.", "Monte a expressão π × r × r e use Math.round para manter somente duas casas decimais.", "function areaCirculo(r) {\n  return Math.round(Math.PI * r * r * 100) / 100;\n}"],
-                tests: [{ args: [1], exp: 3.14 }, { args: [2], exp: 12.57 }, { args: [5], exp: 78.54 }]
+                tests: [{ args: [1], exp: 3.14 }, { args: [2], exp: 12.57 }, { args: [5], exp: 78.54 }, { args: [0], exp: 0 }]
             }
         ]
     },
@@ -84,52 +84,52 @@ export const LEVELS: Level[] = [
         name: "Condicionais", tag: "N2", exercises: [
             {
                 title: "Par ou ímpar", conceptIds: ["remainder","comparisons"], desc: "Retorne true se o número for par e false se for ímpar.", sig: "function ehPar(n) { ... }", starter: "function ehPar(n) {\n  // use o resto da divisão\n\n}", fn: "ehPar", difficulty: "facil", xp: 120, skill: "condicionais e operador de resto",
-                hints: ["Pense em como descobrir se um número é divisível por 2.", "Use % para verificar se o resto da divisão por 2 é zero.", "A condição que resolve a missão é verificar se o resto de n por 2 é exatamente 0.", "function ehPar(n) {\n  return n % 2 === 0;\n}"],
+                hints: ["Pense em como descobrir se um número é divisível por 2.", "Use % para verificar se o resto da divisão por 2 é zero.", "A condição que resolve a missão é verificar se o resto de n por 2 é exatamente 0.", "function ehPar(n) {\n  if (n % 2 === 0) {\n    return true;\n  }\n\n  return false;\n}"],
                 tests: [{ args: [4], exp: true }, { args: [7], exp: false }, { args: [0], exp: true }]
             },
             {
                 title: "Positivo, negativo ou zero", conceptIds: ["conditionals","comparisons"], desc: "Retorne 'positivo', 'negativo' ou 'zero' de acordo com o valor recebido.", sig: "function classificarNumero(n) { ... }", starter: "function classificarNumero(n) {\n  // pense nos três caminhos possíveis\n\n}", fn: "classificarNumero", difficulty: "facil", xp: 120, skill: "if e else para escolher caminhos",
-                hints: ["Pense nos três caminhos possíveis para o valor recebido.", "Verifique primeiro se n é maior que zero, depois se é menor que zero.", "Use dois testes em sequência: primeiro n > 0, depois n < 0; se nenhum for verdadeiro, sobrou o caso zero.", "function classificarNumero(n) {\n  if (n > 0) return 'positivo';\n  if (n < 0) return 'negativo';\n  return 'zero';\n}"],
+                hints: ["Pense nos três caminhos possíveis para o valor recebido.", "Verifique primeiro se n é maior que zero, depois se é menor que zero.", "Use dois testes em sequência: primeiro n > 0, depois n < 0; se nenhum for verdadeiro, sobrou o caso zero.", "function classificarNumero(n) {\n  if (n > 0) {\n    return 'positivo';\n  } else if (n < 0) {\n    return 'negativo';\n  }\n\n  return 'zero';\n}"],
                 tests: [{ args: [8], exp: "positivo" }, { args: [-2], exp: "negativo" }, { args: [0], exp: "zero" }]
             },
             {
                 title: "Maior número", conceptIds: ["conditionals","comparisons"], desc: "Retorne o maior entre a e b.", sig: "function maior(a, b) { ... }", starter: "function maior(a, b) {\n\n}", fn: "maior", difficulty: "facil", xp: 120, skill: "comparações com if e else",
-                hints: ["Pense em como comparar dois números.", "Compare a com b; se a não for maior, b é o resultado.", "Uma forma direta é retornar a quando a > b e, caso contrário, retornar b.", "function maior(a, b) {\n  return a > b ? a : b;\n}"],
+                hints: ["Pense em como comparar dois números.", "Compare a com b; se a não for maior, b é o resultado.", "Uma forma direta é retornar a quando a > b e, caso contrário, retornar b.", "function maior(a, b) {\n  if (a > b) {\n    return a;\n  }\n\n  return b;\n}"],
                 tests: [{ args: [10, 4], exp: 10 }, { args: [3, 9], exp: 9 }, { args: [5, 5], exp: 5 }]
             },
             {
                 title: "Pode dirigir?", conceptIds: ["comparisons"], desc: "Retorne true quando a idade for 18 ou mais.", sig: "function podeDirigir(idade) { ... }", starter: "function podeDirigir(idade) {\n\n}", fn: "podeDirigir", difficulty: "medio", xp: 180, skill: "comparação com maior ou igual",
-                hints: ["Pense no limite mínimo de idade pedido pela missão.", "A condição precisa aceitar 18, então use uma comparação de maior ou igual.", "Compare idade com 18 usando >=, porque a idade 18 também precisa passar.", "function podeDirigir(idade) {\n  return idade >= 18;\n}"],
+                hints: ["Pense no limite mínimo de idade pedido pela missão.", "A condição precisa aceitar 18, então use uma comparação de maior ou igual.", "Compare idade com 18 usando >=, porque a idade 18 também precisa passar.", "function podeDirigir(idade) {\n  if (idade >= 18) {\n    return true;\n  }\n\n  return false;\n}"],
                 tests: [{ args: [18], exp: true }, { args: [17], exp: false }, { args: [25], exp: true }]
             },
             {
                 title: "Aprovado ou reprovado", conceptIds: ["conditionals","comparisons"], desc: "Retorne 'aprovado' para nota maior ou igual a 7; caso contrário, 'reprovado'.", sig: "function resultado(nota) { ... }", starter: "function resultado(nota) {\n\n}", fn: "resultado", difficulty: "medio", xp: 180, skill: "if e else com regra de negócio",
-                hints: ["Pense na nota mínima necessária para cada resultado.", "Compare a nota com 7 usando >= e escolha entre os dois resultados.", "A condição central é nota >= 7; dependendo dela, retorne um dos dois textos pedidos.", "function resultado(nota) {\n  return nota >= 7 ? 'aprovado' : 'reprovado';\n}"],
+                hints: ["Pense na nota mínima necessária para cada resultado.", "Compare a nota com 7 usando >= e escolha entre os dois resultados.", "A condição central é nota >= 7; dependendo dela, retorne um dos dois textos pedidos.", "function resultado(nota) {\n  if (nota >= 7) {\n    return 'aprovado';\n  }\n\n  return 'reprovado';\n}"],
                 tests: [{ args: [8], exp: "aprovado" }, { args: [7], exp: "aprovado" }, { args: [6.9], exp: "reprovado" }]
             },
             {
                 title: "Desconto na compra", conceptIds: ["conditionals","comparisons","multiplication"], desc: "Dê 10% de desconto quando o valor for maior ou igual a 100. Caso contrário, mantenha o valor.", sig: "function precoFinal(valor) { ... }", starter: "function precoFinal(valor) {\n  // escolha qual caminho seguir\n\n}", fn: "precoFinal", difficulty: "medio", xp: 220, skill: "condição com cálculo",
-                hints: ["Pense primeiro em quando o desconto deve acontecer.", "Se o valor for pelo menos 100, o cliente paga 90% do preço.", "Quando valor >= 100, o preço final representa 90% do original; quando não, mantenha o valor.", "function precoFinal(valor) {\n  return valor >= 100 ? valor * 0.9 : valor;\n}"],
+                hints: ["Pense primeiro em quando o desconto deve acontecer.", "Se o valor for pelo menos 100, o cliente paga 90% do preço.", "Quando valor >= 100, o preço final representa 90% do original; quando não, mantenha o valor.", "function precoFinal(valor) {\n  if (valor >= 100) {\n    return valor * 0.9;\n  }\n\n  return valor;\n}"],
                 tests: [{ args: [100], exp: 90 }, { args: [250], exp: 225 }, { args: [80], exp: 80 }]
             },
             {
                 title: "Classificação de temperatura", conceptIds: ["conditionals","comparisons"], desc: "Retorne 'frio' abaixo de 15, 'agradavel' de 15 até 29 e 'quente' a partir de 30.", sig: "function classificarTemperatura(t) { ... }", starter: "function classificarTemperatura(t) {\n  // existem três caminhos\n\n}", fn: "classificarTemperatura", difficulty: "dificil", xp: 300, skill: "múltiplas condições com else if",
-                hints: ["Pense nas três faixas de temperatura da missão.", "Verifique primeiro abaixo de 15, depois abaixo de 30; o restante é quente.", "As faixas podem ser resolvidas em ordem crescente: abaixo de 15, abaixo de 30 e, por fim, o restante.", "function classificarTemperatura(t) {\n  if (t < 15) return 'frio';\n  if (t < 30) return 'agradavel';\n  return 'quente';\n}"],
+                hints: ["Pense nas três faixas de temperatura da missão.", "Verifique primeiro abaixo de 15, depois abaixo de 30; o restante é quente.", "As faixas podem ser resolvidas em ordem crescente: abaixo de 15, abaixo de 30 e, por fim, o restante.", "function classificarTemperatura(t) {\n  if (t < 15) {\n    return 'frio';\n  } else if (t < 30) {\n    return 'agradavel';\n  }\n\n  return 'quente';\n}"],
                 tests: [{ args: [10], exp: "frio" }, { args: [15], exp: "agradavel" }, { args: [30], exp: "quente" }]
             },
             {
                 title: "Senha válida", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne true somente se a senha tiver pelo menos 8 caracteres e for diferente de '12345678'.", sig: "function senhaValida(senha) { ... }", starter: "function senhaValida(senha) {\n\n}", fn: "senhaValida", difficulty: "dificil", xp: 320, skill: "combinar condições com &&",
-                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Use && para exigir tamanho mínimo de 8 e uma senha diferente de 12345678.", "As duas regras precisam ser verdadeiras: comprimento mínimo e senha diferente de 12345678.", "function senhaValida(senha) {\n  return senha.length >= 8 && senha !== '12345678';\n}"],
-                tests: [{ args: ["codempi2026"], exp: true }, { args: ["12345678"], exp: false }, { args: ["abc"], exp: false }]
+                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Use && para exigir tamanho mínimo de 8 e uma senha diferente de 12345678.", "As duas regras precisam ser verdadeiras: comprimento mínimo e senha diferente de 12345678.", "function senhaValida(senha) {\n  if (senha.length >= 8 && senha !== '12345678') {\n    return true;\n  }\n\n  return false;\n}"],
+                tests: [{ args: ["codempi2026"], exp: true }, { args: ["12345678"], exp: false }, { args: ["abc"], exp: false }, { args: ["abcdefgh"], exp: true }]
             },
             {
                 title: "Frete grátis", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne 'gratis' se a compra for 200 ou mais ou se o cliente for assinante. Caso contrário, retorne 'pago'.", sig: "function tipoFrete(valor, assinante) { ... }", starter: "function tipoFrete(valor, assinante) {\n\n}", fn: "tipoFrete", difficulty: "dificil", xp: 350, skill: "combinar condições com ||",
-                hints: ["Pense nas duas situações que liberam o frete grátis.", "Use || porque basta a compra atingir 200 ou o cliente ser assinante.", "Como basta uma das regras, use uma condição com OR entre valor >= 200 e assinante.", "function tipoFrete(valor, assinante) {\n  return valor >= 200 || assinante ? 'gratis' : 'pago';\n}"],
+                hints: ["Pense nas duas situações que liberam o frete grátis.", "Use || porque basta a compra atingir 200 ou o cliente ser assinante.", "Como basta uma das regras, use uma condição com OR entre valor >= 200 e assinante.", "function tipoFrete(valor, assinante) {\n  if (valor >= 200 || assinante) {\n    return 'gratis';\n  }\n\n  return 'pago';\n}"],
                 tests: [{ args: [250, false], exp: "gratis" }, { args: [100, true], exp: "gratis" }, { args: [100, false], exp: "pago" }]
             },
             {
                 title: "BOSS · Classificador de acesso", conceptIds: ["conditionals","comparisons","booleanLogic"], desc: "Classifique o acesso: 'bloqueado' se a conta estiver inativa; 'admin' se estiver ativa e for admin; 'usuario' nos demais casos.", sig: "function classificarAcesso(ativo, admin) { ... }", starter: "function classificarAcesso(ativo, admin) {\n  // pense na ordem das condições\n\n}", fn: "classificarAcesso", difficulty: "boss", xp: 550, skill: "ordenar múltiplas condições",
-                hints: ["Pense na ordem das regras: conta inativa, admin ativo e usuário ativo.", "Trate o caso inativo primeiro; depois verifique admin e, por fim, o usuário comum.", "Trate a conta inativa primeiro; se estiver ativa, admin define o segundo caminho e o restante é usuário.", "function classificarAcesso(ativo, admin) {\n  if (!ativo) return 'bloqueado';\n  if (admin) return 'admin';\n  return 'usuario';\n}"],
+                hints: ["Pense na ordem das regras: conta inativa, admin ativo e usuário ativo.", "Trate o caso inativo primeiro; depois verifique admin e, por fim, o usuário comum.", "Trate a conta inativa primeiro; se estiver ativa, admin define o segundo caminho e o restante é usuário.", "function classificarAcesso(ativo, admin) {\n  if (!ativo) {\n    return 'bloqueado';\n  } else if (admin) {\n    return 'admin';\n  }\n\n  return 'usuario';\n}"],
                 tests: [{ args: [false, true], exp: "bloqueado" }, { args: [true, true], exp: "admin" }, { args: [true, false], exp: "usuario" }]
             }
         ]
@@ -139,7 +139,7 @@ export const LEVELS: Level[] = [
             {
                 title: "Soma até N", conceptIds: ["loops","accumulators"], desc: "Retorne a soma de todos os números inteiros de 1 até n.", sig: "function somaAte(n) { ... }", starter: "function somaAte(n) {\n  let total = 0;\n\n  // some 1, 2, 3... até n\n}", fn: "somaAte", difficulty: "facil", xp: 120, skill: "usar um laço para acumular valores",
                 hints: ["Pense em como repetir uma operação para todos os números até n.", "Use um acumulador começando em 0 e um for de 1 até n.", "Crie o for com i começando em 1, avance enquanto i <= n e some cada i ao total.", "function somaAte(n) {\n  let total = 0;\n\n  for (let i = 1; i <= n; i++) {\n    total += i;\n  }\n\n  return total;\n}"],
-                tests: [{ args: [1], exp: 1 }, { args: [5], exp: 15 }, { args: [10], exp: 55 }]
+                tests: [{ args: [1], exp: 1 }, { args: [5], exp: 15 }, { args: [10], exp: 55 }, { args: [0], exp: 0 }]
             },
             {
                 title: "Contando pares", conceptIds: ["loops","counters","conditionals","remainder"], desc: "Conte quantos números pares existem de 1 até n.", sig: "function contarPares(n) { ... }", starter: "function contarPares(n) {\n  let quantidade = 0;\n\n  // conte os números pares\n}", fn: "contarPares", difficulty: "facil", xp: 120, skill: "usar contador, laço e resto da divisão",
