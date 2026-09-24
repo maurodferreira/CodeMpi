@@ -62,4 +62,7 @@ export interface LearningFeedback {
   tone: 'success' | 'focus' | 'error';
   title: string;
   body: string;
+  conceptName?: string;
+  conceptFocus?: string;
+  reflectionQuestion?: string;
 }

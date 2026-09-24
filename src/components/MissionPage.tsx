@@ -295,13 +295,34 @@ export function MissionPage({
                         )}
 
                         {learningFeedback.tone !== 'success' && (
-                          <div className="diagnostic-tip">
-                            <span>O QUE OBSERVAR</span>
-                            <strong>{learningFeedback.tone === 'error'
-                              ? 'O código precisa conseguir executar antes de os testes avaliarem a lógica.'
-                              : 'Compare a entrada com o resultado produzido e procure a operação ou condição que transforma um no outro.'}
-                            </strong>
-                          </div>
+                          <>
+                            <div className="diagnostic-tip">
+                              <span>O QUE OBSERVAR</span>
+                              <strong>{learningFeedback.tone === 'error'
+                                ? 'Primeiro faça o código executar. Depois volte para o raciocínio da regra.'
+                                : 'Comece pelo primeiro caso que falhou e compare entrada, transformação e resultado.'}
+                              </strong>
+                            </div>
+
+                            {(learningFeedback.conceptName || learningFeedback.conceptFocus || learningFeedback.reflectionQuestion) && (
+                              <div className="learning-guidance-grid">
+                                {learningFeedback.conceptFocus && (
+                                  <div className="learning-guidance-card">
+                                    <span>CONCEITO EM FOCO</span>
+                                    <strong>{learningFeedback.conceptName}</strong>
+                                    <p>{learningFeedback.conceptFocus}</p>
+                                  </div>
+                                )}
+
+                                {learningFeedback.reflectionQuestion && (
+                                  <div className="learning-guidance-card reflection">
+                                    <span>PERGUNTA PARA PENSAR</span>
+                                    <p>{learningFeedback.reflectionQuestion}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
