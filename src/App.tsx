@@ -193,7 +193,6 @@ export default function App() {
 
       {view === 'dashboard' && (
         <Dashboard
-          store={store}
           completedExercises={completedExercises}
           totalEarned={totalEarned}
           levelsDoneTotal={levelsDoneTotal}
