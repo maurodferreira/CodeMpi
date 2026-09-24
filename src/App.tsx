@@ -109,13 +109,25 @@ export default function App() {
           failures: performance.failures,
         }];
       }),
-    ).sort((a, b) => (
-      Number(a.done) - Number(b.done) ||
-      b.failures - a.failures ||
-      b.attempts - a.attempts ||
-      a.levelIndex - b.levelIndex ||
-      a.exerciseIndex - b.exerciseIndex
-    ));
+    ).sort((a, b) => {
+      if (concept.state === 'review') {
+        return (
+          b.failures - a.failures ||
+          b.attempts - a.attempts ||
+          Number(a.done) - Number(b.done) ||
+          a.levelIndex - b.levelIndex ||
+          a.exerciseIndex - b.exerciseIndex
+        );
+      }
+
+      return (
+        Number(a.done) - Number(b.done) ||
+        b.failures - a.failures ||
+        b.attempts - a.attempts ||
+        a.levelIndex - b.levelIndex ||
+        a.exerciseIndex - b.exerciseIndex
+      );
+    });
 
     const target = candidates[0];
 
