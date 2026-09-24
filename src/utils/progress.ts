@@ -23,11 +23,14 @@ export function getActivityStreak(activityDates: string[], today = getLocalDateK
     return Date.UTC(year, month - 1, day);
   };
 
-  const previousDay = (key: string) => {
+  const shiftDay = (key: string, amount: number) => {
     const date = new Date(toDateNumber(key));
-    date.setUTCDate(date.getUTCDate() - 1);
+    date.setUTCDate(date.getUTCDate() + amount);
     return date.toISOString().slice(0, 10);
   };
+
+  const previousDay = (key: string) => shiftDay(key, -1);
+  const nextDay = (key: string) => shiftDay(key, 1);
 
   const activeToday = dates.has(today);
 
@@ -44,7 +47,7 @@ export function getActivityStreak(activityDates: string[], today = getLocalDateK
   let previous: string | null = null;
 
   for (const key of uniqueDates) {
-    if (previous && key === previousDay(previous)) {
+    if (previous && key === nextDay(previous)) {
       run += 1;
     } else {
       run = 1;

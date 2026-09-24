@@ -98,18 +98,13 @@ export default function App() {
   });
 
   const handleReviewConcept = (concept: ConceptSummary) => {
-    const target = findConceptMissionTarget(concept, store);
+    const target = findConceptMissionTarget(concept, store, exUnlocked);
 
-    if (!target) {
-      resetMissionState(null);
-      setLevelIndex(concept.levelIndex);
-      setExerciseIndex(concept.exerciseIndex);
-    } else {
-      resetMissionState(target.exercise);
-      setLevelIndex(target.levelIndex);
-      setExerciseIndex(target.exerciseIndex);
-    }
+    if (!target) return;
 
+    resetMissionState(target.exercise);
+    setLevelIndex(target.levelIndex);
+    setExerciseIndex(target.exerciseIndex);
     setLessonStep(0);
     setQuizAnswer(null);
     setView('mission');
@@ -129,6 +124,8 @@ export default function App() {
       return;
     }
 
+    if (ei !== undefined && (!level.exercises[ei] || !exUnlocked(li, ei))) return;
+
     const target = ei ?? getNextExerciseIndex(li, store);
 
     resetMissionState(level.exercises[target] || null);
@@ -137,6 +134,10 @@ export default function App() {
     setLessonStep(0);
     setQuizAnswer(null);
     setView(LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
+  };
+
+  const handleOpenMissionNavigation = () => {
+    openMission(levelIndex);
   };
 
   const handleShowHint = () => {
@@ -196,6 +197,7 @@ export default function App() {
         totalMax={totalMax}
         overallProgress={overallProgress}
         levelsDoneTotal={levelsDoneTotal}
+        onOpenMission={handleOpenMissionNavigation}
       />
 
       {view === 'settings' && (
@@ -237,6 +239,7 @@ export default function App() {
           overallProgress={overallProgress}
           completedExercises={completedExercises}
           levelsDoneTotal={levelsDoneTotal}
+          continuePoint={continuePoint}
           levelUnlocked={levelUnlocked}
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
@@ -249,6 +252,8 @@ export default function App() {
           concepts={concepts}
           openMission={openMission}
           onReview={handleReviewConcept}
+          levelUnlocked={levelUnlocked}
+          exUnlocked={exUnlocked}
         />
       )}
 
@@ -328,7 +333,7 @@ export default function App() {
         />
       )}
 
-      <AppFooter view={view} setView={setView} />
+      <AppFooter view={view} setView={setView} onOpenMission={handleOpenMissionNavigation} />
     </div>
   );
 }

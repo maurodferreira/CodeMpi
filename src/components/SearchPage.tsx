@@ -6,6 +6,8 @@ interface SearchPageProps {
   concepts: ConceptSummary[];
   openMission: (levelIndex: number, exerciseIndex?: number) => void;
   onReview: (concept: ConceptSummary) => void;
+  levelUnlocked: (levelIndex: number) => boolean;
+  exUnlocked: (levelIndex: number, exerciseIndex: number) => boolean;
 }
 
 type SearchFilter = 'all' | 'challenge' | 'concept' | 'level';
@@ -19,6 +21,7 @@ interface SearchItem {
   levelIndex?: number;
   exerciseIndex?: number;
   concept?: ConceptSummary;
+  locked?: boolean;
 }
 
 const TYPE_LABELS = {
@@ -30,7 +33,13 @@ const TYPE_LABELS = {
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-export function SearchPage({ concepts, openMission, onReview }: SearchPageProps) {
+export function SearchPage({
+  concepts,
+  openMission,
+  onReview,
+  levelUnlocked,
+  exUnlocked,
+}: SearchPageProps) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<SearchFilter>('all');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +66,7 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
         meta: `${level.tag} · ${exercise.difficulty.toUpperCase()} · ${exercise.xp} XP`,
         levelIndex,
         exerciseIndex,
+        locked: !exUnlocked(levelIndex, exerciseIndex),
       })),
     );
 
@@ -67,6 +77,7 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
       description: concept.description,
       meta: `${concept.progress}% praticado · ${concept.state === 'solid' ? 'dominado' : concept.state === 'review' ? 'vale revisar' : concept.state === 'developing' ? 'em desenvolvimento' : 'novo'}`,
       concept,
+      locked: !exUnlocked(concept.levelIndex, concept.exerciseIndex),
     }));
 
     const levelItems = LEVELS.map((level, levelIndex) => ({
@@ -76,10 +87,11 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
       description: level.topics || 'Etapa da jornada de programação.',
       meta: level.tag,
       levelIndex,
+      locked: !levelUnlocked(levelIndex),
     }));
 
     return [...challenges, ...conceptItems, ...levelItems];
-  }, [concepts]);
+  }, [concepts, exUnlocked, levelUnlocked]);
 
   const normalizedQuery = normalize(query.trim());
 
@@ -96,6 +108,8 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
   }, [filter, items, normalizedQuery]);
 
   const handleOpen = (item: SearchItem) => {
+    if (item.locked) return;
+
     if (item.type === 'concept' && item.concept) {
       onReview(item.concept);
       return;
@@ -178,14 +192,17 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
               <button
                 type="button"
                 key={item.id}
-                className={`search-result-card ${item.type}`}
+                className={`search-result-card ${item.type} ${item.locked ? 'locked' : ''}`}
                 onClick={() => handleOpen(item)}
+                disabled={item.locked}
               >
                 <span className="search-result-type">{TYPE_LABELS[item.type]}</span>
                 <span className="search-result-title">{item.title}</span>
                 <span className="search-result-description">{item.description}</span>
                 <span className="search-result-meta">{item.meta}</span>
-                <span className="search-result-action">{item.type === 'concept' ? 'Revisar conceito →' : 'Abrir →'}</span>
+                <span className="search-result-action">
+                  {item.locked ? 'Bloqueado' : item.type === 'concept' ? 'Revisar conceito →' : 'Abrir →'}
+                </span>
               </button>
             ))}
           </div>

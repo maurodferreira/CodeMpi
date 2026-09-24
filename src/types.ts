@@ -19,6 +19,7 @@ export interface StoreData {
   lessonDone: Record<number, boolean>;
   performance: Record<string, PerformanceData>;
   activityDates: string[];
+  progressVersion: number;
 }
 
 export type ConceptState = 'new' | 'developing' | 'solid' | 'review';

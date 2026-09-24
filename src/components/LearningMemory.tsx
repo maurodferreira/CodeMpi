@@ -120,8 +120,15 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
 
   const handleQuickReview = (concept: ConceptSummary) => {
     setSelectedConcept(null);
-    setReviewingConcept(concept);
     setReviewAnswer(null);
+
+    if (!getConceptReview(concept.id)) {
+      setReviewingConcept(null);
+      onReview(concept);
+      return;
+    }
+
+    setReviewingConcept(concept);
   };
 
   const handleReviewFromModal = () => {
@@ -161,7 +168,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
               <p>{recommendedReason}</p>
             </div>
             <button type="button" className="memory-recommendation-action" onClick={() => handleQuickReview(recommendedConcept)}>
-              Revisar agora →
+              {getConceptReview(recommendedConcept.id) ? 'Revisar agora →' : 'Praticar conceito →'}
             </button>
           </div>
         ) : (
@@ -478,7 +485,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
                 className="memory-modal-primary"
                 onClick={handleReviewFromModal}
               >
-                Revisão rápida →
+                {getConceptReview(selectedConcept.id) ? 'Revisão rápida →' : 'Ir para exercício →'}
               </button>
             </div>
           </div>

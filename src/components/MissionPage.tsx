@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from '../data/levels';
 import type { AppPreferences } from '../hooks/useAppPreferences';
@@ -85,10 +85,20 @@ export function MissionPage({
   handleShowHint,
   handleNext,
 }: MissionPageProps) {
+  const [focusMode, setFocusMode] = useState(false);
   const hasExercises = Boolean(currentLevel.exercises?.length);
 
+  const handleFeedbackRetry = () => {
+    const editor = document.querySelector<HTMLElement>('.code-editor .cm-content');
+
+    if (!editor) return;
+
+    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    editor.focus();
+  };
+
   return (
-<main className="mission-shell">
+<main className={`mission-shell ${focusMode ? 'code-focus' : ''}`}>
           <div className="mission-toolbar">
             <button className="text-action" onClick={() => setView('map')}>← Voltar para o mapa</button>
             <span>MISSÃO ATUAL · {currentLevel.tag}</span>
@@ -210,6 +220,9 @@ export function MissionPage({
                       lineWrapping={preferences.editorLineWrapping}
                       lineNumbers={preferences.editorLineNumbers}
                       indentSize={preferences.editorIndentSize}
+                      focusMode={focusMode}
+                      onToggleFocus={() => setFocusMode((previous) => !previous)}
+                      focusLabel={currentExercise.title}
                     />
 
                     <div className="learning-note">
@@ -218,28 +231,34 @@ export function MissionPage({
                     </div>
 
                     <div className="actions">
-                      <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
-                      <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
-                      <button
-                        className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
-                        onClick={() => {
-                          setShowFreeTest((prev) => !prev);
-                          setFreeResult(null);
-                        }}
-                      >
-                        {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
-                      </button>
-                      <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
-                        {hintsShown >= currentExercise.hints.length
-                          ? '3 dicas + solução exibidas'
-                          : hintsShown === 3
-                            ? preferences.showXp
-                              ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
-                              : 'Mostrar solução completa'
-                            : preferences.showXp
-                              ? `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
-                              : `Mostrar dica (${hintsShown + 1}/3)`}
-                      </button>
+                      <div className="actions-main">
+                        <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
+                      </div>
+
+                      <div className="actions-secondary">
+                        <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
+                        <button
+                          className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
+                          onClick={() => {
+                            setShowFreeTest((prev) => !prev);
+                            setFreeResult(null);
+                          }}
+                        >
+                          {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
+                        </button>
+                        <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
+                          {hintsShown >= currentExercise.hints.length
+                            ? '3 dicas + solução exibidas'
+                            : hintsShown === 3
+                              ? preferences.showXp
+                                ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                                : 'Mostrar solução completa'
+                              : preferences.showXp
+                                ? `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                                : `Mostrar dica (${hintsShown + 1}/3)`}
+                        </button>
+                      </div>
+
                       {preferences.showXp && (
                         <span className="xp-live">
                             {!alreadyDoneXP && hintsShown > 0
@@ -281,14 +300,14 @@ export function MissionPage({
                     </div>
                   )}
 
-                  {learningFeedback && (
+                  {learningFeedback && learningFeedback.tone !== 'success' && (
                     <div
                       className={`learning-feedback ${learningFeedback.tone}`}
                       role={learningFeedback.tone === 'error' ? 'alert' : 'status'}
                       aria-live="polite"
                     >
                       <span className="learning-feedback-icon">
-                        {learningFeedback.tone === 'success' ? '✓' : learningFeedback.tone === 'error' ? '!' : '↻'}
+                        {learningFeedback.tone === 'error' ? '!' : '↻'}
                       </span>
 
                       <div className="learning-feedback-content">
@@ -319,8 +338,7 @@ export function MissionPage({
                           )
                         )}
 
-                        {learningFeedback.tone !== 'success' && (
-                          <>
+                        <>
                             <div className="diagnostic-tip">
                               <span>O QUE OBSERVAR</span>
                               <strong>{learningFeedback.tone === 'error'
@@ -347,8 +365,21 @@ export function MissionPage({
                                 )}
                               </div>
                             )}
-                          </>
-                        )}
+
+                            <div className="learning-feedback-actions">
+                              <button type="button" className="btn ghost" onClick={handleFeedbackRetry}>
+                                Tentar novamente
+                              </button>
+                              <button
+                                type="button"
+                                className="btn secondary"
+                                disabled={hintsShown >= currentExercise.hints.length}
+                                onClick={handleShowHint}
+                              >
+                                {hintsShown >= currentExercise.hints.length ? 'Dicas já exibidas' : 'Usar dica'}
+                              </button>
+                            </div>
+                        </>
                       </div>
                     </div>
                   )}

@@ -9,6 +9,7 @@ interface AppHeaderProps {
   totalMax: number;
   overallProgress: number;
   levelsDoneTotal: number;
+  onOpenMission: () => void;
 }
 
 export function AppHeader({
@@ -18,7 +19,10 @@ export function AppHeader({
   totalMax,
   overallProgress,
   levelsDoneTotal,
+  onOpenMission,
 }: AppHeaderProps) {
+  const builtLevels = LEVELS.filter((level) => Boolean(level.exercises?.length)).length;
+
   return (
     <header className="top app-header">
       <button className="header-brand-button" onClick={() => setView('dashboard')} aria-label="Ir para o início">
@@ -50,7 +54,7 @@ export function AppHeader({
         <button className={`nav-link ${view === 'memory' ? 'active' : ''}`} onClick={() => setView('memory')}>
           Memória
         </button>
-        <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
+        <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={onOpenMission}>
           Missão
         </button>
         <button className="settings-trigger nav-settings" onClick={() => setView('settings')} aria-label="Abrir configurações" title="Configurações">
@@ -80,7 +84,7 @@ export function AppHeader({
             <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
           </div>
           <div className="sub" id="lvlprog">
-            {levelsDoneTotal} / {LEVELS.length} níveis fechados
+            {levelsDoneTotal} / {builtLevels} níveis disponíveis
           </div>
         </div>
       </div>
@@ -102,7 +106,7 @@ export function AppHeader({
           <span>✦</span>
           Memória
         </button>
-        <button className={view === 'mission' ? 'active' : ''} type="button" onClick={() => setView('mission')}>
+        <button className={view === 'mission' ? 'active' : ''} type="button" onClick={onOpenMission}>
           <span>›_</span>
           Missão
         </button>
