@@ -392,7 +392,7 @@ function getExecutionFeedback(error: string, args: string): Pick<LearningFeedbac
   const errorContext = args ? ` no teste com os valores ${args}` : '';
   const normalized = error.toLowerCase();
 
-  const undefinedMatch = error.match(/([A-Za-z_$][\\w$]*) is not defined/);
+  const undefinedMatch = error.match(/([A-Za-z_$][\w$]*) is not defined/);
   if (undefinedMatch) {
     return {
       title: 'Uma variável ainda não está disponível.',
