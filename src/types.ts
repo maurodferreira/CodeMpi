@@ -1,4 +1,4 @@
-export type View = 'dashboard' | 'map' | 'lesson' | 'mission' | 'completion' | 'settings';
+export type View = 'dashboard' | 'map' | 'memory' | 'lesson' | 'mission' | 'completion' | 'settings';
 export type ThemeKey = 'green' | 'carbon' | 'violet' | 'crimson' | 'ocean';
 
 export interface ThemeOption {
