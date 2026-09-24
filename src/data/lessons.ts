@@ -510,8 +510,6 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
     ],
   },
 
-,
-
   6: {
     levelTag: 'N7',
     title: 'Objetos',
@@ -524,7 +522,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '01 · CONCEITO',
         title: 'Um objeto reúne informações relacionadas',
         body: 'Um objeto permite guardar várias informações que pertencem à mesma coisa. Cada informação fica em uma propriedade formada por um nome e um valor.',
-        code: 'const pessoa = {\\n  nome: "Ana",\\n  idade: 20\\n};',
+        code: 'const pessoa = {\n  nome: "Ana",\n  idade: 20\n};',
         explanation: 'Neste exemplo, pessoa é um objeto com duas propriedades: nome e idade. Em vez de espalhar essas informações em variáveis separadas, o objeto mantém tudo relacionado no mesmo lugar.',
       },
       {
@@ -533,7 +531,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '02 · PROPRIEDADES',
         title: 'Cada propriedade representa uma informação',
         body: 'As propriedades podem guardar textos, números, booleanos e outros valores que você já conhece. O nome da propriedade ajuda a entender o papel daquele valor.',
-        code: 'const produto = {\\n  nome: "Teclado",\\n  preco: 120,\\n  disponivel: true\\n};',
+        code: 'const produto = {\n  nome: "Teclado",\n  preco: 120,\n  disponivel: true\n};',
         explanation: 'nome, preco e disponivel são propriedades do mesmo objeto. O objeto não cria um novo tipo de informação: ele organiza valores que você já aprendeu a usar.',
       },
       {
@@ -542,7 +540,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '03 · ACESSANDO',
         title: 'Leia uma propriedade com ponto',
         body: 'Quando você sabe qual propriedade quer acessar, use o nome do objeto, um ponto e o nome da propriedade.',
-        code: 'const pessoa = {\\n  nome: "Ana",\\n  idade: 20\\n};\\n\\npessoa.nome; // "Ana"\\npessoa.idade; // 20',
+        code: 'const pessoa = {\n  nome: "Ana",\n  idade: 20\n};\n\npessoa.nome; // "Ana"\npessoa.idade; // 20',
         explanation: 'A notação de ponto é a forma mais direta de ler uma propriedade conhecida. O valor de pessoa.nome é "Ana", enquanto pessoa.idade é 20.',
       },
       {
@@ -551,7 +549,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '04 · COLCHETES',
         title: 'Use colchetes quando o nome está em uma variável',
         body: 'Quando o nome da propriedade está guardado em uma variável, use a notação com colchetes. Assim, o programa usa o conteúdo dessa variável para decidir qual propriedade acessar.',
-        code: 'const pessoa = {\\n  nome: "Ana",\\n  idade: 20\\n};\\n\\nconst campo = "idade";\\npessoa[campo]; // 20',
+        code: 'const pessoa = {\n  nome: "Ana",\n  idade: 20\n};\n\nconst campo = "idade";\npessoa[campo]; // 20',
         explanation: 'Com pessoa.campo, o programa procuraria uma propriedade chamada campo. Com pessoa[campo], ele usa o valor de campo, que neste caso é "idade".',
       },
       {
@@ -560,7 +558,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '05 · ALTERANDO',
         title: 'Você também pode mudar uma propriedade',
         body: 'Uma propriedade existente pode receber um novo valor. O restante do objeto continua igual.',
-        code: 'const pessoa = {\\n  nome: "Ana",\\n  idade: 20\\n};\\n\\npessoa.idade = 21;',
+        code: 'const pessoa = {\n  nome: "Ana",\n  idade: 20\n};\n\npessoa.idade = 21;',
         explanation: 'Atribuir um novo valor à propriedade altera o objeto. Esse mesmo padrão já apareceu com variáveis: agora você está atualizando um valor que está dentro de uma estrutura.',
       },
       {
@@ -569,7 +567,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '06 · ESTRUTURA',
         title: 'Propriedades também podem entrar e sair',
         body: 'Atribuir um valor a uma propriedade que ainda não existe cria essa propriedade. Para remover uma propriedade, use delete.',
-        code: 'const usuario = {\\n  nome: "Ana",\\n  idade: 20\\n};\\n\\nusuario.ativo = true;\\ndelete usuario.idade;',
+        code: 'const usuario = {\n  nome: "Ana",\n  idade: 20\n};\n\nusuario.ativo = true;\ndelete usuario.idade;',
         explanation: 'Depois da primeira atribuição, ativo passa a fazer parte do objeto. Depois de delete, idade deixa de existir no objeto. Use essas operações quando a própria estrutura dos dados precisar mudar.',
       },
       {
@@ -578,7 +576,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '07 · OBJETOS + ARRAYS',
         title: 'Um array pode guardar vários objetos',
         body: 'Quando você tem muitas pessoas, produtos ou jogadores do mesmo tipo, pode colocar os objetos dentro de um array e percorrê-los com o for que aprendeu antes.',
-        code: 'const alunos = [\\n  { nome: "Ana", nota: 8 },\\n  { nome: "Bruno", nota: 6 }\\n];\\n\\nfor (let i = 0; i < alunos.length; i++) {\\n  console.log(alunos[i].nome);\\n}',
+        code: 'const alunos = [\n  { nome: "Ana", nota: 8 },\n  { nome: "Bruno", nota: 6 }\n];\n\nfor (let i = 0; i < alunos.length; i++) {\n  console.log(alunos[i].nome);\n}',
         explanation: 'alunos[i] é um objeto. Depois de encontrá-lo pelo índice, você pode acessar suas propriedades normalmente, como alunos[i].nome ou alunos[i].nota.',
       },
       {
@@ -587,7 +585,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '08 · VALIDANDO',
         title: 'Objetos também podem ser validados por suas propriedades',
         body: 'As regras de um programa muitas vezes dependem de mais de um dado do mesmo objeto. Leia as propriedades e combine as condições que precisam ser verdadeiras.',
-        code: 'function produtoValido(produto) {\\n  return produto.preco > 0 && produto.estoque >= 0;\\n}\\n\\nprodutoValido({ preco: 50, estoque: 3 }); // true',
+        code: 'function produtoValido(produto) {\n  return produto.preco > 0 && produto.estoque >= 0;\n}\n\nprodutoValido({ preco: 50, estoque: 3 }); // true',
         explanation: 'A função não pergunta sobre o objeto inteiro de uma vez. Ela usa as propriedades relevantes e transforma as regras do produto em uma resposta booleana.',
       },
       {
@@ -596,7 +594,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '09 · FUNÇÕES',
         title: 'Funções podem transformar dados de um objeto',
         body: 'Uma função pode receber um objeto, ler suas propriedades e devolver um resultado calculado. Isso permite criar tarefas reutilizáveis para um tipo de dado.',
-        code: 'function calcularTotal(produto) {\\n  return produto.preco * produto.quantidade;\\n}\\n\\ncalcularTotal({ preco: 50, quantidade: 3 }); // 150',
+        code: 'function calcularTotal(produto) {\n  return produto.preco * produto.quantidade;\n}\n\ncalcularTotal({ preco: 50, quantidade: 3 }); // 150',
         explanation: 'A função recebe um único objeto, mas consegue usar várias informações dele. Isso deixa a chamada mais organizada quando os dados pertencem à mesma entidade.',
       },
       {
@@ -611,7 +609,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
           answer: 1,
           explanation: 'A variável campo recebe o texto "idade". Com objeto[campo], o acesso é feito à propriedade idade, cujo valor é 20.',
         },
-        code: 'function obterPropriedade(objeto, campo) {\\n  return objeto[campo];\\n}',
+        code: 'function obterPropriedade(objeto, campo) {\n  return objeto[campo];\n}',
       },
       {
         id: 'ready',
@@ -619,7 +617,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         eyebrow: '11 · VOCÊ ESTÁ PRONTO',
         title: 'Agora pense em dados, não só em valores',
         body: 'Você já sabe criar objetos, acessar propriedades, usar colchetes, alterar, adicionar e remover dados, validar objetos e percorrer arrays de objetos. As missões agora vão transformar essas ideias em problemas de cadastro, busca, produtos e pedidos.',
-        code: 'function processarPedido(produto, quantidade) {\\n  // use o objeto para validar e atualizar o pedido\\n}',
+        code: 'function processarPedido(produto, quantidade) {\n  // use o objeto para validar e atualizar o pedido\n}',
         explanation: 'N7 marca a passagem de valores isolados para estruturas que representam entidades. O objetivo não é decorar sintaxe de objetos, mas aprender a organizar e manipular dados de forma clara.',
       },
     ],
