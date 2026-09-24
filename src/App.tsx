@@ -4,6 +4,7 @@ import { AppHeader } from './components/AppHeader';
 import { CompletionPage } from './components/CompletionPage';
 import { Dashboard } from './components/Dashboard';
 import { JourneyMap } from './components/JourneyMap';
+import { LearningMemoryPage } from './components/LearningMemoryPage';
 import { LessonPage } from './components/LessonPage';
 import { MissionPage } from './components/MissionPage';
 import { SettingsPage } from './components/SettingsPage';
@@ -223,6 +224,14 @@ export default function App() {
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
           openMission={openMission}
+        />
+      )}
+
+      {view === 'memory' && (
+        <LearningMemoryPage
+          concepts={concepts}
+          store={store}
+          onReview={handleReviewConcept}
         />
       )}
 
