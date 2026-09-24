@@ -9,6 +9,7 @@ import type { ApiConfig } from './config.js';
 import {
   routeApiRequest,
   type ApiRouteResponse,
+  type DatabaseHealthStatus,
 } from './router.js';
 
 interface BodyReadSuccess {
@@ -24,6 +25,14 @@ interface BodyReadFailure {
 }
 
 type BodyReadResult = BodyReadSuccess | BodyReadFailure;
+
+interface DatabaseHealthProbe {
+  ping(): Promise<void>;
+}
+
+export interface ApiServerDependencies {
+  database?: DatabaseHealthProbe | null;
+}
 
 const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH']);
 
@@ -186,7 +195,23 @@ function handleCorsPreflight(
   return true;
 }
 
-export function createApiServer(config: ApiConfig): Server {
+async function getDatabaseHealth(
+  database: DatabaseHealthProbe | null | undefined,
+): Promise<DatabaseHealthStatus> {
+  if (!database) return 'not_configured';
+
+  try {
+    await database.ping();
+    return 'ok';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+export function createApiServer(
+  config: ApiConfig,
+  dependencies: ApiServerDependencies = {},
+): Server {
   return createServer(async (request, response) => {
     const requestId = randomUUID();
     const origin = getRequestOrigin(request);
@@ -238,11 +263,16 @@ export function createApiServer(config: ApiConfig): Server {
     const host = request.headers.host ?? `${config.host}:${config.port}`;
     const url = new URL(request.url ?? '/', `http://${host}`);
 
+    const databaseHealth = url.pathname === '/health'
+      ? await getDatabaseHealth(dependencies.database)
+      : undefined;
+
     const routeResponse = routeApiRequest({
       method: request.method ?? 'GET',
       pathname: url.pathname,
       requestId,
       body: bodyResult.body,
+      databaseHealth,
     });
 
     sendJson(response, requestId, routeResponse);
