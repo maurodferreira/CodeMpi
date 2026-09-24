@@ -28,6 +28,7 @@ const preferencesRepositoryModule = await vite.ssrLoadModule('/src/services/pref
 const themeRepositoryModule = await vite.ssrLoadModule('/src/services/themeRepository.ts');
 const codeExecutorModule = await vite.ssrLoadModule('/src/services/codeExecutor.ts');
 const workerExecutorModule = await vite.ssrLoadModule('/src/services/workerCodeExecutor.ts');
+const executionPolicyModule = await vite.ssrLoadModule('/src/services/executionPolicy.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -609,6 +610,83 @@ test('free execution returns values and runtime errors through the executor', as
   assert.match(failure.error, /erro livre/);
 });
 
+
+
+test('execution policy accepts normal exercise code', () => {
+  assert.deepEqual(
+    executionPolicyModule.validateExecutionPolicy(
+      'function somar(a, b) { return a + b; }',
+    ),
+    { ok: true },
+  );
+});
+
+test('execution policy ignores blocked words inside comments and strings', () => {
+  assert.deepEqual(
+    executionPolicyModule.validateExecutionPolicy(
+      [
+        'function explicar() {',
+        '  // fetch não deve ser executado aqui',
+        '  const texto = "window fetch WebSocket";',
+        '  return texto.length;',
+        '}',
+      ].join('\n'),
+    ),
+    { ok: true },
+  );
+});
+
+test('execution policy blocks direct browser and network APIs', () => {
+  const result = executionPolicyModule.validateExecutionPolicy(
+    'function carregar() { return fetch("/dados"); }',
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'blocked-api');
+  assert.match(result.error, /fetch/);
+});
+
+test('execution policy blocks dynamic import', () => {
+  const result = executionPolicyModule.validateExecutionPolicy(
+    'function carregar() { return import("./outro.js"); }',
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'dynamic-import');
+});
+
+test('execution policy limits oversized source code', () => {
+  const result = executionPolicyModule.validateExecutionPolicy(
+    'a'.repeat(executionPolicyModule.MAX_USER_CODE_LENGTH + 1),
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'code-too-large');
+});
+
+test('code executor exposes policy violations without running tests', async () => {
+  const result = await codeExecutorModule.browserCodeExecutor.runTests(
+    'function buscar() { return fetch("/api"); }',
+    'buscar',
+    [{ args: [], exp: true }],
+  );
+
+  assert.equal(result.status, 'policy-error');
+  assert.equal(result.passed, 0);
+  assert.equal(result.total, 1);
+  assert.match(result.error, /fetch/);
+});
+
+test('runtime shadowing blocks a sensitive global missed inside a template expression', async () => {
+  const result = await codeExecutorModule.browserCodeExecutor.runFunction(
+    'function tentar() { return `${fetch("/api")}`; }',
+    'tentar',
+    [],
+  );
+
+  assert.equal(result.status, 'runtime-error');
+  assert.match(result.error, /fetch/i);
+});
 
 test('worker executor returns worker results and terminates the worker', async () => {
   let worker;
