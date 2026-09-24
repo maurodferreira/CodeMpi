@@ -19,6 +19,7 @@ export interface CreatePostgresDatabaseOptions {
   maxConnections?: number;
   connectionTimeoutMs?: number;
   idleTimeoutMs?: number;
+  onUnexpectedError?: (error: Error) => void;
 }
 
 async function queryWithClient<Row>(
@@ -63,6 +64,10 @@ export function createPostgresDatabase(
   };
 
   const pool = new Pool(config);
+
+  if (options.onUnexpectedError) {
+    pool.on('error', options.onUnexpectedError);
+  }
 
   return {
     query<Row = Record<string, unknown>>(
