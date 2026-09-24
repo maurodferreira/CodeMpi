@@ -125,7 +125,7 @@ export function LessonPage({
                 >
                   {quizAnswer === currentLessonStep.quiz.answer
                     ? '✓ Acertou! '
-                    : '↻ Ainda não. Escolha outra opção para tentar novamente. '}
+                    : '↻ Ainda não. Tente novamente e revise a explicação. '}
                   {currentLessonStep.quiz.explanation}
                 </div>
               )}
