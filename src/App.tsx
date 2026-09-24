@@ -252,6 +252,8 @@ export default function App() {
           concepts={concepts}
           openMission={openMission}
           onReview={handleReviewConcept}
+          levelUnlocked={levelUnlocked}
+          exUnlocked={exUnlocked}
         />
       )}
 
