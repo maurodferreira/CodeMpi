@@ -1853,7 +1853,7 @@ test('backend HTTP server validates JSON and request body size before routing', 
       'PAYLOAD_TOO_LARGE',
     );
 
-    const stubbedAuth = await fetch(`${baseUrl}/auth/sign-in`, {
+    const unavailableAuth = await fetch(`${baseUrl}/auth/sign-in`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1863,10 +1863,10 @@ test('backend HTTP server validates JSON and request body size before routing', 
       }),
     });
 
-    assert.equal(stubbedAuth.status, 501);
+    assert.equal(unavailableAuth.status, 503);
     assert.equal(
-      (await stubbedAuth.json()).error.code,
-      'AUTH_NOT_CONFIGURED',
+      (await unavailableAuth.json()).error.code,
+      'AUTH_UNAVAILABLE',
     );
   } finally {
     await new Promise((resolve, reject) => {
