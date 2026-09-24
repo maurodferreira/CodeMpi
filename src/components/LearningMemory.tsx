@@ -142,20 +142,14 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
       <section className="learning-memory">
         <div className="section-heading learning-memory-heading">
           <div>
-            <span className="section-kicker">MEMÓRIA DE APRENDIZADO</span>
+            <span className="section-kicker">MAPA DE HABILIDADES</span>
             <h2>Como estão suas habilidades</h2>
             <p className="learning-memory-intro">
-              O CodeMpi usa seus exercícios concluídos, tentativas e erros para acompanhar cada conceito.
+              Acompanhe o que já está sólido, o que ainda está se formando e onde vale colocar sua próxima tentativa.
             </p>
           </div>
 
-          <div className="learning-memory-tools">
-            <span className="concept-count">{concepts.length} conceitos acompanhados</span>
-            <div className="memory-carousel-actions" aria-label="Navegar pelos conceitos">
-              <button type="button" onClick={() => scrollCarousel('prev')} aria-label="Conceitos anteriores">←</button>
-              <button type="button" onClick={() => scrollCarousel('next')} aria-label="Próximos conceitos">→</button>
-            </div>
-          </div>
+          <span className="concept-count">{concepts.length} conceitos acompanhados</span>
         </div>
 
         {recommendedConcept ? (
