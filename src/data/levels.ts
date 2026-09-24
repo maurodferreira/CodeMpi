@@ -84,7 +84,7 @@ export const LEVELS: Level[] = [
         name: "Condicionais", tag: "N2", exercises: [
             {
                 title: "Par ou ímpar", conceptIds: ["remainder","comparisons"], desc: "Retorne true se o número for par e false se for ímpar.", sig: "function ehPar(n) { ... }", starter: "function ehPar(n) {\n  // use o resto da divisão\n\n}", fn: "ehPar", difficulty: "facil", xp: 120, skill: "condicionais e operador de resto",
-                hints: ["Pense em como descobrir se um número é divisível por 2.", "Use % para verificar se o resto da divisão por 2 é zero.", "A condição que resolve a missão é verificar se o resto de n por 2 é exatamente 0.", "function ehPar(n) {\n  if (n % 2 === 0) {\n    return true;\n  }\n\n  return false;\n}"],
+                hints: ["Pense em como descobrir se um número é divisível por 2.", "Use % para verificar se o resto da divisão por 2 é zero.", "A condição que resolve a missão é verificar se o resto de n por 2 é exatamente 0.", "function ehPar(n) {\n  if (n % 2 === 0) {\n    return true;\n  } else {\n    return false;\n  }\n}"],
                 tests: [{ args: [4], exp: true }, { args: [7], exp: false }, { args: [0], exp: true }]
             },
             {
@@ -94,22 +94,22 @@ export const LEVELS: Level[] = [
             },
             {
                 title: "Maior número", conceptIds: ["conditionals","comparisons"], desc: "Retorne o maior entre a e b.", sig: "function maior(a, b) { ... }", starter: "function maior(a, b) {\n\n}", fn: "maior", difficulty: "facil", xp: 120, skill: "comparações com if e else",
-                hints: ["Pense em como comparar dois números.", "Compare a com b; se a não for maior, b é o resultado.", "Uma forma direta é retornar a quando a > b e, caso contrário, retornar b.", "function maior(a, b) {\n  if (a > b) {\n    return a;\n  }\n\n  return b;\n}"],
+                hints: ["Pense em como comparar dois números.", "Compare a com b; se a não for maior, b é o resultado.", "Uma forma direta é retornar a quando a > b e, caso contrário, retornar b.", "function maior(a, b) {\n  if (a > b) {\n    return a;\n  } else {\n    return b;\n  }\n}"],
                 tests: [{ args: [10, 4], exp: 10 }, { args: [3, 9], exp: 9 }, { args: [5, 5], exp: 5 }]
             },
             {
                 title: "Pode dirigir?", conceptIds: ["comparisons"], desc: "Retorne true quando a idade for 18 ou mais.", sig: "function podeDirigir(idade) { ... }", starter: "function podeDirigir(idade) {\n\n}", fn: "podeDirigir", difficulty: "medio", xp: 180, skill: "comparação com maior ou igual",
-                hints: ["Pense no limite mínimo de idade pedido pela missão.", "A condição precisa aceitar 18, então use uma comparação de maior ou igual.", "Compare idade com 18 usando >=, porque a idade 18 também precisa passar.", "function podeDirigir(idade) {\n  if (idade >= 18) {\n    return true;\n  }\n\n  return false;\n}"],
+                hints: ["Pense no limite mínimo de idade pedido pela missão.", "A condição precisa aceitar 18, então use uma comparação de maior ou igual.", "Compare idade com 18 usando >=, porque a idade 18 também precisa passar.", "function podeDirigir(idade) {\n  if (idade >= 18) {\n    return true;\n  } else {\n    return false;\n  }\n}"],
                 tests: [{ args: [18], exp: true }, { args: [17], exp: false }, { args: [25], exp: true }]
             },
             {
                 title: "Aprovado ou reprovado", conceptIds: ["conditionals","comparisons"], desc: "Retorne 'aprovado' para nota maior ou igual a 7; caso contrário, 'reprovado'.", sig: "function resultado(nota) { ... }", starter: "function resultado(nota) {\n\n}", fn: "resultado", difficulty: "medio", xp: 180, skill: "if e else com regra de negócio",
-                hints: ["Pense na nota mínima necessária para cada resultado.", "Compare a nota com 7 usando >= e escolha entre os dois resultados.", "A condição central é nota >= 7; dependendo dela, retorne um dos dois textos pedidos.", "function resultado(nota) {\n  if (nota >= 7) {\n    return 'aprovado';\n  }\n\n  return 'reprovado';\n}"],
+                hints: ["Pense na nota mínima necessária para cada resultado.", "Compare a nota com 7 usando >= e escolha entre os dois resultados.", "A condição central é nota >= 7; dependendo dela, retorne um dos dois textos pedidos.", "function resultado(nota) {\n  if (nota >= 7) {\n    return 'aprovado';\n  } else {\n    return 'reprovado';\n  }\n}"],
                 tests: [{ args: [8], exp: "aprovado" }, { args: [7], exp: "aprovado" }, { args: [6.9], exp: "reprovado" }]
             },
             {
                 title: "Desconto na compra", conceptIds: ["conditionals","comparisons","multiplication"], desc: "Dê 10% de desconto quando o valor for maior ou igual a 100. Caso contrário, mantenha o valor.", sig: "function precoFinal(valor) { ... }", starter: "function precoFinal(valor) {\n  // escolha qual caminho seguir\n\n}", fn: "precoFinal", difficulty: "medio", xp: 220, skill: "condição com cálculo",
-                hints: ["Pense primeiro em quando o desconto deve acontecer.", "Se o valor for pelo menos 100, o cliente paga 90% do preço.", "Quando valor >= 100, o preço final representa 90% do original; quando não, mantenha o valor.", "function precoFinal(valor) {\n  if (valor >= 100) {\n    return valor * 0.9;\n  }\n\n  return valor;\n}"],
+                hints: ["Pense primeiro em quando o desconto deve acontecer.", "Se o valor for pelo menos 100, o cliente paga 90% do preço.", "Quando valor >= 100, o preço final representa 90% do original; quando não, mantenha o valor.", "function precoFinal(valor) {\n  if (valor >= 100) {\n    return valor * 0.9;\n  } else {\n    return valor;\n  }\n}"],
                 tests: [{ args: [100], exp: 90 }, { args: [250], exp: 225 }, { args: [80], exp: 80 }]
             },
             {
@@ -119,12 +119,12 @@ export const LEVELS: Level[] = [
             },
             {
                 title: "Senha válida", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne true somente se a senha tiver pelo menos 8 caracteres e for diferente de '12345678'.", sig: "function senhaValida(senha) { ... }", starter: "function senhaValida(senha) {\n\n}", fn: "senhaValida", difficulty: "dificil", xp: 320, skill: "combinar condições com &&",
-                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Use && para exigir tamanho mínimo de 8 e uma senha diferente de 12345678.", "As duas regras precisam ser verdadeiras: comprimento mínimo e senha diferente de 12345678.", "function senhaValida(senha) {\n  if (senha.length >= 8 && senha !== '12345678') {\n    return true;\n  }\n\n  return false;\n}"],
+                hints: ["Pense nas duas regras que precisam ser verdadeiras ao mesmo tempo.", "Use && para exigir tamanho mínimo de 8 e uma senha diferente de 12345678.", "As duas regras precisam ser verdadeiras: comprimento mínimo e senha diferente de 12345678.", "function senhaValida(senha) {\n  if (senha.length >= 8 && senha !== '12345678') {\n    return true;\n  } else {\n    return false;\n  }\n}"],
                 tests: [{ args: ["codempi2026"], exp: true }, { args: ["12345678"], exp: false }, { args: ["abc"], exp: false }, { args: ["abcdefgh"], exp: true }]
             },
             {
                 title: "Frete grátis", conceptIds: ["comparisons","booleanLogic","conditionals"], desc: "Retorne 'gratis' se a compra for 200 ou mais ou se o cliente for assinante. Caso contrário, retorne 'pago'.", sig: "function tipoFrete(valor, assinante) { ... }", starter: "function tipoFrete(valor, assinante) {\n\n}", fn: "tipoFrete", difficulty: "dificil", xp: 350, skill: "combinar condições com ||",
-                hints: ["Pense nas duas situações que liberam o frete grátis.", "Use || porque basta a compra atingir 200 ou o cliente ser assinante.", "Como basta uma das regras, use uma condição com OR entre valor >= 200 e assinante.", "function tipoFrete(valor, assinante) {\n  if (valor >= 200 || assinante) {\n    return 'gratis';\n  }\n\n  return 'pago';\n}"],
+                hints: ["Pense nas duas situações que liberam o frete grátis.", "Use || porque basta a compra atingir 200 ou o cliente ser assinante.", "Como basta uma das regras, use uma condição com OR entre valor >= 200 e assinante.", "function tipoFrete(valor, assinante) {\n  if (valor >= 200 || assinante) {\n    return 'gratis';\n  } else {\n    return 'pago';\n  }\n}"],
                 tests: [{ args: [250, false], exp: "gratis" }, { args: [100, true], exp: "gratis" }, { args: [100, false], exp: "pago" }]
             },
             {
