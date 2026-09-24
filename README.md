@@ -1,104 +1,507 @@
 # CodeMpi
 
-CodeMpi é uma plataforma de aprendizado de programação focada em prática guiada, feedback e evolução individual.
+**Aprenda programação praticando, errando, entendendo e tentando de novo.**
 
-A proposta é levar o aluno do básico ao pensamento algorítmico por meio de aulas, desafios progressivos, testes automáticos, diagnóstico de erros e ferramentas de experimentação.
+CodeMpi é uma plataforma educacional de programação criada para levar uma pessoa do primeiro contato com código até problemas mais avançados de lógica e algoritmos.
 
-## O que já existe
+A proposta não é ser apenas uma lista de exercícios. O produto combina aula guiada, prática progressiva, feedback imediato, revisão por conceito e acompanhamento individual da aprendizagem.
 
-- aulas guiadas para os níveis iniciais;
-- desafios progressivos com XP;
-- multiplicador de XP por uso de dicas: 100%, 90%, 75%, 50% e 25% na solução completa;
+> **Versão atual: 0.7.0**  
+> N1–N7 disponíveis · 70 desafios · 252 casos de teste · 55 conceitos acompanhados
+
+---
+
+## Visão do produto
+
+O CodeMpi foi pensado em torno de um ciclo simples:
+
+```text
+aprender → praticar → errar → entender → tentar novamente → dominar
+```
+
+O erro faz parte da experiência. Em vez de apenas informar que uma resposta está errada, o sistema tenta mostrar onde a lógica divergiu e qual conceito merece atenção.
+
+A experiência é **mobile-first**, mas também foi construída para funcionar bem no desktop.
+
+### Princípios
+
+- prática antes de memorização;
+- dificuldade crescente sem saltos desnecessários;
+- feedback que ajuda a pensar em vez de apenas entregar a resposta;
+- XP pessoal, sem ranking competitivo;
+- progresso nunca é apagado por perder uma sequência de dias;
+- dicas ajudam sem bloquear a conclusão;
+- solução completa existe como último recurso;
+- interface enxuta: elementos visuais precisam ter função no aprendizado.
+
+---
+
+## Estado atual
+
+### Conteúdo disponível
+
+| Nível | Tema | Desafios | Status |
+| --- | --- | ---: | --- |
+| N1 | Variáveis e Operadores | 10 | ✅ Disponível |
+| N2 | Condicionais | 10 | ✅ Disponível |
+| N3 | Loops | 10 | ✅ Disponível |
+| N4 | Strings | 10 | ✅ Disponível |
+| N5 | Arrays | 10 | ✅ Disponível |
+| N6 | Funções e Lógica | 10 | ✅ Disponível |
+| N7 | Objetos | 10 | ✅ Disponível |
+| N8 | Lógica Avançada | 10 planejados | 🚧 Planejado |
+| N9 | Algoritmos | 10 planejados | 🚧 Planejado |
+| N10 | Boss Final | 5 planejados | 🚧 Planejado |
+
+Hoje o CodeMpi possui:
+
+- **70 desafios implementados**;
+- **252 casos de teste** cadastrados;
+- **7 aulas guiadas**;
+- **55 conceitos** acompanhados pela memória de aprendizado;
+- revisão rápida e feedback pedagógico específico para todos os conceitos atuais.
+
+---
+
+## O que já funciona
+
+### Aprendizado
+
+- aulas guiadas antes da prática;
+- exercícios progressivos por nível;
 - testes automáticos;
-- diagnóstico educativo de erros;
-- teste de mesa com entradas personalizadas;
-- continuidade diária sem perda de progresso;
-- memória de aprendizado com revisão rápida sem XP;
-- mapa da jornada;
+- feedback baseado no primeiro caso que falhou;
+- diagnóstico por conceito;
+- dicas progressivas;
+- solução completa como última ajuda;
+- revisão rápida de conceitos sem XP;
+- memória de aprendizado;
+- busca por nível, conceito e desafio;
 - tela de conclusão de nível;
-- temas de interface personalizáveis.
+- continuidade diária e melhor sequência;
+- mapa completo da jornada.
+
+### Editor e prática
+
+- editor baseado em CodeMirror;
+- JavaScript com syntax highlighting;
+- números de linha configuráveis;
+- quebra de linha configurável;
+- tamanho de fonte configurável;
+- indentação de 2 ou 4 espaços;
+- atalhos de código para mobile;
+- modo foco no desktop;
+- teste livre com entradas personalizadas;
+- reinício do código com confirmação opcional.
+
+### Interface
+
+- layout responsivo;
+- experiência mobile-first;
+- navegação específica para mobile;
+- cinco temas visuais;
+- escala da interface;
+- opção de alto contraste;
+- redução de animações;
+- preferências persistidas no navegador.
+
+---
+
+## Sistema de XP e dicas
+
+Cada desafio possui um XP base.
+
+O XP recebido depende da quantidade de ajuda utilizada antes da primeira conclusão:
+
+| Ajuda utilizada | XP recebido |
+| --- | ---: |
+| Nenhuma dica | 100% |
+| 1 dica | 90% |
+| 2 dicas | 75% |
+| 3 dicas | 50% |
+| Solução completa | 25% |
+
+A primeira conclusão registra o XP conquistado.
+
+Reabrir ou resolver novamente um exercício já concluído **não concede XP adicional**.
+
+As aulas também possuem uma pequena recompensa própria.
+
+---
+
+## Memória de aprendizado
+
+O CodeMpi não acompanha apenas quais exercícios foram concluídos. Ele também registra sinais de aprendizagem por conceito.
+
+Cada conceito pode aparecer em um destes estados:
+
+- **Ainda não praticado** — nenhum exercício relacionado foi tentado;
+- **Em desenvolvimento** — já houve prática, mas o conceito ainda não está totalmente consolidado;
+- **Vale revisar** — o histórico registra dificuldade recorrente;
+- **Dominado** — todos os desafios relacionados ao conceito foram concluídos.
+
+A memória considera:
+
+- desafios relacionados;
+- exercícios concluídos;
+- número de tentativas;
+- tentativas com erro;
+- progresso daquele conceito.
+
+Cada conceito atual também possui:
+
+- orientação pedagógica específica;
+- pergunta de reflexão;
+- checkpoint de revisão rápida;
+- ligação com exercícios relevantes da jornada.
+
+Esses estados servem para **orientar a prática**, não para dar nota ao usuário.
+
+---
+
+## Progressão
+
+A jornada é sequencial.
+
+Um nível é liberado quando o nível anterior é concluído, e os exercícios de um nível são liberados progressivamente.
+
+Atalhos como busca, memória e navegação respeitam as mesmas regras de desbloqueio.
+
+Quando todo o conteúdo atualmente disponível é concluído, o progresso permanece registrado e a próxima etapa aparece como **Em breve**.
+
+---
 
 ## Stack
 
+### Frontend
+
 - React 19
-- TypeScript
-- Vite
-- CodeMirror
+- TypeScript 6
+- Vite 8
+- CodeMirror 6
 - CSS customizado
-- LocalStorage para persistência do progresso atual
 
-## Estrutura
+### Persistência atual
 
-```
+- LocalStorage
+
+Ainda não há backend, autenticação ou sincronização entre dispositivos.
+
+---
+
+## Arquitetura
+
+O projeto foi organizado para separar interface, estado, regras e conteúdo pedagógico.
+
+```text
 src/
 ├── components/
+│   ├── AppFooter.tsx
 │   ├── AppHeader.tsx
+│   ├── CodeEditor.tsx
 │   ├── CompletionPage.tsx
 │   ├── Dashboard.tsx
 │   ├── JourneyMap.tsx
 │   ├── LearningMemory.tsx
+│   ├── LearningMemoryPage.tsx
 │   ├── LessonPage.tsx
 │   ├── MissionPage.tsx
+│   ├── SearchPage.tsx
 │   └── SettingsPage.tsx
+│
 ├── data/
-│   ├── concepts.ts
+│   ├── levels/
+│   │   ├── n1.ts
+│   │   ├── n2.ts
+│   │   ├── n3.ts
+│   │   ├── n4.ts
+│   │   ├── n5.ts
+│   │   ├── n6.ts
+│   │   └── n7.ts
+│   │
+│   ├── lessons/
+│   │   ├── n1.ts
+│   │   ├── n2.ts
+│   │   ├── n3.ts
+│   │   ├── n4.ts
+│   │   ├── n5.ts
+│   │   ├── n6.ts
+│   │   └── n7.ts
+│   │
 │   ├── conceptGuidance.ts
 │   ├── conceptReviews.ts
+│   ├── concepts.ts
+│   ├── contentTypes.ts
 │   ├── levels.ts
 │   ├── lessons.ts
 │   └── themes.ts
+│
 ├── hooks/
+│   ├── useAppPreferences.ts
 │   ├── useLearningProgress.ts
 │   ├── useMissionRunner.ts
 │   ├── useProgressStore.ts
 │   └── useTheme.ts
+│
 ├── utils/
 │   ├── learningFeedback.ts
 │   ├── missionTargets.ts
 │   ├── progress.ts
 │   └── xp.ts
+│
+├── styles/
+│   └── dashboard-refinement.css
+│
+├── App.tsx
 ├── index.css
+├── main.tsx
 └── types.ts
 ```
 
-## Desenvolvimento
+### Responsabilidades principais
+
+**`App.tsx`**  
+Orquestra as telas, o nível atual, navegação e integração entre os hooks.
+
+**`data/levels/`**  
+Contém os desafios, testes, dicas, XP e metadados de cada nível.
+
+**`data/lessons/`**  
+Contém as aulas guiadas de cada nível.
+
+**`useProgressStore`**  
+Persiste progresso, dicas, desempenho, aulas concluídas e atividade diária.
+
+**`useLearningProgress`**  
+Calcula desbloqueios, XP total, ponto de continuação e estado dos conceitos.
+
+**`useMissionRunner`**  
+Compila e executa a solução do usuário, roda os testes e registra desempenho.
+
+**`LearningMemory`**  
+Transforma o histórico de prática em uma visão de conceitos para revisar, desenvolver ou considerar dominados.
+
+---
+
+## Como executar
+
+### Requisitos
+
+- Node.js compatível com as dependências atuais;
+- npm.
+
+### Clonar
+
+```bash
+git clone https://github.com/maurodferreira/CodeMpi.git
+cd CodeMpi
+```
+
+### Instalar dependências
 
 ```bash
 npm install
+```
+
+### Ambiente de desenvolvimento
+
+```bash
 npm run dev
 ```
 
-Validação local:
+O Vite normalmente disponibiliza o projeto em:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## Scripts
+
+### Desenvolvimento
 
 ```bash
-npm run build
+npm run dev
+```
+
+### Lint
+
+```bash
 npm run lint
 ```
 
-## Conteúdo atual
+### Build
 
-- **N1 — Variáveis e Operadores:** disponível, com aula guiada e 10 desafios.
-- **N2 — Condicionais:** disponível, com aula guiada e 10 desafios.
-- **N3 — Loops:** disponível, com aula guiada e 10 desafios.
-- **N4 a N10:** jornada estruturada, conteúdo ainda em construção.
+```bash
+npm run build
+```
 
-## Sistema de aprendizagem
+### Validação completa
 
-A progressão atual combina:
+```bash
+npm run check
+```
 
-1. aula guiada antes do primeiro desafio de cada nível;
-2. exercícios com testes automáticos;
-3. feedback educativo baseado no primeiro caso que falhou;
-4. diagnóstico por conceito, com foco e pergunta para pensar;
-5. dicas progressivas sem bloquear a conclusão;
-6. solução completa como último nível de ajuda, reduzindo o XP para 25%;
-7. memória de aprendizado baseada em conclusão, tentativas e erros;
-8. revisão rápida de conceito sem alterar XP ou progresso.
+`npm run check` executa lint e build em sequência.
 
-A primeira conclusão de um exercício registra o XP conquistado. Reabrir um exercício já concluído não concede XP novamente.
+### Preview do build
 
-## Arquitetura
+```bash
+npm run preview
+```
 
-O `App.tsx` atua como orquestrador. As telas ficam em `components/`, o estado persistente e a execução da missão ficam em hooks, os dados pedagógicos ficam em `data/`, e regras reutilizáveis de progressão, seleção de missão, feedback e XP ficam separadas da UI.
+---
 
-A execução atual de JavaScript acontece no navegador para o protótipo. Antes de disponibilizar execução de código para usuários públicos, o executor deverá ser substituído por um ambiente sandbox seguro.
+## Testes dos desafios
+
+Cada exercício possui casos de teste declarados junto ao conteúdo.
+
+Na v0.7.0 existem **252 casos de teste** distribuídos entre os 70 desafios.
+
+Distribuição atual:
+
+| Nível | Casos de teste |
+| --- | ---: |
+| N1 | 31 |
+| N2 | 32 |
+| N3 | 32 |
+| N4 | 37 |
+| N5 | 39 |
+| N6 | 46 |
+| N7 | 35 |
+| **Total** | **252** |
+
+As soluções completas cadastradas foram validadas contra todos esses casos.
+
+O avaliador também clona os argumentos antes de executar cada teste, impedindo que exercícios que alteram arrays ou objetos contaminem execuções seguintes.
+
+Arrays e objetos são comparados estruturalmente, sem depender da ordem de propriedades de um objeto.
+
+---
+
+## Execução de código
+
+Atualmente o código JavaScript escrito pelo usuário é executado diretamente no navegador.
+
+Essa abordagem é adequada para a fase atual de desenvolvimento e prototipação, mas **não é o modelo planejado para execução pública em produção**.
+
+Antes de disponibilizar o produto para usuários externos em escala, o executor deverá ser isolado em um ambiente seguro, com limites e sandbox apropriados.
+
+---
+
+## Dados e privacidade na versão atual
+
+O progresso atual fica salvo localmente no navegador.
+
+Isso inclui:
+
+- desafios concluídos;
+- XP conquistado;
+- dicas utilizadas;
+- tentativas e erros;
+- aulas concluídas;
+- dias de atividade;
+- preferências de interface;
+- tema.
+
+Consequências do modelo atual:
+
+- trocar de navegador ou dispositivo não leva o progresso junto;
+- limpar os dados do navegador pode remover o progresso;
+- ainda não existe conta do usuário;
+- ainda não existe recuperação de progresso na nuvem.
+
+Esses pontos fazem parte da próxima fase do produto.
+
+---
+
+## Roadmap
+
+### 0.7.x — Consolidação
+
+- [x] N1–N7 completos
+- [x] memória de aprendizado
+- [x] revisão rápida por conceito
+- [x] experiência mobile
+- [x] modo foco
+- [x] busca
+- [x] arquitetura de conteúdo separada por nível
+- [x] validação de 252 casos de teste
+- [x] estabilização da progressão e desbloqueios
+
+### Próxima fase — App Foundation
+
+Objetivo: deixar de tratar o CodeMpi apenas como um frontend com conteúdo e preparar uma fundação real de aplicativo.
+
+Planejado:
+
+- roteamento de aplicação;
+- camada de persistência desacoplada do LocalStorage;
+- estrutura de usuário;
+- preparação para PWA;
+- funcionamento offline onde fizer sentido;
+- estratégia segura para execução de código;
+- melhoria da organização de estado;
+- base para backend e sincronização.
+
+### Fase Cloud
+
+Planejado:
+
+- autenticação;
+- conta CodeMpi;
+- banco de dados;
+- progresso sincronizado;
+- recuperação de progresso;
+- uso em múltiplos dispositivos;
+- perfil do usuário.
+
+### Conteúdo futuro
+
+**N8 — Lógica Avançada**  
+Combinação de arrays, objetos, loops, funções e condicionais em problemas mais complexos.
+
+**N9 — Algoritmos**  
+Busca, ordenação, frequência, comparação de estratégias e introdução à eficiência.
+
+**N10 — Boss Final**  
+Problemas maiores que combinam diferentes conceitos da jornada em pequenos sistemas.
+
+---
+
+## O que o CodeMpi não quer ser
+
+O objetivo não é transformar aprendizado em uma coleção de medalhas, rankings ou elementos decorativos.
+
+XP existe para representar a própria evolução do usuário, não para competir com outras pessoas.
+
+O foco é criar uma experiência em que a pessoa consiga perceber:
+
+> “eu não sabia resolver isso antes; agora eu sei por quê funciona.”
+
+---
+
+## Status do projeto
+
+O CodeMpi está em desenvolvimento ativo.
+
+A versão **0.7.0** representa a consolidação da primeira grande base do produto:
+
+```text
+fundamentos
+    ↓
+condicionais
+    ↓
+loops
+    ↓
+strings
+    ↓
+arrays
+    ↓
+funções
+    ↓
+objetos
+```
+
+A próxima etapa deixa de ser apenas adicionar mais exercícios e passa a trabalhar também na **fundação do CodeMpi como aplicativo**.
