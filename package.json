@@ -11,7 +11,9 @@
     "check": "npm run lint && npm run test && npm run build",
     "test": "node --test scripts/test-foundation.test.mjs",
     "api:build": "tsc -p tsconfig.server.json",
-    "api:start": "npm run api:build && node dist-server/server/index.js"
+    "api:start": "npm run api:build && node dist-server/server/index.js",
+    "db:migrate": "npm run api:build && node dist-server/server/database/migrate.js",
+    "test:postgres": "npm run api:build && node --test scripts/test-postgres-integration.mjs"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
