@@ -539,6 +539,7 @@ test('HTTP sync flow bootstraps local progress and rejects stale revisions', asy
         },
         body: JSON.stringify({
           version: 1,
+          userId: randomUUID(),
           sourceLocalUserId: 'local-sync-test',
           progress,
           preferences,
@@ -709,6 +710,90 @@ WHERE user_id = $1;
       550,
     );
     assert.equal(persisted.rows[0].theme, 'violet');
+
+    const secondSignUpResponse = await fetch(
+      `${baseUrl}/auth/sign-up`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: `sync.second.${randomUUID()}@codempi.dev`,
+          password,
+        }),
+      },
+    );
+
+    assert.equal(secondSignUpResponse.status, 201);
+
+    const secondSignUp = await secondSignUpResponse.json();
+    const secondToken = secondSignUp.session.accessToken;
+
+    const secondDownloadBeforeBootstrap = await fetch(
+      `${baseUrl}/sync/snapshot`,
+      {
+        headers: {
+          Authorization: `Bearer ${secondToken}`,
+        },
+      },
+    );
+
+    assert.equal(secondDownloadBeforeBootstrap.status, 404);
+    assert.equal(
+      (await secondDownloadBeforeBootstrap.json()).error.code,
+      'SNAPSHOT_NOT_FOUND',
+    );
+
+    const secondBootstrapResponse = await fetch(
+      `${baseUrl}/sync/bootstrap`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${secondToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: 1,
+          userId: signUp.user.id,
+          sourceLocalUserId: 'local-sync-second-user',
+          progress,
+          preferences,
+          theme: 'carbon',
+          exportedAt: '2026-09-24T20:10:00.000Z',
+        }),
+      },
+    );
+
+    assert.equal(secondBootstrapResponse.status, 200);
+
+    const secondSnapshot = await secondBootstrapResponse.json();
+
+    assert.equal(secondSnapshot.userId, secondSignUp.user.id);
+    assert.notEqual(secondSnapshot.userId, signUp.user.id);
+    assert.equal(secondSnapshot.revision, 1);
+    assert.equal(secondSnapshot.theme, 'carbon');
+
+    const firstDownloadAfterSecondBootstrap = await fetch(
+      `${baseUrl}/sync/snapshot`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    assert.equal(firstDownloadAfterSecondBootstrap.status, 200);
+
+    const firstSnapshotAfterSecondBootstrap =
+      await firstDownloadAfterSecondBootstrap.json();
+
+    assert.equal(
+      firstSnapshotAfterSecondBootstrap.userId,
+      signUp.user.id,
+    );
+    assert.equal(firstSnapshotAfterSecondBootstrap.revision, 2);
+    assert.equal(firstSnapshotAfterSecondBootstrap.theme, 'violet');
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {
