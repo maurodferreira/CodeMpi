@@ -10,9 +10,11 @@ import {
   parseBootstrapSyncInput,
   parseUpdateSyncInput,
   SyncPayloadError,
+  type BootstrapSyncInput,
   type SyncPreferences,
   type SyncProgressData,
   type SyncTheme,
+  type UpdateSyncInput,
 } from './syncValidation.js';
 
 export interface CloudSyncSnapshot {
@@ -131,7 +133,7 @@ export function createSyncService({
 
   return {
     async bootstrap(accessToken, payload) {
-      let input;
+      let input: BootstrapSyncInput;
 
       try {
         input = parseBootstrapSyncInput(payload);
@@ -179,7 +181,7 @@ export function createSyncService({
     },
 
     async upload(accessToken, payload) {
-      let input;
+      let input: UpdateSyncInput;
 
       try {
         input = parseUpdateSyncInput(payload);
