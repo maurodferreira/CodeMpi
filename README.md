@@ -276,7 +276,7 @@ Persiste progresso, dicas, desempenho, aulas concluídas e atividade diária.
 Calcula desbloqueios, XP total, ponto de continuação e estado dos conceitos.
 
 **`useMissionRunner`**  
-Compila e executa a solução do usuário, roda os testes e registra desempenho.
+Orquestra a experiência da missão, registra desempenho e delega a execução para o `CodeExecutor`.
 
 **`LearningMemory`**  
 Transforma o histórico de prática em uma visão de conceitos para revisar, desenvolver ou considerar dominados.
@@ -343,7 +343,7 @@ npm run build
 npm run check
 ```
 
-`npm run check` executa lint e build em sequência.
+`npm run check` executa lint, testes automatizados e build em sequência.
 
 ### Preview do build
 
@@ -382,11 +382,21 @@ Arrays e objetos são comparados estruturalmente, sem depender da ordem de propr
 
 ## Execução de código
 
-Atualmente o código JavaScript escrito pelo usuário é executado diretamente no navegador.
+A execução JavaScript do usuário é isolada da interface principal por um **Web Worker**.
 
-Essa abordagem é adequada para a fase atual de desenvolvimento e prototipação, mas **não é o modelo planejado para execução pública em produção**.
+A camada atual inclui:
 
-Antes de disponibilizar o produto para usuários externos em escala, o executor deverá ser isolado em um ambiente seguro, com limites e sandbox apropriados.
+- contrato `CodeExecutor` desacoplado da UI;
+- Web Worker dedicado por execução;
+- timeout que encerra código que demora além do limite;
+- clonagem dos argumentos de teste;
+- política de tamanho máximo do código;
+- bloqueio de APIs que não pertencem ao ambiente de exercícios, como rede, storage e criação de outros workers;
+- shadowing de globais sensíveis como segunda barreira local.
+
+Essa arquitetura evita que erros comuns — incluindo loops infinitos — congelem a interface e reduz o acesso acidental a recursos do navegador.
+
+> **Limite de segurança:** Web Worker, timeout e bloqueio de APIs **não constituem um sandbox de segurança completo**. Código JavaScript executado no cliente continua no ambiente do navegador. Antes de permitir execução pública de código não confiável em escala, o executor deverá migrar para isolamento forte, como sandbox dedicado/processo isolado ou serviço remoto com limites próprios de CPU, memória e rede.
 
 ---
 
