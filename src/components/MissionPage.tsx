@@ -218,28 +218,34 @@ export function MissionPage({
                     </div>
 
                     <div className="actions">
-                      <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
-                      <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
-                      <button
-                        className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
-                        onClick={() => {
-                          setShowFreeTest((prev) => !prev);
-                          setFreeResult(null);
-                        }}
-                      >
-                        {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
-                      </button>
-                      <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
-                        {hintsShown >= currentExercise.hints.length
-                          ? '3 dicas + solução exibidas'
-                          : hintsShown === 3
-                            ? preferences.showXp
-                              ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
-                              : 'Mostrar solução completa'
-                            : preferences.showXp
-                              ? `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
-                              : `Mostrar dica (${hintsShown + 1}/3)`}
-                      </button>
+                      <div className="actions-main">
+                        <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
+                      </div>
+
+                      <div className="actions-secondary">
+                        <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
+                        <button
+                          className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
+                          onClick={() => {
+                            setShowFreeTest((prev) => !prev);
+                            setFreeResult(null);
+                          }}
+                        >
+                          {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
+                        </button>
+                        <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
+                          {hintsShown >= currentExercise.hints.length
+                            ? '3 dicas + solução exibidas'
+                            : hintsShown === 3
+                              ? preferences.showXp
+                                ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                                : 'Mostrar solução completa'
+                              : preferences.showXp
+                                ? `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                                : `Mostrar dica (${hintsShown + 1}/3)`}
+                        </button>
+                      </div>
+
                       {preferences.showXp && (
                         <span className="xp-live">
                             {!alreadyDoneXP && hintsShown > 0
