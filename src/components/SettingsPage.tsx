@@ -1,6 +1,7 @@
 import { THEMES } from '../data/themes';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AppPreferences, EditorFontSize, InterfaceScale, IndentSize } from '../hooks/useAppPreferences';
+import type { LocalUserProfile, UserSession } from '../domain/user';
 import type { ThemeKey, View } from '../types';
 
 interface SettingsPageProps {
@@ -12,6 +13,8 @@ interface SettingsPageProps {
   canInstall: boolean;
   isInstalled: boolean;
   onInstall: () => Promise<boolean>;
+  user: LocalUserProfile;
+  session: UserSession;
 }
 
 const interfaceOptions: Array<{ value: InterfaceScale; label: string; description: string }> = [
@@ -40,6 +43,8 @@ export function SettingsPage({
   canInstall,
   isInstalled,
   onInstall,
+  user,
+  session,
 }: SettingsPageProps) {
   const updatePreference = <K extends keyof AppPreferences>(key: K, value: AppPreferences[K]) => {
     setPreferences((current) => ({ ...current, [key]: value }));
@@ -353,19 +358,34 @@ export function SettingsPage({
         <section className="settings-section account-preview">
           <div className="settings-section-head">
             <div>
-              <span className="section-kicker">PRÓXIMA FASE</span>
-              <h2>Seus dados</h2>
+              <span className="section-kicker">SEUS DADOS</span>
+              <h2>Perfil local</h2>
             </div>
-            <span className="coming-badge">EM BREVE</span>
+            <span className="install-status-badge installed">ATIVO</span>
           </div>
 
           <div className="account-preview-card">
             <div className="account-placeholder">⌁</div>
             <div>
-              <strong>Leve seu progresso com você.</strong>
-              <p>Sincronização entre dispositivos, conta CodeMpi e recuperação do progresso chegarão em uma próxima fase.</p>
+              <strong>Este dispositivo já possui uma identidade CodeMpi.</strong>
+              <p>
+                Seu perfil local foi criado em {new Date(user.createdAt).toLocaleDateString('pt-BR')}.
+                O progresso continua salvo neste dispositivo por enquanto.
+              </p>
+              <small className="account-session-note">
+                Sessão local iniciada em {new Date(session.startedAt).toLocaleDateString('pt-BR')}.
+              </small>
             </div>
-            <span className="account-arrow">→</span>
+            <span className="account-arrow">✓</span>
+          </div>
+
+          <div className="account-cloud-note">
+            <strong>Conta e sincronização vêm depois.</strong>
+            <p>
+              Esta identidade local será a base para conectar autenticação, recuperação de progresso
+              e sincronização entre dispositivos sem apagar o que você já conquistou.
+            </p>
+            <span className="coming-badge">EM BREVE</span>
           </div>
         </section>
       </section>

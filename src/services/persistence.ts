@@ -2,6 +2,8 @@ export const STORAGE_KEYS = {
   progress: 'circuito_v2',
   preferences: 'codempi_preferences_v1',
   settings: 'codempi_settings_v1',
+  user: 'codempi_user_v1',
+  session: 'codempi_session_v1',
 } as const;
 
 export interface PersistenceAdapter {
