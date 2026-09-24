@@ -261,8 +261,12 @@ export function MissionPage({
                     <div className="win-banner show">
                       <span>
                         {isPassed
-                          ? `Todos os testes passaram! Você ganhou ${calculateExerciseXp(currentExercise.xp, hintsShown)} XP.`
-                          : `Exercício já concluído — este desafio valeu ${alreadyDoneXP} XP.`}
+                          ? (preferences.showXp
+                            ? `Todos os testes passaram! Você ganhou ${calculateExerciseXp(currentExercise.xp, hintsShown)} XP.`
+                            : 'Todos os testes passaram! Desafio concluído.')
+                          : (preferences.showXp
+                            ? `Exercício já concluído — este desafio valeu ${alreadyDoneXP} XP.`
+                            : 'Exercício já concluído.')}
                       </span>
 
                       {(
