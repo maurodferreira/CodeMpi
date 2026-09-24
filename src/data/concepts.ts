@@ -170,6 +170,46 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Remover duplicados',
     description: 'Construir uma lista preservando apenas a primeira ocorrência de cada valor.',
   },
+  functions: {
+    id: 'functions',
+    name: 'Funções',
+    description: 'Organizar uma tarefa em uma função reutilizável que recebe dados e devolve um resultado.',
+  },
+  parameters: {
+    id: 'parameters',
+    name: 'Parâmetros',
+    description: 'Receber dados de entrada em uma função por meio de parâmetros.',
+  },
+  localVariables: {
+    id: 'localVariables',
+    name: 'Variáveis locais',
+    description: 'Usar variáveis dentro de uma função para construir o resultado passo a passo.',
+  },
+  booleanFunctions: {
+    id: 'booleanFunctions',
+    name: 'Funções booleanas',
+    description: 'Criar funções que respondem perguntas com true ou false.',
+  },
+  earlyReturn: {
+    id: 'earlyReturn',
+    name: 'Retorno antecipado',
+    description: 'Encerrar uma função assim que uma condição importante for atendida.',
+  },
+  validation: {
+    id: 'validation',
+    name: 'Validação',
+    description: 'Verificar se uma entrada está dentro das regras antes de processá-la.',
+  },
+  functionComposition: {
+    id: 'functionComposition',
+    name: 'Composição de funções',
+    description: 'Reutilizar uma função dentro de outra para dividir um problema maior em etapas menores.',
+  },
+  multiStepLogic: {
+    id: 'multiStepLogic',
+    name: 'Lógica em etapas',
+    description: 'Combinar validação, cálculos, condições e funções auxiliares em uma solução.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito'): ConceptDefinition {
