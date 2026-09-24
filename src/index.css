@@ -5811,3 +5811,121 @@ html[data-ui-scale="large"] .settings-toggle {
     height: min(66vh, 700px) !important;
   }
 }
+
+/* Guided lesson experience */
+.lesson-intro {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:28px;
+  padding:34px 40px 8px;
+}
+.lesson-intro-eyebrow {
+  display:block;
+  margin-bottom:8px;
+  color:var(--accent);
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.13em;
+}
+.lesson-intro h1 {
+  margin:0;
+  font-family:var(--font-head);
+  font-size:clamp(30px,4vw,46px);
+  line-height:1;
+  letter-spacing:-.05em;
+  color:var(--text);
+}
+.lesson-intro p {
+  max-width:650px;
+  margin:11px 0 0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.7;
+}
+.lesson-intro-goal {
+  display:flex;
+  min-width:170px;
+  flex-direction:column;
+  gap:6px;
+  padding:10px 12px;
+  border:1px solid rgba(124,255,155,.1);
+  border-radius:9px;
+  background:rgba(124,255,155,.025);
+}
+.lesson-intro-goal span {
+  color:var(--muted-2);
+  font-size:7px;
+  letter-spacing:.11em;
+}
+.lesson-intro-goal strong {
+  color:var(--text);
+  font-size:9px;
+}
+.lesson-step-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.lesson-step-label {
+  color:var(--muted-2);
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.lesson-content h2 {
+  margin:10px 0 14px;
+  font-family:var(--font-head);
+  font-size:clamp(27px,4vw,42px);
+  line-height:1.02;
+  letter-spacing:-.045em;
+  color:var(--text);
+}
+.lesson-quiz-heading > span {
+  display:block;
+  margin-bottom:7px;
+  color:var(--accent);
+  font-size:7px;
+  font-weight:700;
+  letter-spacing:.12em;
+}
+.lesson-quiz-heading > strong {
+  display:block;
+  color:var(--text);
+  font-size:12px;
+  line-height:1.45;
+}
+@media (max-width: 800px) {
+  .lesson-intro {
+    grid-template-columns:1fr;
+    gap:15px;
+    padding:28px 20px 4px;
+  }
+  .lesson-intro-goal {
+    min-width:0;
+  }
+  .lesson-content h2 {
+    font-size:clamp(27px,8vw,38px);
+  }
+}
+@media (max-width: 520px) {
+  .lesson-intro {
+    padding:25px 20px 2px;
+  }
+  .lesson-intro h1 {
+    font-size:clamp(29px,9vw,37px);
+  }
+  .lesson-intro p {
+    font-size:10.5px;
+  }
+  .lesson-step-heading {
+    align-items:flex-start;
+    flex-direction:column;
+    gap:6px;
+  }
+  .lesson-content h2 {
+    margin-top:8px;
+  }
+}
