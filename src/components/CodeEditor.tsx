@@ -45,19 +45,19 @@ export function CodeEditor({
     const view = editorViewRef.current;
     if (!view) return;
 
-    view.dispatch(
-      view.state.changeByRange((range) => ({
-        changes: {
-          from: range.from,
-          to: range.to,
-          insert: text,
-        },
-        range: {
-          from: range.from + cursorOffset,
-          to: range.from + cursorOffset,
-        },
-      })),
-    );
+    const { main } = view.state.selection;
+
+    view.dispatch({
+      changes: {
+        from: main.from,
+        to: main.to,
+        insert: text,
+      },
+      selection: {
+        anchor: main.from + cursorOffset,
+      },
+      scrollIntoView: true,
+    });
 
     view.focus();
   };
