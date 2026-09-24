@@ -1,7 +1,8 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { Exercise } from '../data/levels';
-import type { ConsoleLog, LastTest, LearningFeedback, StoreData } from '../types';
+import type { ConsoleLog, LastTest, StoreData } from '../types';
 import { calculateExerciseXp } from '../utils/xp';
+import { getLearningFeedback } from '../utils/learningFeedback';
 
 interface UseMissionRunnerParams {
   currentExercise: Exercise | null;
