@@ -148,7 +148,7 @@ export const LEVELS: Level[] = [
             },
             {
                 title: "Soma dos múltiplos de 3", conceptIds: ["loops","accumulators","conditionals","remainder"], desc: "Retorne a soma dos números entre 1 e n que são múltiplos de 3.", sig: "function somaMultiplosDe3(n) { ... }", starter: "function somaMultiplosDe3(n) {\n  let total = 0;\n\n  // encontre os múltiplos de 3\n}", fn: "somaMultiplosDe3", difficulty: "medio", xp: 180, skill: "combinar laço, condição e acumulador",
-                hints: ["Percorra de 1 até n.", "Um múltiplo de 3 deixa resto 0 quando dividido por 3.", "for (let i = 1; i <= n; i++) {\n  if (i % 3 === 0) total += i;\n}\nreturn total;"],
+                hints: ["Percorra de 1 até n.", "Um múltiplo de 3 deixa resto 0 quando dividido por 3.", "function somaMultiplosDe3(n) {\n  let total = 0;\n\n  for (let i = 1; i <= n; i++) {\n    if (i % 3 === 0) total += i;\n  }\n\n  return total;\n}"],
                 tests: [{ args: [3], exp: 3 }, { args: [10], exp: 18 }, { args: [15], exp: 45 }]
             },
             {
