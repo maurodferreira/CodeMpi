@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import './styles/dashboard-refinement.css';
 import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
@@ -10,31 +10,28 @@ import { LessonPage } from './components/LessonPage';
 import { MissionPage } from './components/MissionPage';
 import { SearchPage } from './components/SearchPage';
 import { SettingsPage } from './components/SettingsPage';
-import { useAppPreferences } from './hooks/useAppPreferences';
-import { useMissionRunner } from './hooks/useMissionRunner';
-import { useLearningProgress } from './hooks/useLearningProgress';
-import { useProgressStore } from './hooks/useProgressStore';
-import { useTheme } from './hooks/useTheme';
 import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
+import { useAppPreferences } from './hooks/useAppPreferences';
+import {
+  getLessonPath,
+  getLevelPath,
+  getMissionPath,
+  parseAppRoute,
+  useAppRouter,
+  type AppRoute,
+} from './hooks/useAppRouter';
+import { useLearningProgress } from './hooks/useLearningProgress';
+import { useMissionRunner } from './hooks/useMissionRunner';
+import { useProgressStore } from './hooks/useProgressStore';
+import { useTheme } from './hooks/useTheme';
+import type { ConceptSummary, View } from './types';
+import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
 import { HINT_MULTIPLIERS } from './utils/xp';
-import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
-import type { ConceptSummary, View } from './types';
 
 export default function App() {
-  const [view, setView] = useState<View>('dashboard');
-  const [levelIndex, setLevelIndex] = useState(0);
-  const [exerciseIndex, setExerciseIndex] = useState(0);
   const { store, setStore, registerActivity } = useProgressStore();
-  const currentLevel = LEVELS[levelIndex];
-  const hasExercises = Boolean(currentLevel.exercises?.length);
-  const currentExercise = hasExercises ? currentLevel.exercises![exerciseIndex] : null;
-
-  const [code, setCode] = useState(currentExercise?.starter || '');
-  const [lessonStep, setLessonStep] = useState(0);
-  const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const [completionLevel, setCompletionLevel] = useState<number | null>(null);
   const { theme, setTheme } = useTheme();
   const { preferences, setPreferences } = useAppPreferences();
 
@@ -57,6 +54,79 @@ export default function App() {
     concepts,
     reviewTarget,
   } = useLearningProgress(store);
+
+  const resolveRoute = useCallback((nextRoute: AppRoute): AppRoute => {
+    const li = nextRoute.levelIndex;
+
+    if (li === undefined) return nextRoute;
+
+    const level = LEVELS[li];
+
+    if (!level || !levelUnlocked(li)) {
+      return parseAppRoute('/jornada');
+    }
+
+    if (nextRoute.view === 'lesson') {
+      return LEVEL_LESSONS[li]
+        ? nextRoute
+        : parseAppRoute(getLevelPath(li));
+    }
+
+    if (nextRoute.view === 'completion') {
+      return levelComplete(li)
+        ? nextRoute
+        : parseAppRoute('/jornada');
+    }
+
+    if (nextRoute.view !== 'mission') return nextRoute;
+
+    if (!level.exercises?.length) {
+      return nextRoute.exerciseIndex === undefined
+        ? nextRoute
+        : parseAppRoute(getLevelPath(li));
+    }
+
+    if (LEVEL_LESSONS[li] && !store.lessonDone[li]) {
+      return parseAppRoute(getLessonPath(li));
+    }
+
+    const requestedExercise = nextRoute.exerciseIndex ?? getNextExerciseIndex(li, store);
+
+    if (!level.exercises[requestedExercise] || !exUnlocked(li, requestedExercise)) {
+      const fallback = getNextExerciseIndex(li, store);
+
+      if (!level.exercises[fallback] || !exUnlocked(li, fallback)) {
+        return parseAppRoute('/jornada');
+      }
+
+      return parseAppRoute(getMissionPath(li, fallback));
+    }
+
+    const canonicalPath = getMissionPath(li, requestedExercise);
+
+    return nextRoute.pathname === canonicalPath
+      ? nextRoute
+      : parseAppRoute(canonicalPath);
+  }, [exUnlocked, levelComplete, levelUnlocked, store]);
+
+  const initialRoute = resolveRoute(parseAppRoute(window.location.pathname));
+  const initialLevelIndex = initialRoute.levelIndex ?? continuePoint.li;
+  const initialLevel = LEVELS[initialLevelIndex] || LEVELS[0];
+  const initialExerciseIndex = initialRoute.exerciseIndex
+    ?? (initialLevel.exercises?.length ? getNextExerciseIndex(initialLevelIndex, store) : 0);
+
+  const [levelIndex, setLevelIndex] = useState(initialLevelIndex);
+  const [exerciseIndex, setExerciseIndex] = useState(initialExerciseIndex);
+  const currentLevel = LEVELS[levelIndex] || LEVELS[0];
+  const hasExercises = Boolean(currentLevel.exercises?.length);
+  const currentExercise = hasExercises ? currentLevel.exercises![exerciseIndex] || null : null;
+
+  const [code, setCode] = useState(currentExercise?.starter || '');
+  const [lessonStep, setLessonStep] = useState(0);
+  const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
+  const [completionLevel, setCompletionLevel] = useState<number | null>(
+    initialRoute.view === 'completion' ? initialRoute.levelIndex ?? null : null,
+  );
 
   const currentLesson = LEVEL_LESSONS[levelIndex];
   const currentLessonStep = currentLesson?.steps[lessonStep];
@@ -97,30 +167,99 @@ export default function App() {
     getKey,
   });
 
+  const applyRouteState = useCallback((nextRoute: AppRoute) => {
+    const li = nextRoute.levelIndex;
+
+    if (li === undefined) return;
+
+    const level = LEVELS[li];
+
+    if (!level) return;
+
+    setLevelIndex(li);
+    setLessonStep(0);
+    setQuizAnswer(null);
+
+    if (nextRoute.view === 'completion') {
+      setCompletionLevel(li);
+      return;
+    }
+
+    setCompletionLevel(null);
+
+    if (nextRoute.view === 'lesson') {
+      const target = level.exercises?.length ? getNextExerciseIndex(li, store) : 0;
+      setExerciseIndex(target);
+      return;
+    }
+
+    if (nextRoute.view !== 'mission') return;
+
+    if (!level.exercises?.length) {
+      setExerciseIndex(0);
+      resetMissionState(null);
+      return;
+    }
+
+    const target = nextRoute.exerciseIndex ?? getNextExerciseIndex(li, store);
+    setExerciseIndex(target);
+    resetMissionState(level.exercises[target] || null);
+  }, [resetMissionState, store]);
+
+  const {
+    route,
+    navigateView,
+    navigateLevel,
+    navigateLesson,
+    navigateMission,
+    navigateCompletion,
+  } = useAppRouter({
+    resolveRoute,
+    onRouteChange: applyRouteState,
+  });
+
+  const view = route.view;
+
+  const setView: Dispatch<SetStateAction<View>> = (nextValue) => {
+    const nextView = typeof nextValue === 'function' ? nextValue(view) : nextValue;
+
+    if (nextView === 'lesson') {
+      navigateLesson(levelIndex);
+      return;
+    }
+
+    if (nextView === 'mission') {
+      if (currentLevel.exercises?.length) {
+        navigateMission(levelIndex, exerciseIndex);
+      } else {
+        navigateLevel(levelIndex);
+      }
+      return;
+    }
+
+    if (nextView === 'completion') {
+      navigateCompletion(completionLevel ?? levelIndex);
+      return;
+    }
+
+    navigateView(nextView);
+  };
+
   const handleReviewConcept = (concept: ConceptSummary) => {
     const target = findConceptMissionTarget(concept, store, exUnlocked);
 
     if (!target) return;
 
-    resetMissionState(target.exercise);
-    setLevelIndex(target.levelIndex);
-    setExerciseIndex(target.exerciseIndex);
-    setLessonStep(0);
-    setQuizAnswer(null);
-    setView('mission');
+    navigateMission(target.levelIndex, target.exerciseIndex);
   };
 
   const openMission = (li: number, ei?: number) => {
     if (!levelUnlocked(li)) return;
 
     const level = LEVELS[li];
+
     if (!level.exercises?.length) {
-      resetMissionState(null);
-      setLevelIndex(li);
-      setExerciseIndex(0);
-      setLessonStep(0);
-      setQuizAnswer(null);
-      setView('mission');
+      navigateLevel(li);
       return;
     }
 
@@ -128,16 +267,16 @@ export default function App() {
 
     const target = ei ?? getNextExerciseIndex(li, store);
 
-    resetMissionState(level.exercises[target] || null);
-    setLevelIndex(li);
-    setExerciseIndex(target);
-    setLessonStep(0);
-    setQuizAnswer(null);
-    setView(LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
+    if (LEVEL_LESSONS[li] && !store.lessonDone[li]) {
+      navigateLesson(li);
+      return;
+    }
+
+    navigateMission(li, target);
   };
 
   const handleOpenMissionNavigation = () => {
-    openMission(levelIndex);
+    openMission(continuePoint.li, continuePoint.ei);
   };
 
   const handleShowHint = () => {
@@ -159,18 +298,20 @@ export default function App() {
 
   const handleLevelCompletion = (li: number) => {
     setCompletionLevel(li);
-    setView('completion');
+    navigateCompletion(li);
   };
 
   const handleLessonFinish = () => {
     registerActivity();
+
     if (!store.lessonDone[levelIndex] && currentLesson) {
       setStore((prev) => ({
         ...prev,
         lessonDone: { ...prev.lessonDone, [levelIndex]: true },
       }));
     }
-    setView('mission');
+
+    navigateMission(levelIndex, exerciseIndex, { skipResolve: true });
   };
 
   const handleNext = () => {
@@ -179,9 +320,7 @@ export default function App() {
     const isLastInLevel = exerciseIndex === currentLevel.exercises.length - 1;
 
     if (!isLastInLevel) {
-      const nextExerciseIndex = exerciseIndex + 1;
-      resetMissionState(currentLevel.exercises[nextExerciseIndex]);
-      setExerciseIndex(nextExerciseIndex);
+      navigateMission(levelIndex, exerciseIndex + 1);
       return;
     }
 
@@ -315,10 +454,7 @@ export default function App() {
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
           exUnlocked={exUnlocked}
-          selectExercise={(ei) => {
-            resetMissionState(currentLevel.exercises?.[ei] || null);
-            setExerciseIndex(ei);
-          }}
+          selectExercise={(ei) => navigateMission(levelIndex, ei)}
           setView={setView}
           openMission={openMission}
           setCode={setCode}
