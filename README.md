@@ -192,7 +192,7 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 - request ID por requisição
 - graceful shutdown
 
-A fundação da API já existe e o runtime PostgreSQL usa `pg` com pool de conexões. O schema, migrations e repositories SQL de usuário, sessão e progresso já estão conectados à camada de banco. A autenticação HTTP do backend também já está implementada; a interface de cadastro/login e a sincronização de progresso entram nas próximas etapas.
+A fundação da API já existe e o runtime PostgreSQL usa `pg` com pool de conexões. O schema, migrations e repositories SQL de usuário, sessão e progresso já estão conectados à camada de banco. A autenticação HTTP e a Sync Foundation do backend também já estão implementadas; a interface de conta e a sincronização automática no frontend entram nas próximas etapas.
 
 
 ### Database Foundation
@@ -471,7 +471,9 @@ Health check:
 GET http://127.0.0.1:3001/health
 ```
 
-Enquanto autenticação e banco ainda não estão conectados, as rotas `/auth/*` e `/sync/*` respondem `501 Not Implemented` de forma explícita, em vez de simular uma conta funcional.
+A porta pode ser sobrescrita com `CODEMPI_API_PORT` quando `3001` já estiver ocupada, por exemplo `3002`.
+
+Sem `CODEMPI_DATABASE_URL` configurada, o health check continua disponível e informa que o PostgreSQL não está configurado. Nesse modo, autenticação e sync não simulam dados: as rotas protegidas respondem `503 AUTH_UNAVAILABLE` ou `503 SYNC_UNAVAILABLE`.
 
 ### Configuração da Cloud Foundation
 
@@ -489,7 +491,7 @@ CODEMPI_DATABASE_URL=
 CODEMPI_SESSION_TTL_HOURS=24
 ```
 
-Para desenvolvimento futuro com uma API real, crie um arquivo `.env.local` e habilite explicitamente a integração:
+Para apontar o frontend para uma instância real da API, crie um arquivo `.env.local` e habilite explicitamente a integração:
 
 ```env
 VITE_CODEMPI_CLOUD_ENABLED=true
