@@ -18,6 +18,11 @@ export interface AuthenticatedSession {
   expiresAt: string;
 }
 
+export interface CloudIdentity {
+  user: CloudUserProfile;
+  session: AuthenticatedSession;
+}
+
 export interface CloudSnapshot {
   version: typeof CLOUD_SNAPSHOT_VERSION;
   userId: string;
