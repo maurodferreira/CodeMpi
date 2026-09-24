@@ -3,7 +3,7 @@ const CACHE_NAME = 'codempi-shell-v1';
 
 const APP_SHELL = [
   '/',
-  '/manifest.webmanifest',
+  '/manifest.json',
   '/app-icon.svg',
   '/favicon.svg',
   '/logo.png',
