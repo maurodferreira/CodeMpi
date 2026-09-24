@@ -210,6 +210,16 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Lógica em etapas',
     description: 'Combinar validação, cálculos, condições e funções auxiliares em uma solução.',
   },
+  percentage: {
+    id: 'percentage',
+    name: 'Porcentagens',
+    description: 'Calcular acréscimos, descontos e taxas percentuais.',
+  },
+  sequentialState: {
+    id: 'sequentialState',
+    name: 'Estado em sequência',
+    description: 'Atualizar mais de um valor ao longo de uma repetição para construir uma sequência de resultados.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito'): ConceptDefinition {
