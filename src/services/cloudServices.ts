@@ -8,11 +8,16 @@ import {
   createSyncRepository,
   type SyncRepository,
 } from './syncRepository';
+import {
+  cloudSessionRepository,
+  type CloudSessionRepository,
+} from './cloudSessionRepository';
 
 export interface CloudServices {
   api: ApiClient;
   auth: AuthRepository;
   sync: SyncRepository;
+  session: CloudSessionRepository;
 }
 
 export function createCloudServices(
@@ -30,5 +35,6 @@ export function createCloudServices(
     api,
     auth: createAuthRepository(api),
     sync: createSyncRepository(api),
+    session: cloudSessionRepository,
   };
 }
