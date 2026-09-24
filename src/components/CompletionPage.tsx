@@ -25,6 +25,8 @@ export function CompletionPage({
   setView,
 }: CompletionPageProps) {
   const learnedItems = COMPLETION_LEARNED[completionLevel] || [];
+  const nextLevel = LEVELS[completionLevel + 1];
+  const nextLevelBuilt = Boolean(nextLevel?.exercises?.length);
 
   return (
     <main className="completion-page">
@@ -49,14 +51,27 @@ export function CompletionPage({
           </div>
         )}
 
+        {nextLevel && (
+          <div className={`completion-next ${nextLevelBuilt ? '' : 'soon'}`.trim()}>
+            <div>
+              <span className="section-kicker">{nextLevelBuilt ? 'PRÓXIMO PASSO' : 'PRÓXIMA ETAPA'}</span>
+              <strong>{nextLevel.tag} · {nextLevel.name}</strong>
+              <p>{nextLevelBuilt ? 'Continue praticando e avance para o próximo conjunto de desafios.' : 'O próximo nível ainda está sendo construído. Sua conclusão já fica registrada.'}</p>
+            </div>
+            <span className="completion-next-status">{nextLevelBuilt ? 'PRONTO' : 'EM BREVE'}</span>
+          </div>
+        )}
+
         <div className="completion-actions">
           <button className="btn ghost" onClick={() => setView('map')}>Ver jornada</button>
-          {completionLevel < LEVELS.length - 1 ? (
+          {nextLevelBuilt ? (
             <button className="btn primary" onClick={() => openMission(completionLevel + 1)}>
-              Desbloqueado: {LEVELS[completionLevel + 1].tag} →
+              Continuar para {nextLevel.tag} →
             </button>
           ) : (
-            <button className="btn primary" onClick={() => setView('dashboard')}>Voltar ao Dashboard</button>
+            <button className="btn primary" onClick={() => setView('dashboard')}>
+              Voltar ao Dashboard
+            </button>
           )}
         </div>
       </section>
