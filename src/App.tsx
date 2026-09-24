@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import './styles/dashboard-refinement.css';
 import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
@@ -11,6 +11,7 @@ import { MissionPage } from './components/MissionPage';
 import { SearchPage } from './components/SearchPage';
 import { SettingsPage } from './components/SettingsPage';
 import { useAppPreferences } from './hooks/useAppPreferences';
+import { useAppRouter } from './hooks/useAppRouter';
 import { useMissionRunner } from './hooks/useMissionRunner';
 import { useLearningProgress } from './hooks/useLearningProgress';
 import { useProgressStore } from './hooks/useProgressStore';
@@ -23,18 +24,33 @@ import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionT
 import type { ConceptSummary, View } from './types';
 
 export default function App() {
-  const [view, setView] = useState<View>('dashboard');
-  const [levelIndex, setLevelIndex] = useState(0);
-  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const {
+    route,
+    navigateView,
+    navigateLevel,
+    navigateLesson,
+    navigateMission,
+    navigateCompletion,
+  } = useAppRouter();
+  const view = route.view;
+  const initialLevelIndex = route.levelIndex ?? 0;
+  const initialExerciseIndex = route.exerciseIndex ?? 0;
+  const [levelIndex, setLevelIndex] = useState(
+    LEVELS[initialLevelIndex] ? initialLevelIndex : 0,
+  );
+  const [exerciseIndex, setExerciseIndex] = useState(initialExerciseIndex);
   const { store, setStore, registerActivity } = useProgressStore();
-  const currentLevel = LEVELS[levelIndex];
+  const currentLevel = LEVELS[levelIndex] || LEVELS[0];
   const hasExercises = Boolean(currentLevel.exercises?.length);
-  const currentExercise = hasExercises ? currentLevel.exercises![exerciseIndex] : null;
+  const currentExercise = hasExercises ? currentLevel.exercises![exerciseIndex] || null : null;
 
   const [code, setCode] = useState(currentExercise?.starter || '');
   const [lessonStep, setLessonStep] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const [completionLevel, setCompletionLevel] = useState<number | null>(null);
+  const [completionLevel, setCompletionLevel] = useState<number | null>(
+    route.view === 'completion' ? route.levelIndex ?? null : null,
+  );
+  const processedRoutePath = useRef<string | null>(null);
   const { theme, setTheme } = useTheme();
   const { preferences, setPreferences } = useAppPreferences();
 
@@ -97,6 +113,121 @@ export default function App() {
     getKey,
   });
 
+  const setView: Dispatch<SetStateAction<View>> = (nextValue) => {
+    const nextView = typeof nextValue === 'function' ? nextValue(view) : nextValue;
+
+    if (nextView === 'lesson') {
+      navigateLesson(levelIndex);
+      return;
+    }
+
+    if (nextView === 'mission') {
+      if (currentLevel.exercises?.length) {
+        navigateMission(levelIndex, exerciseIndex);
+      } else {
+        navigateLevel(levelIndex);
+      }
+      return;
+    }
+
+    if (nextView === 'completion') {
+      navigateCompletion(completionLevel ?? levelIndex);
+      return;
+    }
+
+    navigateView(nextView);
+  };
+
+  useEffect(() => {
+    if (processedRoutePath.current === route.pathname) return;
+
+    processedRoutePath.current = route.pathname;
+
+    const li = route.levelIndex;
+
+    if (li === undefined) return;
+
+    const level = LEVELS[li];
+
+    if (!level || !levelUnlocked(li)) {
+      navigateView('map', { replace: true });
+      return;
+    }
+
+    setLevelIndex(li);
+    setLessonStep(0);
+    setQuizAnswer(null);
+
+    if (route.view === 'lesson') {
+      if (!LEVEL_LESSONS[li]) {
+        navigateLevel(li, { replace: true });
+        return;
+      }
+
+      setExerciseIndex(getNextExerciseIndex(li, store));
+      return;
+    }
+
+    if (route.view === 'completion') {
+      if (!levelComplete(li)) {
+        navigateView('map', { replace: true });
+        return;
+      }
+
+      setCompletionLevel(li);
+      return;
+    }
+
+    if (route.view !== 'mission') return;
+
+    if (!level.exercises?.length) {
+      if (route.exerciseIndex !== undefined) {
+        navigateLevel(li, { replace: true });
+        return;
+      }
+
+      setExerciseIndex(0);
+      resetMissionState(null);
+      return;
+    }
+
+    if (LEVEL_LESSONS[li] && !store.lessonDone[li]) {
+      navigateLesson(li, { replace: true });
+      return;
+    }
+
+    const target = route.exerciseIndex ?? getNextExerciseIndex(li, store);
+
+    if (!level.exercises[target] || !exUnlocked(li, target)) {
+      const fallback = getNextExerciseIndex(li, store);
+
+      if (!level.exercises[fallback] || !exUnlocked(li, fallback)) {
+        navigateView('map', { replace: true });
+        return;
+      }
+
+      navigateMission(li, fallback, { replace: true });
+      return;
+    }
+
+    setExerciseIndex(target);
+    resetMissionState(level.exercises[target]);
+  }, [
+    exUnlocked,
+    levelComplete,
+    levelUnlocked,
+    navigateLevel,
+    navigateLesson,
+    navigateMission,
+    navigateView,
+    resetMissionState,
+    route.exerciseIndex,
+    route.levelIndex,
+    route.pathname,
+    route.view,
+    store,
+  ]);
+
   const handleReviewConcept = (concept: ConceptSummary) => {
     const target = findConceptMissionTarget(concept, store, exUnlocked);
 
@@ -107,20 +238,21 @@ export default function App() {
     setExerciseIndex(target.exerciseIndex);
     setLessonStep(0);
     setQuizAnswer(null);
-    setView('mission');
+    navigateMission(target.levelIndex, target.exerciseIndex);
   };
 
   const openMission = (li: number, ei?: number) => {
     if (!levelUnlocked(li)) return;
 
     const level = LEVELS[li];
+
     if (!level.exercises?.length) {
       resetMissionState(null);
       setLevelIndex(li);
       setExerciseIndex(0);
       setLessonStep(0);
       setQuizAnswer(null);
-      setView('mission');
+      navigateLevel(li);
       return;
     }
 
@@ -133,7 +265,13 @@ export default function App() {
     setExerciseIndex(target);
     setLessonStep(0);
     setQuizAnswer(null);
-    setView(LEVEL_LESSONS[li] && !store.lessonDone[li] ? 'lesson' : 'mission');
+
+    if (LEVEL_LESSONS[li] && !store.lessonDone[li]) {
+      navigateLesson(li);
+      return;
+    }
+
+    navigateMission(li, target);
   };
 
   const handleOpenMissionNavigation = () => {
@@ -159,7 +297,7 @@ export default function App() {
 
   const handleLevelCompletion = (li: number) => {
     setCompletionLevel(li);
-    setView('completion');
+    navigateCompletion(li);
   };
 
   const handleLessonFinish = () => {
@@ -170,7 +308,7 @@ export default function App() {
         lessonDone: { ...prev.lessonDone, [levelIndex]: true },
       }));
     }
-    setView('mission');
+    navigateMission(levelIndex, exerciseIndex);
   };
 
   const handleNext = () => {
@@ -182,6 +320,7 @@ export default function App() {
       const nextExerciseIndex = exerciseIndex + 1;
       resetMissionState(currentLevel.exercises[nextExerciseIndex]);
       setExerciseIndex(nextExerciseIndex);
+      navigateMission(levelIndex, nextExerciseIndex);
       return;
     }
 
@@ -318,6 +457,7 @@ export default function App() {
           selectExercise={(ei) => {
             resetMissionState(currentLevel.exercises?.[ei] || null);
             setExerciseIndex(ei);
+            navigateMission(levelIndex, ei);
           }}
           setView={setView}
           openMission={openMission}
