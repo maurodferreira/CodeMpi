@@ -105,23 +105,22 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
   const selectedExercises = selectedConcept ? getRelatedExercises(selectedConcept) : [];
   const reviewData = reviewingConcept ? getConceptReview(reviewingConcept.id) : null;
   const recommendedConcept = [...concepts]
-    .filter((concept) => concept.state !== 'new')
+    .filter((concept) => concept.state === 'review' || concept.state === 'developing')
     .sort((a, b) => (
-      (a.state === 'review' ? 0 : a.state === 'developing' ? 1 : 2) -
-      (b.state === 'review' ? 0 : b.state === 'developing' ? 1 : 2) ||
+      (a.state === 'review' ? 0 : 1) -
+      (b.state === 'review' ? 0 : 1) ||
       b.failures - a.failures ||
       b.attempts - a.attempts ||
       a.progress - b.progress ||
       a.name.localeCompare(b.name)
     ))[0] || null;
+  const hasPracticedConcepts = concepts.some((concept) => concept.attempts > 0);
   const recommendedReason = recommendedConcept
     ? recommendedConcept.failures >= 2
       ? `${recommendedConcept.failures} erros em ${recommendedConcept.attempts} tentativas — este conceito merece uma nova passada.`
       : recommendedConcept.failures === 1
         ? 'Houve um erro durante a prática. Uma revisão curta pode ajudar a fixar o padrão.'
-        : recommendedConcept.completed > 0
-          ? 'Você já praticou este conceito. Reforçar enquanto ele ainda está fresco ajuda a consolidar.'
-          : 'Você começou a praticar este conceito, mas ainda há espaço para avançar.'
+        : 'Você já praticou este conceito, mas ainda pode consolidá-lo com uma revisão curta.'
     : null;
 
   const handleQuickReview = (concept: ConceptSummary) => {
@@ -181,8 +180,10 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
             <div className="memory-recommendation-icon">◎</div>
             <div className="memory-recommendation-copy">
               <span className="section-kicker">REVISÃO INTELIGENTE</span>
-              <strong>Faça alguns desafios para começar a personalizar suas revisões.</strong>
-              <p>O CodeMpi vai usar suas tentativas e erros para identificar o próximo conceito que merece atenção.</p>
+              <strong>{hasPracticedConcepts ? 'Nenhum conceito precisa de revisão agora.' : 'Faça alguns desafios para começar a personalizar suas revisões.'}</strong>
+              <p>{hasPracticedConcepts
+                ? 'Sua memória está em dia. Continue a jornada e novas dificuldades serão identificadas automaticamente.'
+                : 'O CodeMpi vai usar suas tentativas e erros para identificar o próximo conceito que merece atenção.'}</p>
             </div>
           </div>
         )}
