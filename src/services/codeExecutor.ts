@@ -1,19 +1,8 @@
 import type { ExerciseTest } from '../data/contentTypes';
-import { areValuesEqual } from '../utils/valueEquality';
-
-type UserFunction = (...args: unknown[]) => unknown;
-
-interface CompileSuccess {
-  status: 'success';
-  fn: UserFunction;
-}
-
-interface CompileFailure {
-  status: 'compile-error' | 'missing-function';
-  error: string;
-}
-
-type CompileResult = CompileSuccess | CompileFailure;
+import {
+  executeFunctionSync,
+  executeTestsSync,
+} from './codeExecutionCore';
 
 export interface TestCaseExecution {
   index: number;
@@ -26,7 +15,7 @@ export interface TestCaseExecution {
 
 export type TestExecutionResult =
   | {
-      status: 'compile-error' | 'missing-function';
+      status: 'compile-error' | 'missing-function' | 'timeout' | 'execution-error';
       error: string;
       passed: 0;
       total: number;
@@ -45,126 +34,35 @@ export type FunctionExecutionResult =
       value: unknown;
     }
   | {
-      status: 'compile-error' | 'missing-function' | 'runtime-error';
+      status:
+        | 'compile-error'
+        | 'missing-function'
+        | 'runtime-error'
+        | 'timeout'
+        | 'execution-error';
       error: string;
     };
 
 export interface CodeExecutor {
-  runTests(code: string, functionName: string, tests: ExerciseTest[]): TestExecutionResult;
-  runFunction(code: string, functionName: string, args: unknown[]): FunctionExecutionResult;
-}
+  runTests(
+    code: string,
+    functionName: string,
+    tests: ExerciseTest[],
+  ): Promise<TestExecutionResult>;
 
-const silentConsole = {
-  log: () => undefined,
-  warn: () => undefined,
-  error: () => undefined,
-};
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
-function compileFunction(
-  code: string,
-  functionName: string,
-  silenceConsole: boolean,
-): CompileResult {
-  try {
-    const source = `${code}\nreturn typeof ${functionName} === "function" ? ${functionName} : undefined;`;
-    const wrapper = silenceConsole
-      ? new Function('console', source)
-      : new Function(source);
-    const value = silenceConsole ? wrapper(silentConsole) : wrapper();
-
-    if (typeof value !== 'function') {
-      return {
-        status: 'missing-function',
-        error: `Função ${functionName} não encontrada.`,
-      };
-    }
-
-    return {
-      status: 'success',
-      fn: value as UserFunction,
-    };
-  } catch (error: unknown) {
-    return {
-      status: 'compile-error',
-      error: getErrorMessage(error, 'Erro de sintaxe no código.'),
-    };
-  }
+  runFunction(
+    code: string,
+    functionName: string,
+    args: unknown[],
+  ): Promise<FunctionExecutionResult>;
 }
 
 export const browserCodeExecutor: CodeExecutor = {
-  runTests(code, functionName, tests) {
-    const compiled = compileFunction(code, functionName, true);
-
-    if (compiled.status !== 'success') {
-      return {
-        status: compiled.status,
-        error: compiled.error,
-        passed: 0,
-        total: tests.length,
-        cases: [],
-      };
-    }
-
-    let passed = 0;
-    const cases = tests.map<TestCaseExecution>((test, index) => {
-      try {
-        const args = structuredClone(test.args);
-        const result = compiled.fn(...args);
-        const isCorrect = areValuesEqual(result, test.exp);
-
-        if (isCorrect) passed += 1;
-
-        return {
-          index,
-          args: test.args,
-          expected: test.exp,
-          result,
-          passed: isCorrect,
-        };
-      } catch (error: unknown) {
-        return {
-          index,
-          args: test.args,
-          expected: test.exp,
-          error: getErrorMessage(error, 'Erro durante a execução'),
-          passed: false,
-        };
-      }
-    });
-
-    return {
-      status: 'completed',
-      passed,
-      total: tests.length,
-      cases,
-    };
+  async runTests(code, functionName, tests) {
+    return executeTestsSync(code, functionName, tests);
   },
 
-  runFunction(code, functionName, args) {
-    const compiled = compileFunction(code, functionName, false);
-
-    if (compiled.status !== 'success') {
-      return compiled;
-    }
-
-    try {
-      return {
-        status: 'success',
-        value: compiled.fn(...structuredClone(args)),
-      };
-    } catch (error: unknown) {
-      return {
-        status: 'runtime-error',
-        error: getErrorMessage(error, 'Erro durante a execução.'),
-      };
-    }
+  async runFunction(code, functionName, args) {
+    return executeFunctionSync(code, functionName, args);
   },
 };

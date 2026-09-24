@@ -146,6 +146,7 @@ export default function App() {
   const {
     consoleLogs,
     isPassed,
+    isRunning,
     lastTest,
     freeInputs,
     setFreeInputs,
@@ -451,6 +452,7 @@ export default function App() {
           hintsShown={hintsShown}
           alreadyDoneXP={alreadyDoneXP}
           isPassed={isPassed}
+          isRunning={isRunning}
           consoleLogs={consoleLogs}
           lastTest={lastTest}
           learningFeedback={learningFeedback}
