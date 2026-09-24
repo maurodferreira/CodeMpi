@@ -1,6 +1,6 @@
 import { THEMES } from '../data/themes';
 import type { Dispatch, SetStateAction } from 'react';
-import type { AppPreferences, EditorFontSize, InterfaceScale, IndentSize } from '../hooks/useAppPreferences';
+import type { AppPreferences, EditorFontSize, InterfaceScale, IndentSize } from '../domain/preferences';
 import type { LocalUserProfile, UserSession } from '../domain/user';
 import type { ThemeKey, View } from '../types';
 
