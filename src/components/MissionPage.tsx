@@ -233,8 +233,12 @@ export function MissionPage({
                         {hintsShown >= currentExercise.hints.length
                           ? '3 dicas + solução exibidas'
                           : hintsShown === 3
-                            ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
-                            : `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`}
+                            ? preferences.showXp
+                              ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                              : 'Mostrar solução completa'
+                            : preferences.showXp
+                              ? `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                              : `Mostrar dica (${hintsShown + 1}/3)`}
                       </button>
                       {preferences.showXp && (
                         <span className="xp-live">
