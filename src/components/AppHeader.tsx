@@ -21,6 +21,8 @@ export function AppHeader({
   levelsDoneTotal,
   onOpenMission,
 }: AppHeaderProps) {
+  const builtLevels = LEVELS.filter((level) => Boolean(level.exercises?.length)).length;
+
   return (
     <header className="top app-header">
       <button className="header-brand-button" onClick={() => setView('dashboard')} aria-label="Ir para o início">
@@ -82,7 +84,7 @@ export function AppHeader({
             <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
           </div>
           <div className="sub" id="lvlprog">
-            {levelsDoneTotal} / {LEVELS.length} níveis fechados
+            {levelsDoneTotal} / {builtLevels} níveis disponíveis
           </div>
         </div>
       </div>
