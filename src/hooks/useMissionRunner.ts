@@ -205,7 +205,8 @@ export function useMissionRunner({
       let error: string | null = null;
 
       try {
-        result = userFn(...test.args);
+        const testArgs = structuredClone(test.args);
+        result = userFn(...testArgs);
       } catch (caught: unknown) {
         error = getErrorMessage(caught, 'Erro durante a execução');
       }
