@@ -23,6 +23,7 @@ interface MissionPageProps {
   hintsShown: number;
   alreadyDoneXP: number | undefined;
   isPassed: boolean;
+  isRunning: boolean;
   consoleLogs: ConsoleLog[];
   lastTest: LastTest | null;
   learningFeedback: LearningFeedback | null;
@@ -42,9 +43,9 @@ interface MissionPageProps {
   setFreeResult: Dispatch<SetStateAction<{ ok: boolean; value?: string; error?: string } | null>>;
   setShowFreeTest: Dispatch<SetStateAction<boolean>>;
   openMission: (li: number) => void;
-  handleEvaluate: () => void;
+  handleEvaluate: () => void | Promise<void>;
   handleResetCode: () => void;
-  handleFreeTest: () => void;
+  handleFreeTest: () => void | Promise<void>;
   handleShowHint: () => void;
   handleNext: () => void;
 }
@@ -60,6 +61,7 @@ export function MissionPage({
   hintsShown,
   alreadyDoneXP,
   isPassed,
+  isRunning,
   consoleLogs,
   lastTest,
   learningFeedback,
@@ -232,11 +234,13 @@ export function MissionPage({
 
                     <div className="actions">
                       <div className="actions-main">
-                        <button className="btn primary" onClick={handleEvaluate}>▶ Rodar testes</button>
+                        <button className="btn primary" onClick={() => void handleEvaluate()} disabled={isRunning}>
+                          {isRunning ? 'Executando…' : '▶ Rodar testes'}
+                        </button>
                       </div>
 
                       <div className="actions-secondary">
-                        <button className="btn ghost" onClick={handleResetCode}>Reiniciar código</button>
+                        <button className="btn ghost" onClick={handleResetCode} disabled={isRunning}>Reiniciar código</button>
                         <button
                           className={`btn ${showFreeTest ? 'secondary active' : 'ghost'}`}
                           onClick={() => {
@@ -246,7 +250,7 @@ export function MissionPage({
                         >
                           {showFreeTest ? '× Fechar teste de mesa' : '◇ Abrir teste de mesa'}
                         </button>
-                        <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
+                        <button className="btn ghost" onClick={handleShowHint} disabled={isRunning || hintsShown >= currentExercise.hints.length}>
                           {hintsShown >= currentExercise.hints.length
                             ? '3 dicas + solução exibidas'
                             : hintsShown === 3
@@ -422,7 +426,13 @@ export function MissionPage({
                           />
                         </label>
                       ))}
-                      <button className="btn secondary free-test-button" onClick={handleFreeTest}>Testar entrada →</button>
+                      <button
+                        className="btn secondary free-test-button"
+                        onClick={() => void handleFreeTest()}
+                        disabled={isRunning}
+                      >
+                        {isRunning ? 'Executando…' : 'Testar entrada →'}
+                      </button>
                     </div>
 
                     {freeResult && (
