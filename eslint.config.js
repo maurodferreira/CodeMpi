@@ -7,11 +7,11 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores([
-  'dist',
-  'dist-server',
-  'android/**',
-  'ios/**',
-]),
+    'dist',
+    'dist-server',
+    'android/**',
+    'ios/**',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
