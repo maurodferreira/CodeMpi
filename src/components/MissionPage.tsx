@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from '../data/levels';
 import type { AppPreferences } from '../hooks/useAppPreferences';
@@ -85,10 +85,11 @@ export function MissionPage({
   handleShowHint,
   handleNext,
 }: MissionPageProps) {
+  const [focusMode, setFocusMode] = useState(false);
   const hasExercises = Boolean(currentLevel.exercises?.length);
 
   return (
-<main className="mission-shell">
+<main className={`mission-shell ${focusMode ? 'code-focus' : ''}`}>
           <div className="mission-toolbar">
             <button className="text-action" onClick={() => setView('map')}>← Voltar para o mapa</button>
             <span>MISSÃO ATUAL · {currentLevel.tag}</span>
@@ -210,6 +211,9 @@ export function MissionPage({
                       lineWrapping={preferences.editorLineWrapping}
                       lineNumbers={preferences.editorLineNumbers}
                       indentSize={preferences.editorIndentSize}
+                      focusMode={focusMode}
+                      onToggleFocus={() => setFocusMode((previous) => !previous)}
+                      focusLabel={currentExercise.title}
                     />
 
                     <div className="learning-note">
