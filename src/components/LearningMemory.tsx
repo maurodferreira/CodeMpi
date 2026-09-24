@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LEVELS } from '../data/levels';
 import { getProgressKey } from '../hooks/useLearningProgress';
+import { getConceptReview } from '../data/concepts';
 import type { ConceptSummary, StoreData } from '../types';
 
 interface LearningMemoryProps {
@@ -37,6 +38,8 @@ const STATE_ORDER = {
 
 export function LearningMemory({ concepts, store, onReview }: LearningMemoryProps) {
   const [selectedConcept, setSelectedConcept] = useState<ConceptSummary | null>(null);
+  const [reviewingConcept, setReviewingConcept] = useState<ConceptSummary | null>(null);
+  const [reviewAnswer, setReviewAnswer] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const orderedConcepts = [...concepts].sort((a, b) => (
@@ -54,15 +57,22 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
   };
 
   useEffect(() => {
-    if (!selectedConcept) return;
+    if (!selectedConcept && !reviewingConcept) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedConcept(null);
+      if (event.key === 'Escape') {
+        if (reviewingConcept) {
+          setReviewingConcept(null);
+          setReviewAnswer(null);
+        } else {
+          setSelectedConcept(null);
+        }
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedConcept]);
+  }, [selectedConcept, reviewingConcept]);
 
   const scrollCarousel = (direction: 'prev' | 'next') => {
     const element = carouselRef.current;
@@ -113,10 +123,22 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
           : 'Você começou a praticar este conceito, mas ainda há espaço para avançar.'
     : null;
 
-  const handleReview = () => {
-    if (!selectedConcept) return;
-    const concept = selectedConcept;
+  const handleQuickReview = (concept: ConceptSummary) => {
     setSelectedConcept(null);
+    setReviewingConcept(concept);
+    setReviewAnswer(null);
+  };
+
+  const handleReviewFromModal = () => {
+    if (!selectedConcept) return;
+    handleQuickReview(selectedConcept);
+  };
+
+  const handleFinishReview = () => {
+    if (!reviewingConcept) return;
+    const concept = reviewingConcept;
+    setReviewingConcept(null);
+    setReviewAnswer(null);
     onReview(concept);
   };
 
@@ -149,7 +171,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
               <strong>{recommendedConcept.name}</strong>
               <p>{recommendedReason}</p>
             </div>
-            <button type="button" className="memory-recommendation-action" onClick={() => onReview(recommendedConcept)}>
+            <button type="button" className="memory-recommendation-action" onClick={() => handleQuickReview(recommendedConcept)}>
               Revisar agora →
             </button>
           </div>
@@ -216,6 +238,124 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
           })}
         </div>
       </section>
+
+      {reviewingConcept && getConceptReview(reviewingConcept.id) && (
+        <div
+          className="memory-review-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setReviewingConcept(null);
+              setReviewAnswer(null);
+            }
+          }}
+        >
+          <div
+            className="memory-review"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="memory-review-title"
+          >
+            <div className="memory-review-head">
+              <div>
+                <span className="section-kicker">REVISÃO RÁPIDA · SEM XP</span>
+                <h2 id="memory-review-title">{reviewingConcept.name}</h2>
+                <p>Uma pergunta curta para ativar o conceito antes de você voltar à prática.</p>
+              </div>
+
+              <button
+                type="button"
+                className="memory-modal-close"
+                onClick={() => {
+                  setReviewingConcept(null);
+                  setReviewAnswer(null);
+                }}
+                aria-label="Fechar revisão"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="memory-review-body">
+              {(() => {
+                const review = getConceptReview(reviewingConcept.id);
+                if (!review) return null;
+
+                const answered = reviewAnswer !== null;
+                const correct = reviewAnswer === review.answer;
+
+                return (
+                  <>
+                    <span className="memory-review-label">CHECKPOINT</span>
+                    <h3>{review.question}</h3>
+
+                    {review.code && (
+                      <pre className="memory-review-code"><code>{review.code}</code></pre>
+                    )}
+
+                    <div className="memory-review-options">
+                      {review.options.map((option, index) => (
+                        <button
+                          key={option}
+                          type="button"
+                          className={`memory-review-option ${answered && index === review.answer ? 'correct' : ''} ${answered && index === reviewAnswer && index !== review.answer ? 'wrong' : ''} `}
+                          onClick={() => setReviewAnswer(index)}
+                          disabled={answered}
+                        >
+                          <span>{String.fromCharCode(65 + index)}</span>
+                          <strong>{option}</strong>
+                        </button>
+                      ))}
+                    </div>
+
+                    {answered && (
+                      <div className={`memory-review-feedback ${correct ? 'correct' : 'wrong'}`}>
+                        <strong>{correct ? '✓ Conceito recuperado.' : '↻ Quase. Vamos rever.'}</strong>
+                        <p>{review.explanation}</p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="memory-review-footer">
+              <span>1 pergunta · sem alterar XP ou progresso</span>
+              <div>
+                <button
+                  type="button"
+                  className="memory-modal-secondary"
+                  onClick={() => {
+                    setReviewingConcept(null);
+                    setReviewAnswer(null);
+                  }}
+                >
+                  Fechar
+                </button>
+
+                {reviewAnswer === getConceptReview(reviewingConcept.id)?.answer ? (
+                  <button
+                    type="button"
+                    className="memory-modal-primary"
+                    onClick={handleFinishReview}
+                  >
+                    Ir para o exercício →
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="memory-modal-primary"
+                    disabled={reviewAnswer === null}
+                    onClick={() => setReviewAnswer(null)}
+                  >
+                    Tentar novamente →
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedConcept && selectedMeta && (
         <div
@@ -317,15 +457,9 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
               <button
                 type="button"
                 className="memory-modal-primary"
-                onClick={handleReview}
+                onClick={handleReviewFromModal}
               >
-                {selectedConcept.state === 'review'
-                  ? 'Revisar conceito →'
-                  : selectedConcept.state === 'solid'
-                    ? 'Praticar novamente →'
-                    : selectedConcept.state === 'developing'
-                      ? 'Continuar praticando →'
-                      : 'Praticar conceito →'}
+                Revisão rápida →
               </button>
             </div>
           </div>
