@@ -417,9 +417,9 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         type: 'example',
         eyebrow: '02 · ENTRADAS',
         title: 'Parâmetros tornam a função reutilizável',
-        body: 'Uma mesma função pode trabalhar com muitos valores diferentes porque os dados entram pelos parâmetros.',
+        body: 'Uma mesma função pode trabalhar com muitos valores diferentes porque os dados entram pelos parâmetros. Quando uma taxa é dada em porcentagem, dividir por 100 transforma a porcentagem em sua parte do valor.',
         code: 'function precoComTaxa(valor, taxa) {\n  return valor + valor * taxa / 100;\n}\n\nprecoComTaxa(100, 10); // 110\nprecoComTaxa(80, 25); // 100',
-        explanation: 'A função não depende de um número fixo. Ela recebe valor e taxa a cada chamada e produz o resultado correspondente.',
+        explanation: 'A função não depende de um número fixo. Ela recebe valor e taxa a cada chamada. Em uma taxa de 10%, por exemplo, taxa / 100 vale 0.10.',
       },
       {
         id: 'local-variables',
