@@ -275,7 +275,7 @@ export default function App() {
   };
 
   const handleOpenMissionNavigation = () => {
-    openMission(levelIndex);
+    openMission(continuePoint.li, continuePoint.ei);
   };
 
   const handleShowHint = () => {
