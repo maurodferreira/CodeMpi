@@ -1,8 +1,14 @@
+export type DatabaseHealthStatus =
+  | 'not_configured'
+  | 'ok'
+  | 'unavailable';
+
 export interface ApiRouteRequest {
   method: string;
   pathname: string;
   requestId: string;
   body?: unknown;
+  databaseHealth?: DatabaseHealthStatus;
 }
 
 export interface ApiRouteResponse {
@@ -39,12 +45,21 @@ const routes: RouteDefinition[] = [
     method: 'GET',
     pathname: '/health',
     handle(request) {
+      const databaseHealth =
+        request.databaseHealth ?? 'not_configured';
+      const databaseUnavailable =
+        databaseHealth === 'unavailable';
+
       return {
-        status: 200,
+        status: databaseUnavailable ? 503 : 200,
         body: {
-          status: 'ok',
+          status: databaseUnavailable ? 'degraded' : 'ok',
           service: 'codempi-api',
           version: '0.1.0',
+          database: {
+            configured: databaseHealth !== 'not_configured',
+            status: databaseHealth,
+          },
           requestId: request.requestId,
         },
       };

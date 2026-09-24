@@ -1,5 +1,6 @@
 import { loadEnvFile } from 'node:process';
 import { readApiConfig } from './config.js';
+import { createPostgresDatabase } from './database/postgres.js';
 import { createApiServer } from './server.js';
 
 try {
@@ -19,17 +20,45 @@ try {
 }
 
 const config = readApiConfig();
-const server = createApiServer(config);
+
+const database = config.databaseUrl
+  ? createPostgresDatabase(config.databaseUrl, {
+      onUnexpectedError(error) {
+        process.stderr.write(
+          `Erro inesperado no pool PostgreSQL: ${error.message}\n`,
+        );
+      },
+    })
+  : null;
+
+const server = createApiServer(config, {
+  database,
+});
 
 server.listen(config.port, config.host, () => {
   process.stdout.write(
     `CodeMpi API pronta em http://${config.host}:${config.port}\n`,
   );
+
+  process.stdout.write(
+    database
+      ? 'PostgreSQL configurado para esta instância.\n'
+      : 'PostgreSQL não configurado nesta instância.\n',
+  );
 });
 
 let shuttingDown = false;
 
-function shutdown(signal: string): void {
+async function closeServer(): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+}
+
+async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
 
   shuttingDown = true;
@@ -37,17 +66,27 @@ function shutdown(signal: string): void {
     `Encerrando CodeMpi API (${signal})...\n`,
   );
 
-  server.close((error) => {
-    if (error) {
-      process.stderr.write(
-        `Falha ao encerrar a API: ${error.message}\n`,
-      );
-      process.exitCode = 1;
-    }
+  try {
+    await closeServer();
+    await database?.close();
+  } catch (error: unknown) {
+    const message = error instanceof Error
+      ? error.message
+      : 'erro desconhecido';
 
+    process.stderr.write(
+      `Falha ao encerrar a API: ${message}\n`,
+    );
+    process.exitCode = 1;
+  } finally {
     process.exit();
-  });
+  }
 }
 
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => {
+  void shutdown('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+  void shutdown('SIGTERM');
+});

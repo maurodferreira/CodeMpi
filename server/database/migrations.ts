@@ -1,4 +1,7 @@
-import type { DatabaseClient } from './types.js';
+import type {
+  Database,
+  DatabaseClient,
+} from './types.js';
 
 export interface DatabaseMigration {
   id: string;
@@ -102,34 +105,33 @@ async function getAppliedMigrationIds(
 }
 
 export async function runDatabaseMigrations(
-  database: DatabaseClient,
+  database: Database,
 ): Promise<string[]> {
-  await ensureMigrationTable(database);
+  return database.transaction(async (client) => {
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('codempi_schema_migrations'));",
+    );
 
-  const applied = await getAppliedMigrationIds(database);
-  const executed: string[] = [];
+    await ensureMigrationTable(client);
 
-  for (const migration of DATABASE_MIGRATIONS) {
-    if (applied.has(migration.id)) continue;
+    const applied = await getAppliedMigrationIds(client);
+    const executed: string[] = [];
 
-    await database.query('BEGIN');
+    for (const migration of DATABASE_MIGRATIONS) {
+      if (applied.has(migration.id)) continue;
 
-    try {
-      await database.query(migration.sql);
-      await database.query(
+      await client.query(migration.sql);
+      await client.query(
         `
 INSERT INTO codempi_schema_migrations (id, description)
 VALUES ($1, $2);
 `.trim(),
         [migration.id, migration.description],
       );
-      await database.query('COMMIT');
-      executed.push(migration.id);
-    } catch (error) {
-      await database.query('ROLLBACK');
-      throw error;
-    }
-  }
 
-  return executed;
+      executed.push(migration.id);
+    }
+
+    return executed;
+  });
 }

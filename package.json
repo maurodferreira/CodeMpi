@@ -11,17 +11,21 @@
     "check": "npm run lint && npm run test && npm run build",
     "test": "node --test scripts/test-foundation.test.mjs",
     "api:build": "tsc -p tsconfig.server.json",
-    "api:start": "npm run api:build && node dist-server/server/index.js"
+    "api:start": "npm run api:build && node dist-server/server/index.js",
+    "db:migrate": "npm run api:build && node dist-server/server/database/migrate.js",
+    "test:postgres": "npm run api:build && node --test scripts/test-postgres-integration.mjs"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
     "@uiw/react-codemirror": "^4.25.11",
+    "pg": "8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.3",
+    "@types/pg": "8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

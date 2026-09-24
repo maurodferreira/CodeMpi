@@ -18,9 +18,24 @@ concurrency:
 
 jobs:
   validate:
-    name: Lint, tests and build
+    name: Lint, tests, PostgreSQL and build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: codempi
+          POSTGRES_PASSWORD: codempi
+          POSTGRES_DB: codempi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codempi -d codempi_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Checkout
@@ -37,3 +52,8 @@ jobs:
 
       - name: Run quality checks
         run: npm run check
+
+      - name: Run PostgreSQL integration tests
+        env:
+          CODEMPI_TEST_DATABASE_URL: postgresql://codempi:codempi@127.0.0.1:5432/codempi_test
+        run: npm run test:postgres

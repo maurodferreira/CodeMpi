@@ -41,6 +41,7 @@ const apiServerConfigModule = await vite.ssrLoadModule('/server/config.ts');
 const apiRouterModule = await vite.ssrLoadModule('/server/router.ts');
 const apiServerModule = await vite.ssrLoadModule('/server/server.ts');
 const databaseMigrationsModule = await vite.ssrLoadModule('/server/database/migrations.ts');
+const postgresRepositoriesModule = await vite.ssrLoadModule('/server/database/postgresRepositories.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -1272,7 +1273,25 @@ test('backend router exposes health and explicit unconfigured cloud endpoints', 
   assert.equal(health.status, 200);
   assert.equal(health.body.status, 'ok');
   assert.equal(health.body.service, 'codempi-api');
+  assert.deepEqual(health.body.database, {
+    configured: false,
+    status: 'not_configured',
+  });
   assert.equal(health.body.requestId, 'req-health');
+
+  const degraded = apiRouterModule.routeApiRequest({
+    method: 'GET',
+    pathname: '/health',
+    requestId: 'req-degraded',
+    databaseHealth: 'unavailable',
+  });
+
+  assert.equal(degraded.status, 503);
+  assert.equal(degraded.body.status, 'degraded');
+  assert.deepEqual(degraded.body.database, {
+    configured: true,
+    status: 'unavailable',
+  });
 
   const auth = apiRouterModule.routeApiRequest({
     method: 'POST',
@@ -1359,6 +1378,10 @@ test('backend HTTP server answers health and restricts browser origins', async (
 
     const health = await allowed.json();
     assert.equal(health.status, 'ok');
+    assert.deepEqual(health.database, {
+      configured: false,
+      status: 'not_configured',
+    });
 
     const blocked = await fetch(`${baseUrl}/health`, {
       headers: {
@@ -1477,10 +1500,11 @@ test('database schema defines users sessions snapshots and migration history', (
   assert.match(migration.sql, /ON DELETE CASCADE/);
 });
 
-test('database migrations run pending migrations inside transactions', async () => {
+test('database migrations run pending migrations inside one real transaction boundary', async () => {
   const calls = [];
+  const transactionEvents = [];
 
-  const database = {
+  const client = {
     async query(sql, params = []) {
       calls.push({ sql, params });
 
@@ -1498,20 +1522,29 @@ test('database migrations run pending migrations inside transactions', async () 
     },
   };
 
+  const database = {
+    query: client.query,
+    async transaction(work) {
+      transactionEvents.push('BEGIN');
+
+      try {
+        const result = await work(client);
+        transactionEvents.push('COMMIT');
+        return result;
+      } catch (error) {
+        transactionEvents.push('ROLLBACK');
+        throw error;
+      }
+    },
+  };
+
   const executed = await databaseMigrationsModule.runDatabaseMigrations(database);
 
   assert.deepEqual(executed, ['001_initial_cloud_schema']);
+  assert.deepEqual(transactionEvents, ['BEGIN', 'COMMIT']);
   assert.equal(
-    calls.some((call) => call.sql === 'BEGIN'),
+    calls.some((call) => call.sql.includes('pg_advisory_xact_lock')),
     true,
-  );
-  assert.equal(
-    calls.some((call) => call.sql === 'COMMIT'),
-    true,
-  );
-  assert.equal(
-    calls.some((call) => call.sql === 'ROLLBACK'),
-    false,
   );
 
   const insert = calls.find((call) => (
@@ -1529,8 +1562,9 @@ test('database migrations run pending migrations inside transactions', async () 
 
 test('database migrations skip versions already recorded', async () => {
   const calls = [];
+  const transactionEvents = [];
 
-  const database = {
+  const client = {
     async query(sql, params = []) {
       calls.push({ sql, params });
 
@@ -1548,22 +1582,33 @@ test('database migrations skip versions already recorded', async () => {
     },
   };
 
+  const database = {
+    query: client.query,
+    async transaction(work) {
+      transactionEvents.push('BEGIN');
+      const result = await work(client);
+      transactionEvents.push('COMMIT');
+      return result;
+    },
+  };
+
   const executed = await databaseMigrationsModule.runDatabaseMigrations(database);
 
   assert.deepEqual(executed, []);
+  assert.deepEqual(transactionEvents, ['BEGIN', 'COMMIT']);
   assert.equal(
-    calls.some((call) => call.sql === 'BEGIN'),
+    calls.some((call) => (
+      call.sql.startsWith('INSERT INTO codempi_schema_migrations')
+    )),
     false,
   );
 });
 
 test('database migrations rollback when a migration fails', async () => {
-  const calls = [];
+  const transactionEvents = [];
 
-  const database = {
-    async query(sql, params = []) {
-      calls.push({ sql, params });
-
+  const client = {
+    async query(sql) {
       if (sql.startsWith('SELECT id FROM codempi_schema_migrations')) {
         return {
           rows: [],
@@ -1582,19 +1627,244 @@ test('database migrations rollback when a migration fails', async () => {
     },
   };
 
+  const database = {
+    query: client.query,
+    async transaction(work) {
+      transactionEvents.push('BEGIN');
+
+      try {
+        const result = await work(client);
+        transactionEvents.push('COMMIT');
+        return result;
+      } catch (error) {
+        transactionEvents.push('ROLLBACK');
+        throw error;
+      }
+    },
+  };
+
   await assert.rejects(
     () => databaseMigrationsModule.runDatabaseMigrations(database),
     /database failure/,
   );
 
-  assert.equal(
-    calls.some((call) => call.sql === 'ROLLBACK'),
-    true,
+  assert.deepEqual(transactionEvents, ['BEGIN', 'ROLLBACK']);
+});
+
+test('PostgreSQL user repository normalizes emails and maps database rows', async () => {
+  const calls = [];
+  const timestamp = '2026-09-24T19:00:00.000Z';
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      return {
+        rows: [{
+          id: 'user-1',
+          email: 'aluno@codempi.dev',
+          password_hash: 'hash',
+          display_name: 'Aluno',
+          created_at: timestamp,
+          updated_at: timestamp,
+        }],
+        rowCount: 1,
+      };
+    },
+  };
+
+  const repository = postgresRepositoriesModule.createPostgresUserRepository(database);
+
+  const created = await repository.create({
+    id: 'user-1',
+    email: '  ALUNO@CODEMPI.DEV ',
+    passwordHash: 'hash',
+    displayName: 'Aluno',
+  });
+
+  assert.equal(created.email, 'aluno@codempi.dev');
+  assert.equal(created.passwordHash, 'hash');
+  assert.deepEqual(
+    calls[0].params,
+    ['user-1', 'aluno@codempi.dev', 'hash', 'Aluno'],
   );
-  assert.equal(
-    calls.some((call) => call.sql === 'COMMIT'),
-    false,
+
+  await repository.findByEmail(' ALUNO@CODEMPI.DEV ');
+  assert.deepEqual(calls[1].params, ['aluno@codempi.dev']);
+});
+
+test('PostgreSQL session repository queries only active sessions and revokes idempotently', async () => {
+  const calls = [];
+  const timestamp = '2026-09-24T19:00:00.000Z';
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      if (sql.startsWith('SELECT')) {
+        return {
+          rows: [{
+            id: 'session-1',
+            user_id: 'user-1',
+            token_hash: 'token-hash',
+            created_at: timestamp,
+            expires_at: '2026-09-25T19:00:00.000Z',
+            revoked_at: null,
+          }],
+          rowCount: 1,
+        };
+      }
+
+      return {
+        rows: [],
+        rowCount: 1,
+      };
+    },
+  };
+
+  const repository = postgresRepositoriesModule.createPostgresSessionRepository(database);
+
+  const active = await repository.findActiveByTokenHash(
+    'token-hash',
+    timestamp,
   );
+
+  assert.equal(active.id, 'session-1');
+  assert.match(calls[0].sql, /revoked_at IS NULL/);
+  assert.match(calls[0].sql, /expires_at > \$2/);
+
+  await repository.revoke(
+    'session-1',
+    '2026-09-24T20:00:00.000Z',
+  );
+
+  assert.match(calls[1].sql, /COALESCE\(revoked_at, \$2\)/);
+});
+
+test('PostgreSQL progress repository uses optimistic revision control', async () => {
+  const calls = [];
+  const timestamp = '2026-09-24T19:00:00.000Z';
+  let returnRow = true;
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      if (!returnRow) {
+        return {
+          rows: [],
+          rowCount: 0,
+        };
+      }
+
+      return {
+        rows: [{
+          user_id: 'user-1',
+          snapshot_version: 1,
+          revision: '2',
+          source_local_user_id: 'local-1',
+          progress: { done: { '0-0': 100 } },
+          preferences: { interfaceScale: 'large' },
+          theme: 'violet',
+          created_at: timestamp,
+          updated_at: timestamp,
+        }],
+        rowCount: 1,
+      };
+    },
+  };
+
+  const repository =
+    postgresRepositoriesModule.createPostgresProgressSnapshotRepository(database);
+
+  const saved = await repository.save({
+    userId: 'user-1',
+    snapshotVersion: 1,
+    sourceLocalUserId: 'local-1',
+    progress: { done: { '0-0': 100 } },
+    preferences: { interfaceScale: 'large' },
+    theme: 'violet',
+    expectedRevision: 1,
+  });
+
+  assert.equal(saved.revision, 2);
+  assert.equal(saved.theme, 'violet');
+  assert.equal(calls[0].params[6], 1);
+  assert.equal(
+    calls[0].params[3],
+    JSON.stringify({ done: { '0-0': 100 } }),
+  );
+  assert.match(calls[0].sql, /revision = codempi_progress_snapshots.revision \+ 1/);
+
+  returnRow = false;
+
+  await assert.rejects(
+    () => repository.save({
+      userId: 'user-1',
+      snapshotVersion: 1,
+      progress: {},
+      preferences: {},
+      theme: 'green',
+      expectedRevision: 1,
+    }),
+    (error) => (
+      error.name === 'ProgressSnapshotConflictError'
+    ),
+  );
+});
+
+test('backend health reports configured PostgreSQL availability without leaking connection data', async () => {
+  const config = {
+    host: '127.0.0.1',
+    port: 3001,
+    webOrigin: 'http://localhost:5173',
+    bodyLimitBytes: 65536,
+    nodeEnv: 'test',
+    databaseUrl: 'postgresql://secret:secret@db.example/codempi',
+  };
+
+  const server = apiServerModule.createApiServer(config, {
+    database: {
+      async ping() {
+        return undefined;
+      },
+    },
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, config.host, resolve);
+  });
+
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+
+  try {
+    const response = await fetch(
+      `http://${config.host}:${address.port}/health`,
+    );
+
+    assert.equal(response.status, 200);
+
+    const health = await response.json();
+
+    assert.deepEqual(health.database, {
+      configured: true,
+      status: 'ok',
+    });
+
+    assert.equal(
+      JSON.stringify(health).includes('secret'),
+      false,
+    );
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  }
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {
