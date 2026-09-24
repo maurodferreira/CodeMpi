@@ -66,9 +66,9 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         body: 'Não precisa ter medo de errar. Escolha uma opção; você pode tentar novamente quantas vezes precisar.',
         quiz: {
           question: 'Depois deste código, qual será o valor de total?',
-          options: ['10', '15', '20', '25'],
-          answer: 1,
-          explanation: 'total começa em 10 e depois recebe 10 + 5. Portanto, o resultado é 15.',
+          options: ['100', '115', '125', '150'],
+          answer: 2,
+          explanation: 'pontos vale 100, bonus vale 25 e total recebe a soma dos dois. Portanto, o resultado é 125.',
         },
       },
       {
@@ -122,10 +122,10 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         title: 'Qual caminho será escolhido?',
         body: 'Leia a condição com calma. Errar aqui faz parte do aprendizado.',
         quiz: {
-          question: 'Se idade vale 16, qual mensagem o código imprime? if (idade >= 18) { "adulto" } else { "menor" }',
+          question: 'Se idade vale 16, qual mensagem o código imprime? if (idade >= 18) { console.log("adulto"); } else { console.log("menor"); }',
           options: ['adulto', 'menor', 'true', 'nada'],
           answer: 1,
-          explanation: '16 >= 18 é falso. Por isso, o caminho do else é escolhido.',
+          explanation: '16 >= 18 é falso. Por isso, o else executa e o programa imprime "menor".',
         },
       },
       {
