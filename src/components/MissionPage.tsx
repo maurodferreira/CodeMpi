@@ -300,7 +300,7 @@ export function MissionPage({
                     </div>
                   )}
 
-                  {learningFeedback && (
+                  {learningFeedback && learningFeedback.tone !== 'success' && (
                     <div
                       className={`learning-feedback ${learningFeedback.tone}`}
                       role={learningFeedback.tone === 'error' ? 'alert' : 'status'}
