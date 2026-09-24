@@ -228,7 +228,7 @@ export const LEVELS: Level[] = [
             {
                 title: "Substituir ocorrências", conceptIds: ["strings","stringReplacement"], desc: "Retorne texto com todas as ocorrências de alvo substituídas por novo.", sig: "function substituir(texto, alvo, novo) { ... }", starter: "function substituir(texto, alvo, novo) {\n  // substitua todas as ocorrências\n}", fn: "substituir", difficulty: "dificil", xp: 320, skill: "substituir todas as ocorrências de um trecho em uma string",
                 hints: ["Pense no método que a aula apresentou para trocar partes do texto.", "Use replaceAll para informar o que deve sair e o que deve entrar.", "Retorne texto.replaceAll(alvo, novo).", "function substituir(texto, alvo, novo) {\n  return texto.replaceAll(alvo, novo);\n}"],
-                tests: [{ args: ["banana", "a", "o"], exp: "bonono" }, { args: ["CodeMpi", "M", "m"], exp: "codempi" }, { args: ["aaaa", "aa", "b"], exp: "bb" }, { args: ["abc", "x", "y"], exp: "abc" }]
+                tests: [{ args: ["banana", "a", "o"], exp: "bonono" }, { args: ["CodeMpi", "M", "m"], exp: "Codempi" }, { args: ["aaaa", "aa", "b"], exp: "bb" }, { args: ["abc", "x", "y"], exp: "abc" }]
             },
             {
                 title: "Textos iguais", conceptIds: ["strings","stringComparison"], desc: "Retorne true somente quando textoA e textoB forem exatamente iguais.", sig: "function iguais(textoA, textoB) { ... }", starter: "function iguais(textoA, textoB) {\n  // faça uma comparação exata\n}", fn: "iguais", difficulty: "dificil", xp: 340, skill: "comparar duas strings usando igualdade exata",
