@@ -1,5 +1,9 @@
 import type { ExerciseTest } from '../data/contentTypes';
 import { areValuesEqual } from '../utils/valueEquality';
+import {
+  EXECUTION_BLOCKED_GLOBALS,
+  validateExecutionPolicy,
+} from './executionPolicy';
 import type {
   FunctionExecutionResult,
   TestCaseExecution,
@@ -14,7 +18,7 @@ interface CompileSuccess {
 }
 
 interface CompileFailure {
-  status: 'compile-error' | 'missing-function';
+  status: 'compile-error' | 'missing-function' | 'policy-error';
   error: string;
 }
 
@@ -39,12 +43,22 @@ function compileFunction(
   functionName: string,
   silenceConsole: boolean,
 ): CompileResult {
+  const policy = validateExecutionPolicy(code);
+
+  if (!policy.ok) {
+    return {
+      status: 'policy-error',
+      error: policy.error,
+    };
+  }
+
   try {
-    const source = `${code}\nreturn typeof ${functionName} === "function" ? ${functionName} : undefined;`;
-    const wrapper = silenceConsole
-      ? new Function('console', source)
-      : new Function(source);
-    const value = silenceConsole ? wrapper(silentConsole) : wrapper();
+    const source = `"use strict";\n${code}\nreturn typeof ${functionName} === "function" ? ${functionName} : undefined;`;
+    const parameterNames = ['console', ...EXECUTION_BLOCKED_GLOBALS];
+    const wrapper = new Function(...parameterNames, source);
+    const blockedValues = EXECUTION_BLOCKED_GLOBALS.map(() => undefined);
+    const activeConsole = silenceConsole ? silentConsole : console;
+    const value = wrapper(activeConsole, ...blockedValues);
 
     if (typeof value !== 'function') {
       return {
