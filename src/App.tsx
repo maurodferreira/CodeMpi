@@ -15,7 +15,8 @@ import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
 import { HINT_MULTIPLIERS } from './utils/xp';
-import type { ConceptSummary, View } from './types';
+import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
+import type { View } from './types';
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
@@ -92,44 +93,8 @@ export default function App() {
     getKey,
   });
 
-  const handleReviewConcept = (concept: ConceptSummary) => {
-    const candidates = LEVELS.flatMap((level, li) =>
-      (level.exercises || []).flatMap((exercise, ei) => {
-        if (!exercise.conceptIds?.includes(concept.id)) return [];
-
-        const key = getKey(li, ei);
-        const performance = store.performance[key] || { attempts: 0, failures: 0 };
-
-        return [{
-          exercise,
-          levelIndex: li,
-          exerciseIndex: ei,
-          done: Boolean(store.done[key]),
-          attempts: performance.attempts,
-          failures: performance.failures,
-        }];
-      }),
-    ).sort((a, b) => {
-      if (concept.state === 'review') {
-        return (
-          b.failures - a.failures ||
-          b.attempts - a.attempts ||
-          Number(a.done) - Number(b.done) ||
-          a.levelIndex - b.levelIndex ||
-          a.exerciseIndex - b.exerciseIndex
-        );
-      }
-
-      return (
-        Number(a.done) - Number(b.done) ||
-        b.failures - a.failures ||
-        b.attempts - a.attempts ||
-        a.levelIndex - b.levelIndex ||
-        a.exerciseIndex - b.exerciseIndex
-      );
-    });
-
-    const target = candidates[0];
+  const handleReviewConcept = (concept: Parameters<typeof findConceptMissionTarget>[0]) => {
+    const target = findConceptMissionTarget(concept, store);
 
     if (!target) {
       resetMissionState(null);
@@ -160,17 +125,7 @@ export default function App() {
       return;
     }
 
-    let target = ei ?? 0;
-    if (ei === undefined) {
-      target = 0;
-      for (let i = 0; i < level.exercises.length; i += 1) {
-        if (!store.done[getKey(li, i)]) {
-          target = i;
-          break;
-        }
-        target = i;
-      }
-    }
+    const target = ei ?? getNextExerciseIndex(li, store);
 
     resetMissionState(level.exercises[target] || null);
     setLevelIndex(li);
