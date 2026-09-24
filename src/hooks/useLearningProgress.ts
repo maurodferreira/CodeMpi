@@ -58,10 +58,6 @@ export function useLearningProgress(store: StoreData) {
   const exUnlocked = (levelIndex: number, exerciseIndex: number) => (
     isExerciseUnlocked(store, levelIndex, exerciseIndex)
   );
-  const getMult = (levelIndex: number, exerciseIndex: number) => (
-    getStoredHintMultiplier(store, levelIndex, exerciseIndex)
-  );
-
   const { totalEarned, totalMax } = useMemo(() => {
     let earned = 0;
     let max = 0;
@@ -215,7 +211,6 @@ export function useLearningProgress(store: StoreData) {
     levelComplete,
     levelUnlocked,
     exUnlocked,
-    getMult,
     totalEarned,
     totalMax,
     levelsDoneTotal,
