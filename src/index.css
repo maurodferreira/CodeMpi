@@ -982,6 +982,7 @@ button.btn:disabled {
 }
 
 .hint-line {
+  display: block;
   background: rgba(255, 184, 77, .04);
   border: 1px solid rgba(255, 184, 77, .13);
   border-left: 3px solid var(--amber);
@@ -997,6 +998,37 @@ button.btn:disabled {
   color: var(--amber);
   font-weight: 700;
   margin-right: 7px;
+}
+
+.hint-line > span {
+  color: var(--text);
+}
+
+.hint-line.solution {
+  margin-top: 2px;
+  border-color: rgba(124, 255, 155, .2);
+  border-left-color: var(--accent-strong);
+  background: linear-gradient(145deg, rgba(124, 255, 155, .06), rgba(7, 17, 15, .28));
+}
+
+.hint-line.solution b {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--accent);
+}
+
+.hint-line.solution code {
+  display: block;
+  overflow-x: auto;
+  padding: 10px 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: rgba(4, 12, 10, .42);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.7;
+  white-space: pre;
 }
 
 .win-banner {
