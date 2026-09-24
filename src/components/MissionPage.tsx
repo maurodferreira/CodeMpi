@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from '../data/levels';
+import type { AppPreferences } from '../hooks/useAppPreferences';
 import { calculateExerciseXp } from '../utils/xp';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
 
@@ -18,6 +19,7 @@ interface MissionPageProps {
   exerciseIndex: number;
   store: StoreData;
   code: string;
+  preferences: AppPreferences;
   hintsShown: number;
   alreadyDoneXP: number | undefined;
   isPassed: boolean;
@@ -54,6 +56,7 @@ export function MissionPage({
   exerciseIndex,
   store,
   code,
+  preferences,
   hintsShown,
   alreadyDoneXP,
   isPassed,
@@ -144,7 +147,9 @@ export function MissionPage({
 
                       <div className="challenge-badges">
                         <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
-                        <span className="badge xp">XP {calculateExerciseXp(currentExercise.xp, hintsShown)} / {currentExercise.xp}</span>
+                        {preferences.showXp && (
+                          <span className="badge xp">XP {calculateExerciseXp(currentExercise.xp, hintsShown)} / {currentExercise.xp}</span>
+                        )}
                       </div>
                     </div>
 
@@ -198,7 +203,14 @@ export function MissionPage({
                   </div>
 
                   <div className="editor-wrap">
-                    <CodeEditor code={code} onChange={setCode} />
+                    <CodeEditor
+                      code={code}
+                      onChange={setCode}
+                      fontSize={preferences.editorFontSize}
+                      lineWrapping={preferences.editorLineWrapping}
+                      lineNumbers={preferences.editorLineNumbers}
+                      indentSize={preferences.editorIndentSize}
+                    />
 
                     <div className="learning-note">
                       <span>💡</span>
@@ -224,13 +236,15 @@ export function MissionPage({
                             ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
                             : `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`}
                       </button>
-                      <span className="xp-live">
-                        {!alreadyDoneXP && hintsShown > 0
-                          ? hintsShown >= 4
-                            ? `Solução completa usada — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
-                            : `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
-                          : ''}
-                      </span>
+                      {preferences.showXp && (
+                        <span className="xp-live">
+                            {!alreadyDoneXP && hintsShown > 0
+                              ? hintsShown >= 4
+                                ? `Solução completa usada — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
+                                : `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round((calculateExerciseXp(currentExercise.xp, hintsShown) / currentExercise.xp) * 100)}%`
+                              : ''}
+                        </span>
+                      )}
                     </div>
 
                     <div className="hints-box">
