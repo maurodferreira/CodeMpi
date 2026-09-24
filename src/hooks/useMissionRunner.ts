@@ -1,9 +1,9 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { Exercise } from '../data/levels';
+import { browserCodeExecutor, type CodeExecutor } from '../services/codeExecutor';
 import type { ConsoleLog, LastTest, StoreData } from '../types';
-import { calculateExerciseXp } from '../utils/xp';
 import { getLearningFeedback } from '../utils/learningFeedback';
-import { areValuesEqual } from '../utils/valueEquality';
+import { calculateExerciseXp } from '../utils/xp';
 
 interface UseMissionRunnerParams {
   currentExercise: Exercise | null;
@@ -16,6 +16,7 @@ interface UseMissionRunnerParams {
   setStore: Dispatch<SetStateAction<StoreData>>;
   registerActivity: () => void;
   getKey: (li: number, ei: number) => string;
+  executor?: CodeExecutor;
 }
 
 interface FreeResult {
@@ -35,6 +36,7 @@ export function useMissionRunner({
   setStore,
   registerActivity,
   getKey,
+  executor = browserCodeExecutor,
 }: UseMissionRunnerParams) {
   const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([]);
   const [isPassed, setIsPassed] = useState(false);
@@ -62,47 +64,25 @@ export function useMissionRunner({
   const handleFreeTest = () => {
     if (!currentExercise) return;
 
-    let userFn: unknown;
+    const args = freeInputs.map(parseInput);
+    const execution = executor.runFunction(
+      code,
+      currentExercise.fn,
+      args,
+    );
 
-    try {
-      const wrapper = new Function(
-        code + `\nreturn typeof ${currentExercise.fn} === "function" ? ${currentExercise.fn} : undefined;`,
-      );
-
-      userFn = wrapper({
-        log: () => {},
-        warn: () => {},
-        error: () => {},
-      });
-    } catch (error: unknown) {
-      setFreeResult({
-        ok: false,
-        error: getErrorMessage(error, 'Erro de sintaxe no código.'),
-      });
-      return;
-    }
-
-    if (typeof userFn !== 'function') {
-      setFreeResult({
-        ok: false,
-        error: `Função ${currentExercise.fn} não encontrada.`,
-      });
-      return;
-    }
-
-    try {
-      const args = freeInputs.map(parseInput);
-      const result = userFn(...args);
+    if (execution.status === 'success') {
       setFreeResult({
         ok: true,
-        value: JSON.stringify(result) ?? String(result),
+        value: formatInput(execution.value),
       });
-    } catch (error: unknown) {
-      setFreeResult({
-        ok: false,
-        error: getErrorMessage(error, 'Erro durante a execução.'),
-      });
+      return;
     }
+
+    setFreeResult({
+      ok: false,
+      error: execution.error,
+    });
   };
 
   const handleEvaluate = () => {
@@ -122,23 +102,13 @@ export function useMissionRunner({
       },
     }));
 
-    const logs: ConsoleLog[] = [];
-    let userFn: unknown;
+    const execution = executor.runTests(
+      code,
+      currentExercise.fn,
+      currentExercise.tests,
+    );
 
-    try {
-      const wrapper = new Function(
-        'console',
-        code + `\nreturn typeof ${currentExercise.fn} === "function" ? ${currentExercise.fn} : undefined;`,
-      );
-
-      userFn = wrapper({
-        log: () => {},
-        warn: () => {},
-        error: () => {},
-      });
-    } catch (error: unknown) {
-      const message = getErrorMessage(error, 'Erro de sintaxe');
-
+    if (execution.status === 'compile-error') {
       setConsoleLogs([{
         tag: 'sintaxe',
         msg: 'O JavaScript encontrou um problema antes de conseguir executar sua função.',
@@ -148,8 +118,14 @@ export function useMissionRunner({
       setLastTest({
         passed: 0,
         total: currentExercise.tests.length,
-        firstFailure: { args: '', got: '', expected: '', error: message },
+        firstFailure: {
+          args: '',
+          got: '',
+          expected: '',
+          error: execution.error,
+        },
       });
+
       setStore((prev) => ({
         ...prev,
         performance: {
@@ -160,11 +136,12 @@ export function useMissionRunner({
           },
         },
       }));
+
       setIsPassed(false);
       return;
     }
 
-    if (typeof userFn !== 'function') {
+    if (execution.status === 'missing-function') {
       setStore((prev) => ({
         ...prev,
         performance: {
@@ -191,33 +168,24 @@ export function useMissionRunner({
           args: '',
           got: '',
           expected: '',
-          error: `Função ${expectedFn} não encontrada.`,
+          error: execution.error,
         },
       });
+
       setIsPassed(false);
       return;
     }
 
-    let passed = 0;
+    const logs: ConsoleLog[] = [];
     let firstFailure: LastTest['firstFailure'];
 
-    currentExercise.tests.forEach((test, index) => {
-      let result: unknown;
-      let error: string | null = null;
+    execution.cases.forEach((testCase) => {
+      const argsStr = testCase.args.map(formatInput).join(', ');
+      const expectedStr = formatInput(testCase.expected);
 
-      try {
-        const testArgs = structuredClone(test.args);
-        result = userFn(...testArgs);
-      } catch (caught: unknown) {
-        error = getErrorMessage(caught, 'Erro durante a execução');
-      }
-
-      const argsStr = test.args.map(formatInput).join(', ');
-      const expectedStr = JSON.stringify(test.exp);
-
-      if (error) {
+      if (testCase.error) {
         logs.push({
-          tag: `teste ${index + 1}`,
+          tag: `teste ${testCase.index + 1}`,
           msg: `${currentExercise.fn}(${argsStr}) encontrou um erro durante a execução.`,
           ok: false,
         });
@@ -227,46 +195,44 @@ export function useMissionRunner({
             args: argsStr,
             got: '',
             expected: expectedStr,
-            error,
+            error: testCase.error,
           };
         }
+
         return;
       }
 
-      const gotStr = JSON.stringify(result);
-      const pass = areValuesEqual(result, test.exp);
+      const gotStr = formatInput(testCase.result);
 
-      if (pass) {
-        passed += 1;
-      } else if (!firstFailure) {
+      if (!testCase.passed && !firstFailure) {
         firstFailure = {
           args: argsStr,
-          got: gotStr ?? 'undefined',
+          got: gotStr,
           expected: expectedStr,
         };
       }
 
       logs.push({
-        tag: `teste ${index + 1}`,
-        msg: pass
+        tag: `teste ${testCase.index + 1}`,
+        msg: testCase.passed
           ? `${currentExercise.fn}(${argsStr}) → resultado correto: ${gotStr}`
           : `${currentExercise.fn}(${argsStr}) → seu resultado: ${gotStr}; esperado: ${expectedStr}`,
-        ok: pass,
+        ok: testCase.passed,
       });
     });
 
     setLastTest({
-      passed,
-      total: currentExercise.tests.length,
+      passed: execution.passed,
+      total: execution.total,
       firstFailure,
     });
 
-    if (passed === currentExercise.tests.length) {
+    if (execution.passed === execution.total) {
       const earnedXp = calculateExerciseXp(currentExercise.xp, hintsShown);
 
       logs.push({
         tag: 'info',
-        msg: `${passed} de ${currentExercise.tests.length} testes passaram. Você dominou este desafio.`,
+        msg: `${execution.passed} de ${execution.total} testes passaram. Você dominou este desafio.`,
       });
 
       if (!store.done[key]) {
@@ -291,6 +257,7 @@ export function useMissionRunner({
           },
         },
       }));
+
       setIsPassed(false);
     }
 
@@ -333,12 +300,3 @@ function parseInput(raw: string): unknown {
     return trimmed;
   }
 }
-
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
