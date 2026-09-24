@@ -44,6 +44,9 @@ export function AppHeader({
         <button className={`nav-link ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
           Jornada
         </button>
+        <button className={`nav-link ${view === 'memory' ? 'active' : ''}`} onClick={() => setView('memory')}>
+          Memória
+        </button>
         <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
           Missão
         </button>
@@ -54,21 +57,20 @@ export function AppHeader({
 
       <div className="header-actions">
         <div className="score-box">
-        <div className="score-meta">
-          <span className="score-label">XP TOTAL</span>
-          <span className="score-max">
-            META <span id="maxscore">{totalMax}</span>
-          </span>
-        </div>
-        <div className="score-value" id="score">{totalEarned}</div>
-        <div className="score-track" aria-hidden={true}>
-          <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
-        </div>
+          <div className="score-meta">
+            <span className="score-label">XP TOTAL</span>
+            <span className="score-max">
+              META <span id="maxscore">{totalMax}</span>
+            </span>
+          </div>
+          <div className="score-value" id="score">{totalEarned}</div>
+          <div className="score-track" aria-hidden={true}>
+            <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
+          </div>
           <div className="sub" id="lvlprog">
             {levelsDoneTotal} / {LEVELS.length} níveis fechados
           </div>
         </div>
-
       </div>
     </header>
   );
