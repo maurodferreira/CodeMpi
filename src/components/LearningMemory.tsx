@@ -103,6 +103,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
 
   const selectedMeta = selectedConcept ? STATE_META[selectedConcept.state] : null;
   const selectedExercises = selectedConcept ? getRelatedExercises(selectedConcept) : [];
+  const reviewData = reviewingConcept ? getConceptReview(reviewingConcept.id) : null;
   const recommendedConcept = [...concepts]
     .filter((concept) => concept.state !== 'new')
     .sort((a, b) => (
@@ -239,7 +240,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
         </div>
       </section>
 
-      {reviewingConcept && getConceptReview(reviewingConcept.id) && (
+      {reviewingConcept && reviewData && (
         <div
           className="memory-review-backdrop"
           role="presentation"
@@ -277,46 +278,42 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
             </div>
 
             <div className="memory-review-body">
-              {(() => {
-                const review = getConceptReview(reviewingConcept.id);
-                if (!review) return null;
+              <span className="memory-review-label">CHECKPOINT</span>
+              <h3>{reviewData.question}</h3>
 
-                const answered = reviewAnswer !== null;
-                const correct = reviewAnswer === review.answer;
+              {reviewData.code && (
+                <pre className="memory-review-code"><code>{reviewData.code}</code></pre>
+              )}
 
-                return (
-                  <>
-                    <span className="memory-review-label">CHECKPOINT</span>
-                    <h3>{review.question}</h3>
+              <div className="memory-review-options">
+                {reviewData.options.map((option, index) => {
+                  const answered = reviewAnswer !== null;
+                  const isCorrect = index === reviewData.answer;
+                  const isWrongSelection = index === reviewAnswer && !isCorrect;
 
-                    {review.code && (
-                      <pre className="memory-review-code"><code>{review.code}</code></pre>
-                    )}
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`memory-review-option ${answered && isCorrect ? 'correct' : ''} ${answered && isWrongSelection ? 'wrong' : ''}`}
+                      onClick={() => setReviewAnswer(index)}
+                      disabled={answered}
+                    >
+                      <span>{String.fromCharCode(65 + index)}</span>
+                      <strong>{option}</strong>
+                    </button>
+                  );
+                })}
+              </div>
 
-                    <div className="memory-review-options">
-                      {review.options.map((option, index) => (
-                        <button
-                          key={option}
-                          type="button"
-                          className={`memory-review-option ${answered && index === review.answer ? 'correct' : ''} ${answered && index === reviewAnswer && index !== review.answer ? 'wrong' : ''} `}
-                          onClick={() => setReviewAnswer(index)}
-                          disabled={answered}
-                        >
-                          <span>{String.fromCharCode(65 + index)}</span>
-                          <strong>{option}</strong>
-                        </button>
-                      ))}
-                    </div>
-
-                    {answered && (
-                      <div className={`memory-review-feedback ${correct ? 'correct' : 'wrong'}`}>
-                        <strong>{correct ? '✓ Conceito recuperado.' : '↻ Quase. Vamos rever.'}</strong>
-                        <p>{review.explanation}</p>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+              {reviewAnswer !== null && (
+                <div className={`memory-review-feedback ${reviewAnswer === reviewData.answer ? 'correct' : 'wrong'}`}>
+                  <strong>
+                    {reviewAnswer === reviewData.answer ? '✓ Conceito recuperado.' : '↻ Quase. Vamos rever.'}
+                  </strong>
+                  <p>{reviewData.explanation}</p>
+                </div>
+              )}
             </div>
 
             <div className="memory-review-footer">
@@ -333,7 +330,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
                   Fechar
                 </button>
 
-                {reviewAnswer === getConceptReview(reviewingConcept.id)?.answer ? (
+                {reviewAnswer === reviewData.answer ? (
                   <button
                     type="button"
                     className="memory-modal-primary"
