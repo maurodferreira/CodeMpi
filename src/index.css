@@ -4922,6 +4922,11 @@ html[data-ui-scale="large"] .settings-toggle {
   }
 }
 
+.mission-shell .actions-main,
+.mission-shell .actions-secondary {
+  display: contents;
+}
+
 /* Mobile mission editor — touch-first layout */
 @media (max-width: 700px) {
   .mission-shell .code-editor-shell {
