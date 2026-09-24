@@ -31,7 +31,7 @@ function normalizeApiBaseUrl(value: string | undefined): string | null {
 }
 
 export function readCloudConfig(
-  env: CloudEnv = import.meta.env,
+  env: CloudEnv = import.meta.env as unknown as CloudEnv,
 ): CloudConfig {
   const apiBaseUrl = normalizeApiBaseUrl(env.VITE_CODEMPI_API_URL);
   const requestedEnabled = parseEnabled(env.VITE_CODEMPI_CLOUD_ENABLED);
