@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LEVELS } from '../data/levels';
 import type { ConceptSummary } from '../types';
 
@@ -33,6 +33,19 @@ const normalize = (value: string) =>
 export function SearchPage({ concepts, openMission, onReview }: SearchPageProps) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<SearchFilter>('all');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
 
   const items = useMemo<SearchItem[]>(() => {
     const challenges = LEVELS.flatMap((level, levelIndex) =>
@@ -108,6 +121,7 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
           <span className="search-input-icon" aria-hidden="true">⌕</span>
           <input
             type="search"
+            ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar “for”, “média”, “N2”..."
@@ -119,7 +133,7 @@ export function SearchPage({ concepts, openMission, onReview }: SearchPageProps)
               ×
             </button>
           )}
-          <span className="search-shortcut">⌘ K</span>
+          <span className="search-shortcut">CTRL K</span>
         </div>
 
         <div className="search-filters" aria-label="Filtrar resultados">
