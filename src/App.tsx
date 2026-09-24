@@ -93,9 +93,42 @@ export default function App() {
   });
 
   const handleReviewConcept = (concept: ConceptSummary) => {
-    resetMissionState(LEVELS[concept.levelIndex].exercises?.[concept.exerciseIndex] || null);
-    setLevelIndex(concept.levelIndex);
-    setExerciseIndex(concept.exerciseIndex);
+    const candidates = LEVELS.flatMap((level, li) =>
+      (level.exercises || []).flatMap((exercise, ei) => {
+        if (!exercise.conceptIds?.includes(concept.id)) return [];
+
+        const key = getKey(li, ei);
+        const performance = store.performance[key] || { attempts: 0, failures: 0 };
+
+        return [{
+          exercise,
+          levelIndex: li,
+          exerciseIndex: ei,
+          done: Boolean(store.done[key]),
+          attempts: performance.attempts,
+          failures: performance.failures,
+        }];
+      }),
+    ).sort((a, b) => (
+      Number(a.done) - Number(b.done) ||
+      b.failures - a.failures ||
+      b.attempts - a.attempts ||
+      a.levelIndex - b.levelIndex ||
+      a.exerciseIndex - b.exerciseIndex
+    ));
+
+    const target = candidates[0];
+
+    if (!target) {
+      resetMissionState(null);
+      setLevelIndex(concept.levelIndex);
+      setExerciseIndex(concept.exerciseIndex);
+    } else {
+      resetMissionState(target.exercise);
+      setLevelIndex(target.levelIndex);
+      setExerciseIndex(target.exerciseIndex);
+    }
+
     setLessonStep(0);
     setQuizAnswer(null);
     setView('mission');
