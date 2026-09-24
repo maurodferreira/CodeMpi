@@ -4,6 +4,7 @@ export interface ApiConfig {
   webOrigin: string;
   bodyLimitBytes: number;
   nodeEnv: string;
+  databaseUrl: string | null;
 }
 
 type ApiEnvironment = Record<string, string | undefined>;
@@ -48,6 +49,31 @@ function normalizeOrigin(value: string | undefined): string {
   }
 }
 
+function normalizeDatabaseUrl(
+  value: string | undefined,
+): string | null {
+  const candidate = value?.trim();
+
+  if (!candidate) return null;
+
+  try {
+    const url = new URL(candidate);
+
+    if (
+      url.protocol !== 'postgres:'
+      && url.protocol !== 'postgresql:'
+    ) {
+      throw new Error();
+    }
+
+    return candidate;
+  } catch {
+    throw new Error(
+      'CODEMPI_DATABASE_URL deve ser uma URL PostgreSQL válida.',
+    );
+  }
+}
+
 export function readApiConfig(
   env: ApiEnvironment = process.env,
 ): ApiConfig {
@@ -69,5 +95,8 @@ export function readApiConfig(
       1_048_576,
     ),
     nodeEnv: env.NODE_ENV?.trim() || 'development',
+    databaseUrl: normalizeDatabaseUrl(
+      env.CODEMPI_DATABASE_URL,
+    ),
   };
 }
