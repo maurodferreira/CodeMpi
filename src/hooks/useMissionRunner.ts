@@ -183,6 +183,11 @@ export function useMissionRunner({
                 tag: 'estrutura',
                 message: `Ainda não encontrei uma função chamada ${expectedFn}. Confira o nome e a estrutura pedidos na missão.`,
               }
+            : execution.status === 'policy-error'
+              ? {
+                  tag: 'ambiente',
+                  message: execution.error,
+                }
             : execution.status === 'timeout'
               ? {
                   tag: 'tempo',

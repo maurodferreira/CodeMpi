@@ -15,7 +15,7 @@ export interface TestCaseExecution {
 
 export type TestExecutionResult =
   | {
-      status: 'compile-error' | 'missing-function' | 'timeout' | 'execution-error';
+      status: 'compile-error' | 'missing-function' | 'policy-error' | 'timeout' | 'execution-error';
       error: string;
       passed: 0;
       total: number;
@@ -37,6 +37,7 @@ export type FunctionExecutionResult =
       status:
         | 'compile-error'
         | 'missing-function'
+        | 'policy-error'
         | 'runtime-error'
         | 'timeout'
         | 'execution-error';
