@@ -16,7 +16,7 @@ import { LEVEL_LESSONS } from './data/lessons';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
 import { HINT_MULTIPLIERS } from './utils/xp';
 import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
-import type { View } from './types';
+import type { ConceptSummary, View } from './types';
 
 export default function App() {
   const [view, setView] = useState<View>('dashboard');
@@ -93,7 +93,7 @@ export default function App() {
     getKey,
   });
 
-  const handleReviewConcept = (concept: Parameters<typeof findConceptMissionTarget>[0]) => {
+  const handleReviewConcept = (concept: ConceptSummary) => {
     const target = findConceptMissionTarget(concept, store);
 
     if (!target) {
