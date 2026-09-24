@@ -3,11 +3,8 @@ import { LEVELS } from '../data/levels';
 import { LEVEL_LESSONS } from '../data/lessons';
 import { getConcept } from '../data/concepts';
 import { getHintMultiplier } from '../utils/xp';
+import { getProgressKey } from '../utils/progress';
 import type { ConceptSummary, StoreData } from '../types';
-
-export function getProgressKey(levelIndex: number, exerciseIndex: number): string {
-  return `${levelIndex}-${exerciseIndex}`;
-}
 
 export function getLevelDoneCount(store: StoreData, levelIndex: number): number {
   const level = LEVELS[levelIndex];
