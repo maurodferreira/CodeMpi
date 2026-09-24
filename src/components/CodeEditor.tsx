@@ -13,6 +13,9 @@ interface CodeEditorProps {
   lineWrapping?: boolean;
   lineNumbers?: boolean;
   indentSize?: 2 | 4;
+  focusMode?: boolean;
+  onToggleFocus?: () => void;
+  focusLabel?: string;
 }
 
 const EDITOR_FONT_SIZES = {
@@ -37,6 +40,9 @@ export function CodeEditor({
   lineWrapping = true,
   lineNumbers = true,
   indentSize = 2,
+  focusMode = false,
+  onToggleFocus,
+  focusLabel,
 }: CodeEditorProps) {
   const editorFontSize = EDITOR_FONT_SIZES[fontSize];
   const editorViewRef = useRef<EditorView | null>(null);
@@ -89,6 +95,18 @@ export function CodeEditor({
         <span className="code-editor-dot" />
         <span>desafio.js</span>
         <span className="code-editor-language">JavaScript</span>
+        {onToggleFocus && (
+          <button
+            type="button"
+            className={`code-editor-focus-button ${focusMode ? 'active' : ''}`}
+            aria-pressed={focusMode}
+            aria-label={focusMode ? 'Sair do modo foco' : 'Entrar no modo foco'}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onToggleFocus}
+          >
+            {focusMode ? 'Sair do foco' : 'Focar no código'}
+          </button>
+        )}
       </div>
 
       <CodeMirror
