@@ -2925,6 +2925,82 @@ button.btn.secondary:hover {
   letter-spacing:.09em;
 }
 
+.install-status-badge {
+  padding:5px 7px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--muted-2);
+  font-size:6.5px;
+  letter-spacing:.09em;
+}
+
+.install-status-badge.available {
+  border-color:rgba(124,255,155,.22);
+  background:rgba(124,255,155,.05);
+  color:var(--accent);
+}
+
+.install-status-badge.installed {
+  border-color:rgba(124,255,155,.28);
+  background:rgba(124,255,155,.08);
+  color:var(--accent);
+}
+
+.app-install-card {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+  padding:15px;
+  border:1px solid rgba(124,255,155,.12);
+  border-radius:12px;
+  background:
+    radial-gradient(circle at 100% 0,rgba(124,255,155,.045),transparent 34%),
+    rgba(7,17,15,.28);
+}
+
+.app-install-mark {
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(124,255,155,.18);
+  border-radius:11px;
+  background:rgba(124,255,155,.045);
+  color:var(--accent);
+  font-size:21px;
+}
+
+.app-install-copy {
+  min-width:0;
+}
+
+.app-install-copy strong {
+  display:block;
+  color:var(--text);
+  font-size:10px;
+}
+
+.app-install-copy p {
+  max-width:680px;
+  margin:5px 0 0;
+  color:var(--muted);
+  font-size:8.5px;
+  line-height:1.6;
+}
+
+.app-install-button {
+  min-height:38px;
+  white-space:nowrap;
+}
+
+.app-install-ready {
+  color:var(--accent);
+  font-size:7px;
+  font-weight:700;
+  letter-spacing:.1em;
+}
+
 .account-preview-card {
   display:flex;
   align-items:center;
@@ -2975,6 +3051,19 @@ button.btn.secondary:hover {
   .settings-intro h1 { font-size:28px; }
   .theme-grid { grid-template-columns:1fr; }
   .settings-toolbar { align-items:flex-start; flex-direction:column; gap:8px; }
+  .app-install-card {
+    grid-template-columns:auto minmax(0,1fr);
+    align-items:flex-start;
+  }
+  .app-install-button,
+  .app-install-ready {
+    grid-column:1 / -1;
+    width:100%;
+  }
+  .app-install-ready {
+    padding-top:4px;
+    text-align:center;
+  }
   .account-preview-card { align-items:flex-start; }
 }
 

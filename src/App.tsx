@@ -13,6 +13,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
 import { useAppPreferences } from './hooks/useAppPreferences';
+import { useInstallPrompt } from './hooks/useInstallPrompt';
 import {
   getLessonPath,
   getLevelPath,
@@ -34,6 +35,7 @@ export default function App() {
   const { store, setStore, registerActivity } = useProgressStore();
   const { theme, setTheme } = useTheme();
   const { preferences, setPreferences } = useAppPreferences();
+  const { canInstall, isInstalled, requestInstall } = useInstallPrompt();
 
   const {
     getKey,
@@ -346,6 +348,9 @@ export default function App() {
           preferences={preferences}
           setPreferences={setPreferences}
           setView={setView}
+          canInstall={canInstall}
+          isInstalled={isInstalled}
+          onInstall={requestInstall}
         />
       )}
 
