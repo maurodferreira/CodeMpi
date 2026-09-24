@@ -80,6 +80,46 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Percorrer listas',
     description: 'Visitar os valores de uma lista usando um índice e um laço.',
   },
+  strings: {
+    id: 'strings',
+    name: 'Strings',
+    description: 'Trabalhar com textos e acessar seus caracteres.',
+  },
+  stringLength: {
+    id: 'stringLength',
+    name: 'Tamanho de strings',
+    description: 'Usar length para descobrir quantos caracteres uma string possui.',
+  },
+  stringIndex: {
+    id: 'stringIndex',
+    name: 'Índices de strings',
+    description: 'Acessar caracteres de uma string usando posições e índices.',
+  },
+  stringCase: {
+    id: 'stringCase',
+    name: 'Maiúsculas e minúsculas',
+    description: 'Transformar o texto usando toUpperCase e toLowerCase.',
+  },
+  stringIteration: {
+    id: 'stringIteration',
+    name: 'Percorrer strings',
+    description: 'Visitar caracteres de uma string usando um laço e um índice.',
+  },
+  stringReplacement: {
+    id: 'stringReplacement',
+    name: 'Substituição de texto',
+    description: 'Substituir ocorrências de texto dentro de uma string.',
+  },
+  stringComparison: {
+    id: 'stringComparison',
+    name: 'Comparação de strings',
+    description: 'Comparar textos usando igualdade exata.',
+  },
+  palindrome: {
+    id: 'palindrome',
+    name: 'Palíndromos',
+    description: 'Identificar textos que permanecem iguais quando lidos de trás para frente.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito'): ConceptDefinition {
