@@ -1,7 +1,7 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { CodeEditor } from './CodeEditor';
 import { LEVELS } from '../data/levels';
-import type { AppPreferences } from '../hooks/useAppPreferences';
+import type { AppPreferences } from '../domain/preferences';
 import { calculateExerciseXp } from '../utils/xp';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
 

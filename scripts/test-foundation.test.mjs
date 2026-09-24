@@ -23,6 +23,9 @@ const valueEquality = await vite.ssrLoadModule('/src/utils/valueEquality.ts');
 const levelsModule = await vite.ssrLoadModule('/src/data/levels.ts');
 const userRepository = await vite.ssrLoadModule('/src/services/userRepository.ts');
 const persistenceModule = await vite.ssrLoadModule('/src/services/persistence.ts');
+const progressRepositoryModule = await vite.ssrLoadModule('/src/services/progressRepository.ts');
+const preferencesRepositoryModule = await vite.ssrLoadModule('/src/services/preferencesRepository.ts');
+const themeRepositoryModule = await vite.ssrLoadModule('/src/services/themeRepository.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -396,6 +399,125 @@ test('corrupted local user data creates a fresh safe identity', () => {
   assert.equal(identity.user.id, 'local_recovered');
   assert.equal(identity.user.createdAt, '2026-09-24T18:10:00.000Z');
   assert.equal(identity.session.userId, 'local_recovered');
+});
+
+
+test('progress repository loads migrated data and saves through the adapter', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.progress, {
+      done: { '0-5': 200, '2-1': 300 },
+      hints: { '0-5': 2 },
+      lessonDone: {},
+      performance: {},
+      activityDates: [],
+      progressVersion: 1,
+    }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = progressRepositoryModule.createProgressRepository(persistence);
+  const loaded = repository.load();
+
+  assert.equal(loaded.progressVersion, storeMigration.CURRENT_PROGRESS_VERSION);
+  assert.equal(loaded.done['0-5'], undefined);
+  assert.equal(loaded.done['2-1'], 300);
+
+  loaded.done['6-9'] = 550;
+  assert.equal(repository.save(loaded), true);
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.progress).done['6-9'],
+    550,
+  );
+});
+
+test('preferences repository normalizes corrupted values and preserves valid choices', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.preferences, {
+      interfaceScale: 'invalid',
+      reduceMotion: 1,
+      highContrast: 0,
+      editorFontSize: 'large',
+      editorLineWrapping: false,
+      editorLineNumbers: false,
+      editorIndentSize: 99,
+      showXp: false,
+      confirmReset: false,
+    }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = preferencesRepositoryModule.createPreferencesRepository(persistence);
+  const loaded = repository.load();
+
+  assert.equal(loaded.interfaceScale, 'comfortable');
+  assert.equal(loaded.reduceMotion, true);
+  assert.equal(loaded.highContrast, false);
+  assert.equal(loaded.editorFontSize, 'large');
+  assert.equal(loaded.editorLineWrapping, false);
+  assert.equal(loaded.editorLineNumbers, false);
+  assert.equal(loaded.editorIndentSize, 2);
+  assert.equal(loaded.showXp, false);
+  assert.equal(loaded.confirmReset, false);
+
+  loaded.interfaceScale = 'compact';
+  assert.equal(repository.save(loaded), true);
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.preferences).interfaceScale,
+    'compact',
+  );
+});
+
+test('theme repository validates stored themes and saves through the adapter', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.settings, { theme: 'unknown-theme' }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = themeRepositoryModule.createThemeRepository(persistence);
+
+  assert.equal(repository.load(), 'green');
+  assert.equal(repository.save('violet'), true);
+  assert.deepEqual(
+    data.get(persistenceModule.STORAGE_KEYS.settings),
+    { theme: 'violet' },
+  );
+  assert.equal(repository.load(), 'violet');
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', () => {
