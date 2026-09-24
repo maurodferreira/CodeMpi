@@ -1,6 +1,9 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
-import { CodeEditor } from './CodeEditor';
+import { lazy, Suspense, useState, type Dispatch, type SetStateAction } from 'react';
 import { LEVELS } from '../data/levels';
+
+const CodeEditor = lazy(() => import('./CodeEditor').then((module) => ({
+  default: module.CodeEditor,
+})));
 import type { AppPreferences } from '../domain/preferences';
 import { calculateExerciseXp } from '../utils/xp';
 import type { ConsoleLog, LastTest, LearningFeedback, StoreData, View } from '../types';
@@ -215,17 +218,30 @@ export function MissionPage({
                   </div>
 
                   <div className="editor-wrap">
-                    <CodeEditor
-                      code={code}
-                      onChange={setCode}
-                      fontSize={preferences.editorFontSize}
-                      lineWrapping={preferences.editorLineWrapping}
-                      lineNumbers={preferences.editorLineNumbers}
-                      indentSize={preferences.editorIndentSize}
-                      focusMode={focusMode}
-                      onToggleFocus={() => setFocusMode((previous) => !previous)}
-                      focusLabel={currentExercise.title}
-                    />
+                    <Suspense
+                      fallback={(
+                        <div className="code-editor-shell" aria-busy="true" aria-live="polite">
+                          <div className="code-editor-topbar">
+                            <span className="code-editor-dot" />
+                            <span>desafio.js</span>
+                            <span className="code-editor-language">JavaScript</span>
+                          </div>
+                          <div className="console-empty">Carregando editor…</div>
+                        </div>
+                      )}
+                    >
+                      <CodeEditor
+                        code={code}
+                        onChange={setCode}
+                        fontSize={preferences.editorFontSize}
+                        lineWrapping={preferences.editorLineWrapping}
+                        lineNumbers={preferences.editorLineNumbers}
+                        indentSize={preferences.editorIndentSize}
+                        focusMode={focusMode}
+                        onToggleFocus={() => setFocusMode((previous) => !previous)}
+                        focusLabel={currentExercise.title}
+                      />
+                    </Suspense>
 
                     <div className="learning-note">
                       <span>💡</span>
