@@ -223,7 +223,7 @@ export const LEVELS: Level[] = [
             {
                 title: "Inverter texto", conceptIds: ["strings","stringIteration"], desc: "Retorne texto escrito de trás para frente.", sig: "function inverter(texto) { ... }", starter: "function inverter(texto) {\n  let resultado = \"\";\n\n  // construa o texto invertido\n}", fn: "inverter", difficulty: "dificil", xp: 320, skill: "percorrer uma string e construir um novo texto caractere por caractere",
                 hints: ["Pense em construir uma segunda string enquanto percorre a original.", "Para inverter, visite o texto do último índice até o primeiro.", "Comece no índice texto.length - 1, diminua até 0 e acrescente texto[i] a resultado.", "function inverter(texto) {\n  let resultado = \"\";\n\n  for (let i = texto.length - 1; i >= 0; i--) {\n    resultado += texto[i];\n  }\n\n  return resultado;\n}"],
-                tests: [{ args: ["casa"], exp: "asac" }, { args: ["CodeMpi"], exp: "ipM edoC" }, { args: [""], exp: "" }, { args: ["a"], exp: "a" }]
+                tests: [{ args: ["casa"], exp: "asac" }, { args: ["CodeMpi"], exp: "ipMedoC" }, { args: [""], exp: "" }, { args: ["a"], exp: "a" }]
             },
             {
                 title: "Substituir ocorrências", conceptIds: ["strings","stringReplacement"], desc: "Retorne texto com todas as ocorrências de alvo substituídas por novo.", sig: "function substituir(texto, alvo, novo) { ... }", starter: "function substituir(texto, alvo, novo) {\n  // substitua todas as ocorrências\n}", fn: "substituir", difficulty: "dificil", xp: 320, skill: "substituir todas as ocorrências de um trecho em uma string",
