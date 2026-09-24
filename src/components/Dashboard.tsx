@@ -51,6 +51,11 @@ export function Dashboard({
   const reviewCount = concepts.filter((concept) => concept.state === 'review').length;
   const developingCount = concepts.filter((concept) => concept.state === 'developing').length;
   const solidCount = concepts.filter((concept) => concept.state === 'solid').length;
+  const journeyPreviewStart = Math.min(
+    Math.max(continuePoint.li - 2, 0),
+    Math.max(0, LEVELS.length - 5),
+  );
+  const journeyPreview = LEVELS.slice(journeyPreviewStart, journeyPreviewStart + 5);
 
   return (
     <main className="dashboard">
@@ -133,8 +138,8 @@ export function Dashboard({
           <span className="stat-icon">◇</span>
           <div>
             <span className="stat-label">Níveis concluídos</span>
-            <strong>{levelsDoneTotal}/{LEVELS.length}</strong>
-            <small>{builtLevels} níveis já disponíveis</small>
+            <strong>{levelsDoneTotal}/{builtLevels}</strong>
+            <small>{LEVELS.length - builtLevels} níveis planejados</small>
           </div>
         </article>
       </section>
@@ -234,7 +239,8 @@ export function Dashboard({
         </div>
 
         <div className="path-preview">
-          {LEVELS.slice(0, 5).map((level, index) => {
+          {journeyPreview.map((level, previewIndex) => {
+            const index = journeyPreviewStart + previewIndex;
             const unlocked = levelUnlocked(index);
             const complete = levelComplete(index);
             const inProgress = unlocked && !complete && Boolean(level.exercises?.length);
