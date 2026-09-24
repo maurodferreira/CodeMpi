@@ -181,6 +181,19 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 - CodeMirror 6
 - CSS customizado
 
+### Backend Foundation
+
+- Node.js 22+
+- TypeScript
+- servidor HTTP nativo do Node
+- configuração por ambiente
+- CORS restrito à origem configurada
+- limite de tamanho para bodies JSON
+- request ID por requisição
+- graceful shutdown
+
+A fundação da API já existe, mas autenticação, banco de dados e sincronização persistente ainda não estão conectados.
+
 ### Persistência atual
 
 O CodeMpi continua **local-first**.
@@ -190,7 +203,8 @@ Hoje:
 - progresso, preferências, tema e identidade local usam `localStorage`;
 - a fundação de sessão cloud usa `sessionStorage`, para sobreviver a recarregamentos sem persistir o token indefinidamente;
 - a cloud fica desligada por padrão;
-- ainda não há backend conectado, login visual ou sincronização ativa entre dispositivos.
+- a Backend Foundation já existe e expõe uma API local real;
+- autenticação, banco de dados, login visual e sincronização ativa ainda não estão implementados.
 
 A sessão cloud já possui validação de usuário, token, expiração e vínculo entre IDs. Sessões inválidas ou expiradas são descartadas automaticamente.
 
@@ -314,6 +328,8 @@ npm install
 
 ### Ambiente de desenvolvimento
 
+Frontend:
+
 ```bash
 npm run dev
 ```
@@ -324,6 +340,26 @@ O Vite normalmente disponibiliza o projeto em:
 http://localhost:5173
 ```
 
+Backend Foundation:
+
+```bash
+npm run api:start
+```
+
+Por padrão, a API sobe em:
+
+```text
+http://127.0.0.1:3001
+```
+
+Health check:
+
+```text
+GET http://127.0.0.1:3001/health
+```
+
+Enquanto autenticação e banco ainda não estão conectados, as rotas `/auth/*` e `/sync/*` respondem `501 Not Implemented` de forma explícita, em vez de simular uma conta funcional.
+
 ### Configuração da Cloud Foundation
 
 A cloud permanece desligada por padrão. O arquivo `.env.example` documenta as variáveis disponíveis:
@@ -331,6 +367,11 @@ A cloud permanece desligada por padrão. O arquivo `.env.example` documenta as v
 ```env
 VITE_CODEMPI_CLOUD_ENABLED=false
 VITE_CODEMPI_API_URL=http://localhost:3001
+
+CODEMPI_API_HOST=127.0.0.1
+CODEMPI_API_PORT=3001
+CODEMPI_WEB_ORIGIN=http://localhost:5173
+CODEMPI_API_BODY_LIMIT=65536
 ```
 
 Para desenvolvimento futuro com uma API real, crie um arquivo `.env.local` e habilite explicitamente a integração:
@@ -376,6 +417,18 @@ npm run check
 
 ```bash
 npm run preview
+```
+
+### Build da API
+
+```bash
+npm run api:build
+```
+
+### Iniciar a API local
+
+```bash
+npm run api:start
 ```
 
 ---

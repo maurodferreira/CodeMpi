@@ -37,6 +37,9 @@ const cloudDomainModule = await vite.ssrLoadModule('/src/domain/cloud.ts');
 const cloudConfigModule = await vite.ssrLoadModule('/src/config/cloud.ts');
 const cloudServicesModule = await vite.ssrLoadModule('/src/services/cloudServices.ts');
 const cloudSessionRepositoryModule = await vite.ssrLoadModule('/src/services/cloudSessionRepository.ts');
+const apiServerConfigModule = await vite.ssrLoadModule('/server/config.ts');
+const apiRouterModule = await vite.ssrLoadModule('/server/router.ts');
+const apiServerModule = await vite.ssrLoadModule('/server/server.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -1213,6 +1216,233 @@ test('cloud session repository rejects mismatched user and session IDs', () => {
 
   assert.equal(saved, false);
   assert.equal(data.size, 0);
+});
+
+
+test('backend config uses safe local defaults and validates invalid values', () => {
+  assert.deepEqual(
+    apiServerConfigModule.readApiConfig({}),
+    {
+      host: '127.0.0.1',
+      port: 3001,
+      webOrigin: 'http://localhost:5173',
+      bodyLimitBytes: 65536,
+      nodeEnv: 'development',
+    },
+  );
+
+  assert.throws(
+    () => apiServerConfigModule.readApiConfig({
+      CODEMPI_API_PORT: '70000',
+    }),
+    /CODEMPI_API_PORT/,
+  );
+
+  assert.throws(
+    () => apiServerConfigModule.readApiConfig({
+      CODEMPI_WEB_ORIGIN: 'file:///tmp/codempi',
+    }),
+    /CODEMPI_WEB_ORIGIN/,
+  );
+});
+
+test('backend router exposes health and explicit unconfigured cloud endpoints', () => {
+  const health = apiRouterModule.routeApiRequest({
+    method: 'GET',
+    pathname: '/health',
+    requestId: 'req-health',
+  });
+
+  assert.equal(health.status, 200);
+  assert.equal(health.body.status, 'ok');
+  assert.equal(health.body.service, 'codempi-api');
+  assert.equal(health.body.requestId, 'req-health');
+
+  const auth = apiRouterModule.routeApiRequest({
+    method: 'POST',
+    pathname: '/auth/sign-in',
+    requestId: 'req-auth',
+    body: {
+      email: 'aluno@codempi.dev',
+      password: 'senha',
+    },
+  });
+
+  assert.equal(auth.status, 501);
+  assert.equal(auth.body.error.code, 'AUTH_NOT_CONFIGURED');
+
+  const sync = apiRouterModule.routeApiRequest({
+    method: 'GET',
+    pathname: '/sync/snapshot',
+    requestId: 'req-sync',
+  });
+
+  assert.equal(sync.status, 501);
+  assert.equal(sync.body.error.code, 'SYNC_NOT_CONFIGURED');
+});
+
+test('backend router distinguishes method not allowed from unknown routes', () => {
+  const methodNotAllowed = apiRouterModule.routeApiRequest({
+    method: 'POST',
+    pathname: '/health',
+    requestId: 'req-method',
+  });
+
+  assert.equal(methodNotAllowed.status, 405);
+  assert.equal(methodNotAllowed.headers.Allow, 'GET');
+  assert.equal(
+    methodNotAllowed.body.error.code,
+    'METHOD_NOT_ALLOWED',
+  );
+
+  const notFound = apiRouterModule.routeApiRequest({
+    method: 'GET',
+    pathname: '/rota-inexistente',
+    requestId: 'req-missing',
+  });
+
+  assert.equal(notFound.status, 404);
+  assert.equal(notFound.body.error.code, 'NOT_FOUND');
+});
+
+test('backend HTTP server answers health and restricts browser origins', async () => {
+  const config = {
+    host: '127.0.0.1',
+    port: 3001,
+    webOrigin: 'http://localhost:5173',
+    bodyLimitBytes: 65536,
+    nodeEnv: 'test',
+  };
+
+  const server = apiServerModule.createApiServer(config);
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, config.host, resolve);
+  });
+
+  const address = server.address();
+
+  assert.ok(address && typeof address === 'object');
+
+  const baseUrl = `http://${config.host}:${address.port}`;
+
+  try {
+    const allowed = await fetch(`${baseUrl}/health`, {
+      headers: {
+        Origin: config.webOrigin,
+      },
+    });
+
+    assert.equal(allowed.status, 200);
+    assert.equal(
+      allowed.headers.get('access-control-allow-origin'),
+      config.webOrigin,
+    );
+    assert.ok(allowed.headers.get('x-request-id'));
+
+    const health = await allowed.json();
+    assert.equal(health.status, 'ok');
+
+    const blocked = await fetch(`${baseUrl}/health`, {
+      headers: {
+        Origin: 'https://outro-site.example',
+      },
+    });
+
+    assert.equal(blocked.status, 403);
+
+    const blockedPayload = await blocked.json();
+    assert.equal(
+      blockedPayload.error.code,
+      'ORIGIN_NOT_ALLOWED',
+    );
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  }
+});
+
+test('backend HTTP server validates JSON and request body size before routing', async () => {
+  const config = {
+    host: '127.0.0.1',
+    port: 3001,
+    webOrigin: 'http://localhost:5173',
+    bodyLimitBytes: 32,
+    nodeEnv: 'test',
+  };
+
+  const server = apiServerModule.createApiServer(config);
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, config.host, resolve);
+  });
+
+  const address = server.address();
+
+  assert.ok(address && typeof address === 'object');
+
+  const baseUrl = `http://${config.host}:${address.port}`;
+
+  try {
+    const invalidJson = await fetch(`${baseUrl}/auth/sign-in`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: '{invalido',
+    });
+
+    assert.equal(invalidJson.status, 400);
+    assert.equal(
+      (await invalidJson.json()).error.code,
+      'INVALID_JSON',
+    );
+
+    const tooLarge = await fetch(`${baseUrl}/auth/sign-in`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        value: 'x'.repeat(100),
+      }),
+    });
+
+    assert.equal(tooLarge.status, 413);
+    assert.equal(
+      (await tooLarge.json()).error.code,
+      'PAYLOAD_TOO_LARGE',
+    );
+
+    const stubbedAuth = await fetch(`${baseUrl}/auth/sign-in`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: 'a@b.c',
+      }),
+    });
+
+    assert.equal(stubbedAuth.status, 501);
+    assert.equal(
+      (await stubbedAuth.json()).error.code,
+      'AUTH_NOT_CONFIGURED',
+    );
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  }
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {

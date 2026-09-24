@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "npm run lint && npm run test && npm run build",
-    "test": "node --test scripts/test-foundation.test.mjs"
+    "test": "node --test scripts/test-foundation.test.mjs",
+    "api:build": "tsc -p tsconfig.server.json",
+    "api:start": "npm run api:build && node dist-server/server/index.js"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
