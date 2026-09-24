@@ -237,6 +237,7 @@ export default function App() {
           overallProgress={overallProgress}
           completedExercises={completedExercises}
           levelsDoneTotal={levelsDoneTotal}
+          continuePoint={continuePoint}
           levelUnlocked={levelUnlocked}
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
