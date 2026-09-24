@@ -9,3 +9,9 @@ export interface DatabaseClient {
     params?: readonly unknown[],
   ): Promise<DatabaseQueryResult<Row>>;
 }
+
+export interface Database extends DatabaseClient {
+  transaction<T>(
+    work: (client: DatabaseClient) => Promise<T>,
+  ): Promise<T>;
+}
