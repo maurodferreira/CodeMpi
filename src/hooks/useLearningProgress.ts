@@ -87,7 +87,12 @@ export function useLearningProgress(store: StoreData) {
     [store],
   );
 
-  const completedExercises = Object.keys(store.done).length;
+  const completedExercises = LEVELS.reduce(
+    (total, level, levelIndex) => total + (level.exercises || []).filter(
+      (_, exerciseIndex) => Boolean(store.done[getProgressKey(levelIndex, exerciseIndex)]),
+    ).length,
+    0,
+  );
 
   const continuePoint = (() => {
     for (let levelIndex = 0; levelIndex < LEVELS.length; levelIndex += 1) {
