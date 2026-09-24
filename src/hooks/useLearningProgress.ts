@@ -48,7 +48,7 @@ export function getStoredHintMultiplier(
   levelIndex: number,
   exerciseIndex: number,
 ): number {
-  const shown = Math.min(store.hints[getProgressKey(levelIndex, exerciseIndex)] || 0, 3);
+  const shown = Math.min(store.hints[getProgressKey(levelIndex, exerciseIndex)] || 0, 4);
   return getHintMultiplier(shown);
 }
 
