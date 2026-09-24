@@ -22,12 +22,12 @@ const EDITOR_FONT_SIZES = {
 } as const;
 
 const MOBILE_CODE_TOOLS = [
-  { label: '{ }', insert: '{ }', ariaLabel: 'Inserir chaves' },
-  { label: '( )', insert: '( )', ariaLabel: 'Inserir parênteses' },
-  { label: '[ ]', insert: '[ ]', ariaLabel: 'Inserir colchetes' },
-  { label: '=>', insert: ' => ', ariaLabel: 'Inserir arrow function' },
-  { label: ';', insert: ';', ariaLabel: 'Inserir ponto e vírgula' },
-  { label: '=', insert: ' = ', ariaLabel: 'Inserir sinal de igualdade' },
+  { label: '{ }', insert: '{}', cursorOffset: 1, ariaLabel: 'Inserir chaves' },
+  { label: '( )', insert: '()', cursorOffset: 1, ariaLabel: 'Inserir parênteses' },
+  { label: '[ ]', insert: '[]', cursorOffset: 1, ariaLabel: 'Inserir colchetes' },
+  { label: '=>', insert: ' => ', cursorOffset: 4, ariaLabel: 'Inserir arrow function' },
+  { label: ';', insert: ';', cursorOffset: 1, ariaLabel: 'Inserir ponto e vírgula' },
+  { label: '=', insert: ' = ', cursorOffset: 3, ariaLabel: 'Inserir sinal de igualdade' },
 ] as const;
 
 export function CodeEditor({
@@ -41,7 +41,7 @@ export function CodeEditor({
   const editorFontSize = EDITOR_FONT_SIZES[fontSize];
   const editorViewRef = useRef<EditorView | null>(null);
 
-  const insertText = (text: string) => {
+  const insertText = (text: string, cursorOffset = text.length) => {
     const view = editorViewRef.current;
     if (!view) return;
 
@@ -53,8 +53,8 @@ export function CodeEditor({
           insert: text,
         },
         range: {
-          from: range.from + text.length,
-          to: range.from + text.length,
+          from: range.from + cursorOffset,
+          to: range.from + cursorOffset,
         },
       })),
     );
@@ -130,7 +130,7 @@ export function CodeEditor({
               type="button"
               aria-label={tool.ariaLabel}
               onMouseDown={(event) => event.preventDefault()}
-              onClick={() => insertText(tool.insert)}
+              onClick={() => insertText(tool.insert, tool.cursorOffset)}
             >
               {tool.label}
             </button>
