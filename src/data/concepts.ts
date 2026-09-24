@@ -120,6 +120,56 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Palíndromos',
     description: 'Identificar textos que permanecem iguais quando lidos de trás para frente.',
   },
+  arrays: {
+    id: 'arrays',
+    name: 'Arrays',
+    description: 'Guardar e organizar vários valores em uma única estrutura.',
+  },
+  arrayIndex: {
+    id: 'arrayIndex',
+    name: 'Índices de arrays',
+    description: 'Acessar valores de um array usando posições e índices.',
+  },
+  arrayLength: {
+    id: 'arrayLength',
+    name: 'Tamanho de arrays',
+    description: 'Usar length para descobrir quantos itens um array possui.',
+  },
+  arrayMutation: {
+    id: 'arrayMutation',
+    name: 'Alteração de arrays',
+    description: 'Alterar valores de posições existentes em um array.',
+  },
+  arrayIteration: {
+    id: 'arrayIteration',
+    name: 'Percorrer arrays',
+    description: 'Visitar os itens de um array usando um laço e um índice.',
+  },
+  arrayPush: {
+    id: 'arrayPush',
+    name: 'Adicionar itens',
+    description: 'Adicionar valores a um array usando push.',
+  },
+  arraySearch: {
+    id: 'arraySearch',
+    name: 'Buscar em arrays',
+    description: 'Procurar valores dentro de um array e identificar se estão presentes.',
+  },
+  arrayFilter: {
+    id: 'arrayFilter',
+    name: 'Filtrar arrays',
+    description: 'Selecionar valores de um array e construir uma nova lista.',
+  },
+  arrayReverse: {
+    id: 'arrayReverse',
+    name: 'Inverter arrays',
+    description: 'Percorrer um array de trás para frente e construir outra lista.',
+  },
+  arrayDuplicates: {
+    id: 'arrayDuplicates',
+    name: 'Remover duplicados',
+    description: 'Construir uma lista preservando apenas a primeira ocorrência de cada valor.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito'): ConceptDefinition {
