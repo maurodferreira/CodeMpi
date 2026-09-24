@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LEVELS } from '../data/levels';
-import { getProgressKey } from '../hooks/useLearningProgress';
-import { getConceptReview } from '../data/concepts';
+import { getProgressKey } from '../utils/progress';
+import { getConceptReview } from '../data/conceptReviews';
 import type { ConceptSummary, StoreData } from '../types';
 
 interface LearningMemoryProps {
