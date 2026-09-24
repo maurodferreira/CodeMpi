@@ -220,20 +220,25 @@ export function MissionPage({
                       </button>
                       <button className="btn ghost" onClick={handleShowHint} disabled={hintsShown >= currentExercise.hints.length}>
                         {hintsShown >= currentExercise.hints.length
-                          ? 'Todas as dicas exibidas'
-                          : `Mostrar dica (${hintsShown + 1}/${currentExercise.hints.length}) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`}
+                          ? '3 dicas + solução exibidas'
+                          : hintsShown === 3
+                            ? `Mostrar solução completa — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`
+                            : `Mostrar dica (${hintsShown + 1}/3) — XP cai p/ ${Math.round(hMult[hintsShown + 1] * 100)}%`}
                       </button>
                       <span className="xp-live">
                         {!alreadyDoneXP && hintsShown > 0
-                          ? `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
+                          ? hintsShown >= 4
+                            ? `Solução completa usada — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
+                            : `${hintsShown} dica(s) usada(s) — XP reduzido para ${Math.round(getMult(levelIndex, exerciseIndex) * 100)}%`
                           : ''}
                       </span>
                     </div>
 
                     <div className="hints-box">
                       {currentExercise.hints.slice(0, hintsShown).map((hintText, index) => (
-                        <div key={index} className="hint-line">
-                          <b>Dica {index + 1}</b> {hintText}
+                        <div key={index} className={`hint-line ${index === 3 ? 'solution' : ''}`}>
+                          <b>{index === 3 ? 'Solução completa' : `Dica ${index + 1}`}</b>
+                          {index === 3 ? <code>{hintText}</code> : <span>{hintText}</span>}
                         </div>
                       ))}
                     </div>
