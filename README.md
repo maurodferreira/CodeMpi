@@ -192,7 +192,7 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 - request ID por requisição
 - graceful shutdown
 
-A fundação da API já existe. O schema PostgreSQL e o sistema de migrations também já estão definidos, mas o driver de conexão, autenticação e sincronização persistente ainda não estão conectados.
+A fundação da API já existe e o runtime PostgreSQL usa `pg` com pool de conexões. O schema, migrations e repositories SQL de usuário, sessão e progresso já estão conectados à camada de banco. Autenticação e sincronização HTTP ainda não estão ativadas.
 
 
 ### Database Foundation
@@ -214,7 +214,22 @@ Decisões importantes:
 - `revision` no snapshot para preparar controle de conflitos de sincronização;
 - migrations executadas dentro de transações com `COMMIT`/`ROLLBACK`.
 
-A variável `CODEMPI_DATABASE_URL` já é validada, mas a API ainda não abre uma conexão real nesta etapa. O driver PostgreSQL entra na próxima fatia.
+Quando `CODEMPI_DATABASE_URL` é configurada, a API cria um pool PostgreSQL real. O endpoint `/health` informa apenas o estado do banco (`ok` ou `unavailable`) e nunca expõe a string de conexão.
+
+As migrations são explícitas, não executadas escondidas no start da API:
+
+```bash
+npm run db:migrate
+```
+
+Os repositories PostgreSQL implementam:
+
+- criação e busca de usuários;
+- criação, consulta de sessão ativa e revogação;
+- leitura e gravação do snapshot de progresso;
+- controle otimista de concorrência via `revision`.
+
+A CI sobe uma instância PostgreSQL descartável e executa testes de integração reais sobre migrations, usuários, sessões, snapshots, conflitos de revisão e `ON DELETE CASCADE`.
 
 ### Persistência atual
 
@@ -454,6 +469,22 @@ npm run api:build
 npm run api:start
 ```
 
+### Executar migrations PostgreSQL
+
+```bash
+npm run db:migrate
+```
+
+Requer `CODEMPI_DATABASE_URL` configurada.
+
+### Testes de integração PostgreSQL
+
+```bash
+npm run test:postgres
+```
+
+Requer `CODEMPI_TEST_DATABASE_URL` apontando para um banco de teste descartável.
+
 ---
 
 ## Testes dos desafios
@@ -567,7 +598,9 @@ Em andamento:
 - [x] Backend Foundation;
 - [x] schema PostgreSQL inicial;
 - [x] migrations transacionais;
-- [ ] driver PostgreSQL conectado à API;
+- [x] driver PostgreSQL conectado à API;
+- [x] repositories SQL de usuário, sessão e progresso;
+- [x] testes de integração PostgreSQL na CI;
 - [ ] autenticação real;
 - [ ] conta CodeMpi;
 - [ ] progresso sincronizado;
