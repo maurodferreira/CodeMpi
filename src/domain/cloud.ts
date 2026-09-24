@@ -25,11 +25,21 @@ export interface CloudIdentity {
 
 export interface CloudSnapshot {
   version: typeof CLOUD_SNAPSHOT_VERSION;
+  revision: number;
   userId: string;
+  sourceLocalUserId?: string;
   progress: StoreData;
   preferences: AppPreferences;
   theme: ThemeKey;
   updatedAt: string;
+}
+
+export interface CloudSnapshotUpdate {
+  version: typeof CLOUD_SNAPSHOT_VERSION;
+  revision: number;
+  progress: StoreData;
+  preferences: AppPreferences;
+  theme: ThemeKey;
 }
 
 export interface LocalToCloudBootstrapPayload {
