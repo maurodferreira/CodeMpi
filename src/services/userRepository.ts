@@ -18,6 +18,7 @@ function isLocalUserProfile(value: unknown): value is LocalUserProfile {
     && user.id.length > 0
     && typeof user.createdAt === 'string'
     && user.createdAt.length > 0
+    && !Number.isNaN(Date.parse(user.createdAt))
   );
 }
 
@@ -32,6 +33,7 @@ function isUserSession(value: unknown): value is UserSession {
     && session.userId.length > 0
     && typeof session.startedAt === 'string'
     && session.startedAt.length > 0
+    && !Number.isNaN(Date.parse(session.startedAt))
   );
 }
 
