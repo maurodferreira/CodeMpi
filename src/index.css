@@ -5685,3 +5685,51 @@ html[data-ui-scale="large"] .settings-toggle {
     min-height: 66px;
   }
 }
+
+/* Desktop focus control */
+.code-editor-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.code-editor-focus-label {
+  margin-left: auto;
+  color: var(--muted-2);
+  font-size: 7px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.code-editor-focus-button {
+  margin-left: auto;
+  min-height: 27px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+
+.code-editor-focus-button:hover,
+.code-editor-focus-button.active {
+  border-color: rgba(124,255,155,.22);
+  background: rgba(124,255,155,.045);
+  color: var(--accent);
+}
+
+@media (max-width: 700px) {
+  .code-editor-focus-button {
+    display: none;
+  }
+
+  .code-editor-focus-label {
+    display: none;
+  }
+}
