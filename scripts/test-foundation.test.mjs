@@ -21,6 +21,8 @@ const router = await vite.ssrLoadModule('/src/hooks/useAppRouter.ts');
 const storeMigration = await vite.ssrLoadModule('/src/utils/storeMigration.ts');
 const valueEquality = await vite.ssrLoadModule('/src/utils/valueEquality.ts');
 const levelsModule = await vite.ssrLoadModule('/src/data/levels.ts');
+const userRepository = await vite.ssrLoadModule('/src/services/userRepository.ts');
+const persistenceModule = await vite.ssrLoadModule('/src/services/persistence.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -279,6 +281,121 @@ test('route builders generate canonical CodeMpi URLs', () => {
   assert.equal(router.getLessonPath(6), '/nivel/n7/aula');
   assert.equal(router.getMissionPath(6, 9), '/nivel/n7/desafio/10');
   assert.equal(router.getCompletionPath(6), '/nivel/n7/concluido');
+});
+
+
+test('local identity is created once and remains stable', () => {
+  const data = new Map();
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const first = userRepository.ensureLocalIdentity({
+    persistence,
+    now: () => '2026-09-24T18:00:00.000Z',
+    createId: () => 'local_test-user',
+  });
+
+  const second = userRepository.ensureLocalIdentity({
+    persistence,
+    now: () => '2026-09-25T18:00:00.000Z',
+    createId: () => 'local_should-not-be-used',
+  });
+
+  assert.deepEqual(first, second);
+  assert.equal(first.user.id, 'local_test-user');
+  assert.equal(first.user.kind, 'local');
+  assert.equal(first.session.userId, first.user.id);
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.user).id,
+    'local_test-user',
+  );
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.session).userId,
+    'local_test-user',
+  );
+});
+
+test('local identity repairs an invalid session without replacing the user', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.user, {
+      id: 'local_existing',
+      kind: 'local',
+      createdAt: '2026-09-20T12:00:00.000Z',
+    }],
+    [persistenceModule.STORAGE_KEYS.session, {
+      userId: 'other_user',
+      kind: 'local',
+      startedAt: 'invalid-date',
+    }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const identity = userRepository.ensureLocalIdentity({
+    persistence,
+    now: () => '2026-09-24T18:05:00.000Z',
+    createId: () => 'local_new-user',
+  });
+
+  assert.equal(identity.user.id, 'local_existing');
+  assert.equal(identity.user.createdAt, '2026-09-20T12:00:00.000Z');
+  assert.equal(identity.session.userId, 'local_existing');
+  assert.equal(identity.session.startedAt, '2026-09-24T18:05:00.000Z');
+});
+
+test('corrupted local user data creates a fresh safe identity', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.user, {
+      id: '',
+      kind: 'local',
+      createdAt: 'not-a-date',
+    }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const identity = userRepository.ensureLocalIdentity({
+    persistence,
+    now: () => '2026-09-24T18:10:00.000Z',
+    createId: () => 'local_recovered',
+  });
+
+  assert.equal(identity.user.id, 'local_recovered');
+  assert.equal(identity.user.createdAt, '2026-09-24T18:10:00.000Z');
+  assert.equal(identity.session.userId, 'local_recovered');
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', () => {
