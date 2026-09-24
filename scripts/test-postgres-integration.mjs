@@ -37,6 +37,10 @@ const {
   createApiServer,
 } = await import('../dist-server/server/server.js');
 
+const {
+  createSyncService,
+} = await import('../dist-server/server/sync/syncService.js');
+
 const database = createPostgresDatabase(databaseUrl, {
   maxConnections: 4,
   connectionTimeoutMs: 5_000,
@@ -419,6 +423,292 @@ LIMIT 1;
       signIn.session.accessToken,
       signUp.session.accessToken,
     );
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  }
+});
+
+
+test('HTTP sync flow bootstraps local progress and rejects stale revisions', async () => {
+  const auth = createAuthService({
+    store: createPostgresAuthDataStore(database),
+    sessionTtlHours: 24,
+  });
+
+  const sync = createSyncService({
+    auth,
+    snapshots: createPostgresProgressSnapshotRepository(database),
+  });
+
+  const config = {
+    host: '127.0.0.1',
+    port: 3001,
+    webOrigin: 'http://localhost:5173',
+    bodyLimitBytes: 65536,
+    nodeEnv: 'test',
+    databaseUrl,
+    sessionTtlHours: 24,
+  };
+
+  const server = createApiServer(config, {
+    database,
+    auth,
+    sync,
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, config.host, resolve);
+  });
+
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+
+  const baseUrl = `http://${config.host}:${address.port}`;
+  const email = `sync.${randomUUID()}@codempi.dev`;
+  const password = 'senha-sync-123';
+
+  const progress = {
+    done: {
+      '0-0': 100,
+      '1-2': 180,
+    },
+    hints: {
+      '1-2': 1,
+    },
+    lessonDone: {
+      0: true,
+    },
+    performance: {
+      '1-2': {
+        attempts: 2,
+        failures: 1,
+      },
+    },
+    activityDates: [
+      '2026-09-23',
+      '2026-09-24',
+    ],
+    progressVersion: 2,
+  };
+
+  const preferences = {
+    interfaceScale: 'comfortable',
+    reduceMotion: false,
+    highContrast: false,
+    editorFontSize: 'medium',
+    editorLineWrapping: true,
+    editorLineNumbers: true,
+    editorIndentSize: 2,
+    showXp: true,
+    confirmReset: true,
+  };
+
+  try {
+    const signUpResponse = await fetch(
+      `${baseUrl}/auth/sign-up`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      },
+    );
+
+    assert.equal(signUpResponse.status, 201);
+
+    const signUp = await signUpResponse.json();
+    const token = signUp.session.accessToken;
+
+    const bootstrapResponse = await fetch(
+      `${baseUrl}/sync/bootstrap`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: 1,
+          sourceLocalUserId: 'local-sync-test',
+          progress,
+          preferences,
+          theme: 'green',
+          exportedAt: '2026-09-24T20:00:00.000Z',
+        }),
+      },
+    );
+
+    assert.equal(bootstrapResponse.status, 200);
+
+    const bootstrapped = await bootstrapResponse.json();
+
+    assert.equal(bootstrapped.userId, signUp.user.id);
+    assert.equal(bootstrapped.revision, 1);
+    assert.equal(
+      bootstrapped.sourceLocalUserId,
+      'local-sync-test',
+    );
+    assert.equal(
+      bootstrapped.progress.done['1-2'],
+      180,
+    );
+
+    const repeatedBootstrapResponse = await fetch(
+      `${baseUrl}/sync/bootstrap`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: 1,
+          sourceLocalUserId: 'other-local-id',
+          progress: {
+            ...progress,
+            done: {
+              '6-9': 999,
+            },
+          },
+          preferences,
+          theme: 'crimson',
+          exportedAt: '2026-09-24T20:05:00.000Z',
+        }),
+      },
+    );
+
+    assert.equal(repeatedBootstrapResponse.status, 200);
+
+    const repeated = await repeatedBootstrapResponse.json();
+
+    assert.equal(repeated.revision, 1);
+    assert.equal(
+      repeated.sourceLocalUserId,
+      'local-sync-test',
+    );
+    assert.equal(repeated.progress.done['6-9'], undefined);
+    assert.equal(repeated.theme, 'green');
+
+    const downloadResponse = await fetch(
+      `${baseUrl}/sync/snapshot`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    assert.equal(downloadResponse.status, 200);
+
+    const downloaded = await downloadResponse.json();
+    assert.equal(downloaded.revision, 1);
+    assert.equal(downloaded.userId, signUp.user.id);
+
+    const updateResponse = await fetch(
+      `${baseUrl}/sync/snapshot`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: 1,
+          revision: 1,
+          userId: randomUUID(),
+          progress: {
+            ...progress,
+            done: {
+              ...progress.done,
+              '6-9': 550,
+            },
+          },
+          preferences: {
+            ...preferences,
+            interfaceScale: 'large',
+          },
+          theme: 'violet',
+        }),
+      },
+    );
+
+    assert.equal(updateResponse.status, 200);
+
+    const updated = await updateResponse.json();
+
+    assert.equal(updated.userId, signUp.user.id);
+    assert.equal(updated.revision, 2);
+    assert.equal(updated.progress.done['6-9'], 550);
+    assert.equal(updated.preferences.interfaceScale, 'large');
+    assert.equal(updated.theme, 'violet');
+
+    const staleResponse = await fetch(
+      `${baseUrl}/sync/snapshot`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: 1,
+          revision: 1,
+          progress,
+          preferences,
+          theme: 'green',
+        }),
+      },
+    );
+
+    assert.equal(staleResponse.status, 409);
+
+    const conflict = await staleResponse.json();
+
+    assert.equal(conflict.error.code, 'SYNC_CONFLICT');
+    assert.equal(
+      conflict.error.currentSnapshot.revision,
+      2,
+    );
+    assert.equal(
+      conflict.error.currentSnapshot.progress.done['6-9'],
+      550,
+    );
+
+    const persisted = await database.query(
+      `
+SELECT
+  revision,
+  source_local_user_id,
+  progress,
+  preferences,
+  theme
+FROM codempi_progress_snapshots
+WHERE user_id = $1;
+`.trim(),
+      [signUp.user.id],
+    );
+
+    assert.equal(persisted.rowCount, 1);
+    assert.equal(Number(persisted.rows[0].revision), 2);
+    assert.equal(
+      persisted.rows[0].source_local_user_id,
+      'local-sync-test',
+    );
+    assert.equal(
+      persisted.rows[0].progress.done['6-9'],
+      550,
+    );
+    assert.equal(persisted.rows[0].theme, 'violet');
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => {
