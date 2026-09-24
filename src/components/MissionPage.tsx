@@ -261,7 +261,11 @@ export function MissionPage({
                   )}
 
                   {learningFeedback && (
-                    <div className={`learning-feedback ${learningFeedback.tone}`}>
+                    <div
+                      className={`learning-feedback ${learningFeedback.tone}`}
+                      role={learningFeedback.tone === 'error' ? 'alert' : 'status'}
+                      aria-live="polite"
+                    >
                       <span className="learning-feedback-icon">
                         {learningFeedback.tone === 'success' ? '✓' : learningFeedback.tone === 'error' ? '!' : '↻'}
                       </span>
