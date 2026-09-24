@@ -220,6 +220,72 @@ export const CONCEPTS: Record<string, ConceptDefinition> = {
     name: 'Estado em sequência',
     description: 'Atualizar mais de um valor ao longo de uma repetição para construir uma sequência de resultados.',
   },
+
+  objects: {
+    id: 'objects',
+    name: 'Objetos',
+    description: 'Organizar informações relacionadas em propriedades de um único valor.',
+  },
+  objectProperties: {
+    id: 'objectProperties',
+    name: 'Propriedades de objetos',
+    description: 'Representar dados de um objeto usando pares de nome e valor.',
+  },
+  objectAccess: {
+    id: 'objectAccess',
+    name: 'Acesso a propriedades',
+    description: 'Ler uma propriedade usando a notação de ponto.',
+  },
+  objectBracketAccess: {
+    id: 'objectBracketAccess',
+    name: 'Acesso por colchetes',
+    description: 'Acessar uma propriedade usando uma variável como nome da propriedade.',
+  },
+  objectMutation: {
+    id: 'objectMutation',
+    name: 'Alteração de objetos',
+    description: 'Atualizar valores de propriedades existentes em um objeto.',
+  },
+  objectAddition: {
+    id: 'objectAddition',
+    name: 'Adicionar propriedades',
+    description: 'Criar uma nova propriedade atribuindo um valor ao objeto.',
+  },
+  objectDeletion: {
+    id: 'objectDeletion',
+    name: 'Remover propriedades',
+    description: 'Excluir uma propriedade de um objeto usando delete.',
+  },
+  objectValidation: {
+    id: 'objectValidation',
+    name: 'Validação de objetos',
+    description: 'Verificar regras usando os valores armazenados nas propriedades de um objeto.',
+  },
+  objectCollections: {
+    id: 'objectCollections',
+    name: 'Arrays de objetos',
+    description: 'Trabalhar com listas cujos itens são objetos com as mesmas propriedades.',
+  },
+  objectIteration: {
+    id: 'objectIteration',
+    name: 'Percorrer objetos em listas',
+    description: 'Percorrer um array de objetos e acessar as propriedades de cada item.',
+  },
+  objectSearch: {
+    id: 'objectSearch',
+    name: 'Busca em objetos',
+    description: 'Encontrar um objeto em uma lista comparando uma de suas propriedades.',
+  },
+  objectFunctions: {
+    id: 'objectFunctions',
+    name: 'Funções com objetos',
+    description: 'Usar propriedades de objetos como entradas para cálculos e regras dentro de funções.',
+  },
+  nullValue: {
+    id: 'nullValue',
+    name: 'Ausência de valor',
+    description: 'Usar null para representar que uma função não encontrou um resultado.',
+  },
 };
 
 export function getConcept(conceptId?: string, fallback = 'Conceito'): ConceptDefinition {
