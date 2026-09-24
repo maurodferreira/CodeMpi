@@ -1,6 +1,10 @@
-import type { ConceptReview } from './conceptReviews';
-
-export type { ConceptReview };
+export interface ConceptReview {
+  question: string;
+  code?: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+}
 
 export const CONCEPT_REVIEWS: Record<string, ConceptReview> = {
   return: {
