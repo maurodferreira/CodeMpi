@@ -114,6 +114,7 @@ export function CodeEditor({
             className={`code-editor-focus-button ${focusMode ? 'active' : ''}`}
             aria-pressed={focusMode}
             aria-label={focusMode ? 'Sair do modo foco' : 'Entrar no modo foco'}
+            title={focusMode ? 'Sair do modo foco' : 'Entrar no modo foco'}
             onMouseDown={(event) => event.preventDefault()}
             onClick={onToggleFocus}
           >
