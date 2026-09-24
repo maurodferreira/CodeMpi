@@ -3,6 +3,7 @@ import type { View } from '../types';
 
 export interface NavigationOptions {
   replace?: boolean;
+  skipResolve?: boolean;
 }
 
 export interface AppRoute {
@@ -192,7 +193,8 @@ export function useAppRouter({
   }, [route.pathname]);
 
   const navigatePath = useCallback((pathname: string, options: NavigationOptions = {}) => {
-    const nextRoute = resolveRouteRef.current(parseAppRoute(pathname));
+    const parsedRoute = parseAppRoute(pathname);
+    const nextRoute = options.skipResolve ? parsedRoute : resolveRouteRef.current(parsedRoute);
     const nextPath = nextRoute.pathname;
 
     if (window.location.pathname !== nextPath) {
