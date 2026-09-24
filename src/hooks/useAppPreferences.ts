@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { browserPersistence, STORAGE_KEYS } from '../services/persistence';
 
 export type InterfaceScale = 'compact' | 'comfortable' | 'large';
 export type EditorFontSize = 'small' | 'medium' | 'large';
@@ -16,8 +17,6 @@ export interface AppPreferences {
   confirmReset: boolean;
 }
 
-const STORAGE_KEY = 'codempi_preferences_v1';
-
 const DEFAULT_PREFERENCES: AppPreferences = {
   interfaceScale: 'comfortable',
   reduceMotion: false,
@@ -31,32 +30,27 @@ const DEFAULT_PREFERENCES: AppPreferences = {
 };
 
 function loadPreferences(): AppPreferences {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return DEFAULT_PREFERENCES;
+  const parsed = browserPersistence.read<Partial<AppPreferences>>(STORAGE_KEYS.preferences);
 
-    const parsed = JSON.parse(saved) as Partial<AppPreferences>;
+  if (!parsed) return DEFAULT_PREFERENCES;
 
-    return {
-      ...DEFAULT_PREFERENCES,
-      ...parsed,
-      interfaceScale: parsed.interfaceScale === 'compact' || parsed.interfaceScale === 'large'
-        ? parsed.interfaceScale
-        : 'comfortable',
-      editorFontSize: parsed.editorFontSize === 'small' || parsed.editorFontSize === 'large'
-        ? parsed.editorFontSize
-        : 'medium',
-      editorIndentSize: parsed.editorIndentSize === 4 ? 4 : 2,
-      reduceMotion: Boolean(parsed.reduceMotion),
-      highContrast: Boolean(parsed.highContrast),
-      editorLineWrapping: parsed.editorLineWrapping !== false,
-      editorLineNumbers: parsed.editorLineNumbers !== false,
-      showXp: parsed.showXp !== false,
-      confirmReset: parsed.confirmReset !== false,
-    };
-  } catch {
-    return DEFAULT_PREFERENCES;
-  }
+  return {
+    ...DEFAULT_PREFERENCES,
+    ...parsed,
+    interfaceScale: parsed.interfaceScale === 'compact' || parsed.interfaceScale === 'large'
+      ? parsed.interfaceScale
+      : 'comfortable',
+    editorFontSize: parsed.editorFontSize === 'small' || parsed.editorFontSize === 'large'
+      ? parsed.editorFontSize
+      : 'medium',
+    editorIndentSize: parsed.editorIndentSize === 4 ? 4 : 2,
+    reduceMotion: Boolean(parsed.reduceMotion),
+    highContrast: Boolean(parsed.highContrast),
+    editorLineWrapping: parsed.editorLineWrapping !== false,
+    editorLineNumbers: parsed.editorLineNumbers !== false,
+    showXp: parsed.showXp !== false,
+    confirmReset: parsed.confirmReset !== false,
+  };
 }
 
 export function useAppPreferences() {
@@ -66,7 +60,7 @@ export function useAppPreferences() {
     document.documentElement.dataset.uiScale = preferences.interfaceScale;
     document.documentElement.dataset.reduceMotion = String(preferences.reduceMotion);
     document.documentElement.dataset.highContrast = String(preferences.highContrast);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+    browserPersistence.write(STORAGE_KEYS.preferences, preferences);
   }, [preferences]);
 
   return { preferences, setPreferences };
