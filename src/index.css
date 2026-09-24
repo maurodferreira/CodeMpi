@@ -5067,3 +5067,115 @@ html[data-ui-scale="large"] .settings-toggle {
     grid-column: 1 / -1;
   }
 }
+
+/* Mobile code focus mode */
+.code-editor-focus-button,
+.code-editor-focus-label {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .mission-shell .code-editor-topbar {
+    gap: 7px;
+  }
+
+  .mission-shell .code-editor-focus-label {
+    display: block;
+    min-width: 0;
+    max-width: 32%;
+    overflow: hidden;
+    color: var(--muted-2);
+    font-size: 7px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mission-shell .code-editor-focus-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-height: 28px;
+    margin-left: auto;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(7,17,15,.48);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mission-shell .code-editor-focus-button:active,
+  .mission-shell .code-editor-focus-button.active {
+    border-color: rgba(124,255,155,.24);
+    background: rgba(124,255,155,.07);
+    color: var(--accent);
+  }
+
+  .mission-shell.code-focus .mission-toolbar,
+  .mission-shell.code-focus .circuit,
+  .mission-shell.code-focus .panel-head,
+  .mission-shell.code-focus .challenge-card,
+  .mission-shell.code-focus .ex-strip,
+  .mission-shell.code-focus .learning-note {
+    display: none;
+  }
+
+  .mission-shell.code-focus .panel {
+    margin-top: 0;
+    border-color: rgba(124,255,155,.12);
+    background:
+      radial-gradient(circle at 100% 0, rgba(124,255,155,.055), transparent 30%),
+      rgba(7,17,15,.96);
+  }
+
+  .mission-shell.code-focus .editor-wrap {
+    padding-top: 12px;
+  }
+
+  .mission-shell.code-focus .code-editor .cm-editor {
+    height: min(58vh, 560px) !important;
+  }
+
+  .mission-shell.code-focus .code-editor-focus-label {
+    color: var(--text);
+  }
+
+  .mission-shell.code-focus .actions {
+    margin-top: 10px;
+  }
+
+  .mission-shell.code-focus .hints-box {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .mission-shell .code-editor-focus-label {
+    max-width: 26%;
+    font-size: 6.5px;
+  }
+
+  .mission-shell .code-editor-focus-button {
+    min-height: 27px;
+    padding-inline: 7px;
+    font-size: 6.5px;
+  }
+}
+
+@media (max-width: 700px) and (orientation: landscape) {
+  .mission-shell.code-focus .code-editor .cm-editor {
+    height: min(66vh, 420px) !important;
+  }
+
+  .mission-shell.code-focus .editor-wrap {
+    padding-top: 9px;
+  }
+}
