@@ -375,7 +375,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'array-quiz',
         type: 'quiz',
-        eyebrow: '09 · TESTE RÁPIDO',
+        eyebrow: '10 · TESTE RÁPIDO',
         title: 'Qual valor está nessa posição?',
         body: 'Observe o array e lembre que o índice começa em zero.',
         quiz: {
@@ -389,7 +389,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'ready',
         type: 'checkpoint',
-        eyebrow: '10 · VOCÊ ESTÁ PRONTO',
+        eyebrow: '11 · VOCÊ ESTÁ PRONTO',
         title: 'Agora trabalhe com listas de verdade',
         body: 'Você já conhece arrays, índices, length, alteração, push, busca e o padrão de percorrer e construir novas listas. Agora vai aplicar isso em desafios que aumentam de dificuldade passo a passo.',
         code: 'function somarLista(valores) {\n  let total = 0;\n\n  // sua missão começa aqui\n}',
@@ -467,6 +467,15 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         explanation: 'Depois que uma nota inválida é encontrada, não faz sentido continuar classificando-a. O retorno antecipado encerra a função naquele ponto.',
       },
       {
+        id: 'sequential-state',
+        type: 'example',
+        eyebrow: '08 · PENSANDO EM SEQUÊNCIA',
+        title: 'Alguns problemas precisam atualizar mais de um valor',
+        body: 'Nem todo laço usa um único acumulador. Em sequências como Fibonacci, duas informações dependem uma da outra e avançam a cada repetição.',
+        code: 'let anterior = 0;\nlet atual = 1;\n\nfor (let i = 2; i <= 6; i++) {\n  const proximo = anterior + atual;\n  anterior = atual;\n  atual = proximo;\n}\n\n// atual vale 8',
+        explanation: 'Em cada volta, o valor atual vira o anterior e um novo valor é calculado. Esse padrão prepara você para problemas em que mais de um estado precisa ser atualizado.',
+      },
+      {
         id: 'composition',
         type: 'example',
         eyebrow: '08 · COMPOSIÇÃO',
@@ -494,7 +503,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         type: 'checkpoint',
         eyebrow: '10 · VOCÊ ESTÁ PRONTO',
         title: 'Agora transforme funções em soluções completas',
-        body: 'Você já sabe receber parâmetros, usar variáveis locais, validar entradas, retornar cedo e reutilizar funções auxiliares. As missões agora vão combinar esses padrões com loops, arrays, cálculos e regras.',
+        body: 'Você já sabe receber parâmetros, usar variáveis locais, validar entradas, retornar cedo, atualizar estado em uma sequência e reutilizar funções auxiliares. As missões agora vão combinar esses padrões com loops, arrays, cálculos e regras.',
         code: 'function totalComTaxa(valores, taxa) {\n  // use uma função auxiliar para dividir o problema\n}',
         explanation: 'N6 não é sobre decorar mais uma sintaxe. É sobre aprender a dividir um problema, nomear suas etapas e reaproveitar soluções menores.',
       },
