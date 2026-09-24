@@ -375,7 +375,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'array-quiz',
         type: 'quiz',
-        eyebrow: '10 · TESTE RÁPIDO',
+        eyebrow: '09 · TESTE RÁPIDO',
         title: 'Qual valor está nessa posição?',
         body: 'Observe o array e lembre que o índice começa em zero.',
         quiz: {
@@ -389,7 +389,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'ready',
         type: 'checkpoint',
-        eyebrow: '11 · VOCÊ ESTÁ PRONTO',
+        eyebrow: '10 · VOCÊ ESTÁ PRONTO',
         title: 'Agora trabalhe com listas de verdade',
         body: 'Você já conhece arrays, índices, length, alteração, push, busca e o padrão de percorrer e construir novas listas. Agora vai aplicar isso em desafios que aumentam de dificuldade passo a passo.',
         code: 'function somarLista(valores) {\n  let total = 0;\n\n  // sua missão começa aqui\n}',
@@ -478,7 +478,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'composition',
         type: 'example',
-        eyebrow: '08 · COMPOSIÇÃO',
+        eyebrow: '09 · COMPOSIÇÃO',
         title: 'Funções menores podem trabalhar juntas',
         body: 'Um problema maior pode ser dividido em funções auxiliares. Uma função pode chamar outra, reaproveitando uma tarefa que já foi resolvida.',
         code: 'function dobro(n) {\n  return n * 2;\n}\n\nfunction combinar(n) {\n  const valorDobrado = dobro(n);\n  return valorDobrado + n;\n}\n\ncombinar(5); // 15',
@@ -487,7 +487,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'function-quiz',
         type: 'quiz',
-        eyebrow: '09 · TESTE RÁPIDO',
+        eyebrow: '10 · TESTE RÁPIDO',
         title: 'Qual resultado sai da composição?',
         body: 'Acompanhe a chamada da função auxiliar e depois veja como o resultado é usado pela função principal.',
         quiz: {
@@ -501,7 +501,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
       {
         id: 'ready',
         type: 'checkpoint',
-        eyebrow: '10 · VOCÊ ESTÁ PRONTO',
+        eyebrow: '11 · VOCÊ ESTÁ PRONTO',
         title: 'Agora transforme funções em soluções completas',
         body: 'Você já sabe receber parâmetros, usar variáveis locais, validar entradas, retornar cedo, atualizar estado em uma sequência e reutilizar funções auxiliares. As missões agora vão combinar esses padrões com loops, arrays, cálculos e regras.',
         code: 'function totalComTaxa(valores, taxa) {\n  // use uma função auxiliar para dividir o problema\n}',
