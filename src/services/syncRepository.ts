@@ -1,5 +1,6 @@
 import type {
   CloudSnapshot,
+  CloudSnapshotUpdate,
   LocalToCloudBootstrapPayload,
 } from '../domain/cloud';
 import type { ApiClient } from './apiClient';
@@ -14,7 +15,7 @@ export interface SyncRepository {
 
   uploadSnapshot(
     accessToken: string,
-    snapshot: CloudSnapshot,
+    snapshot: CloudSnapshotUpdate,
   ): Promise<CloudSnapshot>;
 }
 

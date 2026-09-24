@@ -3,7 +3,11 @@ import { createAuthService } from './auth/authService.js';
 import { createPostgresAuthDataStore } from './auth/authDataStore.js';
 import { readApiConfig } from './config.js';
 import { createPostgresDatabase } from './database/postgres.js';
+import {
+  createPostgresProgressSnapshotRepository,
+} from './database/postgresRepositories.js';
 import { createApiServer } from './server.js';
+import { createSyncService } from './sync/syncService.js';
 
 try {
   loadEnvFile('.env.local');
@@ -40,9 +44,17 @@ const auth = database
     })
   : null;
 
+const sync = database && auth
+  ? createSyncService({
+      auth,
+      snapshots: createPostgresProgressSnapshotRepository(database),
+    })
+  : null;
+
 const server = createApiServer(config, {
   database,
   auth,
+  sync,
 });
 
 server.listen(config.port, config.host, () => {

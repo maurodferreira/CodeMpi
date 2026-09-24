@@ -45,6 +45,7 @@ const postgresRepositoriesModule = await vite.ssrLoadModule('/server/database/po
 const authPasswordModule = await vite.ssrLoadModule('/server/auth/password.ts');
 const authTokenModule = await vite.ssrLoadModule('/server/auth/token.ts');
 const authServiceModule = await vite.ssrLoadModule('/server/auth/authService.ts');
+const syncServiceModule = await vite.ssrLoadModule('/server/sync/syncService.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -950,17 +951,21 @@ test('auth repository maps sign-up sign-in current user and sign-out endpoints',
   ]);
 });
 
-test('sync repository keeps bootstrap and snapshot operations separated', async () => {
+test('sync repository keeps bootstrap download and revisioned upload separated', async () => {
   const calls = [];
+  const preferences = preferencesRepositoryModule.createPreferencesRepository({
+    read: () => null,
+    write: () => true,
+    remove: () => true,
+  }).load();
+
   const cloudSnapshot = {
     version: cloudDomainModule.CLOUD_SNAPSHOT_VERSION,
+    revision: 2,
     userId: 'cloud_1',
+    sourceLocalUserId: 'local_1',
     progress: storeMigration.createEmptyStore(),
-    preferences: preferencesRepositoryModule.createPreferencesRepository({
-      read: () => null,
-      write: () => true,
-      remove: () => true,
-    }).load(),
+    preferences,
     theme: 'green',
     updatedAt: '2026-09-24T19:10:00.000Z',
   };
@@ -977,14 +982,21 @@ test('sync repository keeps bootstrap and snapshot operations separated', async 
     version: cloudDomainModule.CLOUD_SNAPSHOT_VERSION,
     sourceLocalUserId: 'local_1',
     progress: storeMigration.createEmptyStore(),
-    preferences: cloudSnapshot.preferences,
+    preferences,
     theme: 'green',
     exportedAt: '2026-09-24T19:05:00.000Z',
+  };
+  const update = {
+    version: cloudDomainModule.CLOUD_SNAPSHOT_VERSION,
+    revision: cloudSnapshot.revision,
+    progress: cloudSnapshot.progress,
+    preferences,
+    theme: 'violet',
   };
 
   await repository.bootstrapLocalProfile('token', bootstrap);
   await repository.downloadSnapshot('token');
-  await repository.uploadSnapshot('token', cloudSnapshot);
+  await repository.uploadSnapshot('token', update);
 
   assert.deepEqual(calls, [
     {
@@ -1006,7 +1018,7 @@ test('sync repository keeps bootstrap and snapshot operations separated', async 
       options: {
         method: 'PUT',
         accessToken: 'token',
-        body: cloudSnapshot,
+        body: update,
       },
     },
   ]);
@@ -1601,6 +1613,316 @@ test('auth routes delegate to the configured service and require bearer sessions
   ]);
 });
 
+
+test('sync service bootstrap is idempotent and never overwrites an existing snapshot', async () => {
+  const preferences = preferencesRepositoryModule.createPreferencesRepository({
+    read: () => null,
+    write: () => true,
+    remove: () => true,
+  }).load();
+
+  let stored = null;
+  let saveCalls = 0;
+
+  const snapshots = {
+    async findByUserId(userId) {
+      assert.equal(userId, 'cloud-1');
+      return stored;
+    },
+    async save(input) {
+      saveCalls += 1;
+      assert.equal(input.userId, 'cloud-1');
+      assert.equal(input.expectedRevision, 0);
+
+      stored = {
+        userId: input.userId,
+        snapshotVersion: input.snapshotVersion,
+        revision: 1,
+        sourceLocalUserId: input.sourceLocalUserId ?? null,
+        progress: structuredClone(input.progress),
+        preferences: structuredClone(input.preferences),
+        theme: input.theme,
+        createdAt: '2026-09-24T20:00:00.000Z',
+        updatedAt: '2026-09-24T20:00:00.000Z',
+      };
+
+      return stored;
+    },
+  };
+
+  const service = syncServiceModule.createSyncService({
+    auth: {
+      async getCurrentUser(token) {
+        assert.equal(token, 'access-token');
+        return {
+          id: 'cloud-1',
+          kind: 'cloud',
+          email: 'aluno@codempi.dev',
+          createdAt: '2026-09-24T19:00:00.000Z',
+        };
+      },
+    },
+    snapshots,
+  });
+
+  const payload = {
+    version: 1,
+    sourceLocalUserId: 'local-original',
+    progress: storeMigration.createEmptyStore(),
+    preferences,
+    theme: 'violet',
+    exportedAt: '2026-09-24T19:55:00.000Z',
+  };
+
+  const first = await service.bootstrap('access-token', payload);
+
+  stored.progress.done['0-0'] = 100;
+
+  const second = await service.bootstrap('access-token', {
+    ...payload,
+    progress: {
+      ...payload.progress,
+      done: {
+        '6-9': 999,
+      },
+    },
+  });
+
+  assert.equal(saveCalls, 1);
+  assert.equal(first.revision, 1);
+  assert.equal(second.progress.done['0-0'], 100);
+  assert.equal(second.progress.done['6-9'], undefined);
+  assert.equal(second.sourceLocalUserId, 'local-original');
+});
+
+test('sync service derives user identity from the token and rejects stale revisions', async () => {
+  const preferences = preferencesRepositoryModule.createPreferencesRepository({
+    read: () => null,
+    write: () => true,
+    remove: () => true,
+  }).load();
+
+  let stored = {
+    userId: 'cloud-owner',
+    snapshotVersion: 1,
+    revision: 2,
+    sourceLocalUserId: 'local-owner',
+    progress: storeMigration.createEmptyStore(),
+    preferences,
+    theme: 'green',
+    createdAt: '2026-09-24T19:00:00.000Z',
+    updatedAt: '2026-09-24T19:30:00.000Z',
+  };
+
+  const snapshots = {
+    async findByUserId(userId) {
+      assert.equal(userId, 'cloud-owner');
+      return structuredClone(stored);
+    },
+    async save(input) {
+      assert.equal(input.userId, 'cloud-owner');
+      assert.equal(input.expectedRevision, 2);
+      assert.equal(input.sourceLocalUserId, 'local-owner');
+
+      stored = {
+        ...stored,
+        revision: 3,
+        progress: structuredClone(input.progress),
+        preferences: structuredClone(input.preferences),
+        theme: input.theme,
+        updatedAt: '2026-09-24T20:00:00.000Z',
+      };
+
+      return structuredClone(stored);
+    },
+  };
+
+  const service = syncServiceModule.createSyncService({
+    auth: {
+      async getCurrentUser() {
+        return {
+          id: 'cloud-owner',
+          kind: 'cloud',
+          email: 'owner@codempi.dev',
+          createdAt: '2026-09-24T18:00:00.000Z',
+        };
+      },
+    },
+    snapshots,
+  });
+
+  await assert.rejects(
+    () => service.upload('access-token', {
+      version: 1,
+      revision: 1,
+      userId: 'cloud-attacker',
+      progress: storeMigration.createEmptyStore(),
+      preferences,
+      theme: 'violet',
+    }),
+    (error) => {
+      assert.equal(error.code, 'SYNC_CONFLICT');
+      assert.equal(error.status, 409);
+      assert.equal(error.currentSnapshot.userId, 'cloud-owner');
+      assert.equal(error.currentSnapshot.revision, 2);
+      return true;
+    },
+  );
+
+  const saved = await service.upload('access-token', {
+    version: 1,
+    revision: 2,
+    userId: 'cloud-attacker',
+    progress: {
+      ...storeMigration.createEmptyStore(),
+      done: {
+        '6-9': 550,
+      },
+    },
+    preferences,
+    theme: 'violet',
+  });
+
+  assert.equal(saved.userId, 'cloud-owner');
+  assert.equal(saved.revision, 3);
+  assert.equal(saved.progress.done['6-9'], 550);
+});
+
+test('sync service validates payloads before persisting malformed progress', async () => {
+  let authCalls = 0;
+  let saveCalls = 0;
+
+  const service = syncServiceModule.createSyncService({
+    auth: {
+      async getCurrentUser() {
+        authCalls += 1;
+        return {
+          id: 'cloud-1',
+          kind: 'cloud',
+          email: 'aluno@codempi.dev',
+          createdAt: '2026-09-24T18:00:00.000Z',
+        };
+      },
+    },
+    snapshots: {
+      async findByUserId() {
+        return null;
+      },
+      async save() {
+        saveCalls += 1;
+        throw new Error('should not save invalid payload');
+      },
+    },
+  });
+
+  await assert.rejects(
+    () => service.bootstrap('token', {
+      version: 1,
+      sourceLocalUserId: 'local-1',
+      progress: {
+        ...storeMigration.createEmptyStore(),
+        performance: {
+          '0-0': {
+            attempts: 1,
+            failures: 2,
+          },
+        },
+      },
+      preferences: {},
+      theme: 'green',
+      exportedAt: '2026-09-24T19:00:00.000Z',
+    }),
+    (error) => error.code === 'INVALID_SYNC_PAYLOAD',
+  );
+
+  assert.equal(authCalls, 0);
+  assert.equal(saveCalls, 0);
+});
+
+test('sync routes delegate bearer sessions and expose revision conflicts', async () => {
+  const calls = [];
+  const currentSnapshot = {
+    version: 1,
+    revision: 4,
+    userId: 'cloud-1',
+    progress: storeMigration.createEmptyStore(),
+    preferences: preferencesRepositoryModule.createPreferencesRepository({
+      read: () => null,
+      write: () => true,
+      remove: () => true,
+    }).load(),
+    theme: 'green',
+    updatedAt: '2026-09-24T20:00:00.000Z',
+  };
+
+  const sync = {
+    async bootstrap(token, payload) {
+      calls.push(['bootstrap', token, payload]);
+      return currentSnapshot;
+    },
+    async download(token) {
+      calls.push(['download', token]);
+      return currentSnapshot;
+    },
+    async upload() {
+      throw new syncServiceModule.SyncServiceError(
+        'SYNC_CONFLICT',
+        409,
+        'O progresso cloud foi alterado em outro lugar.',
+        currentSnapshot,
+      );
+    },
+  };
+
+  const bootstrap = await apiRouterModule.routeApiRequest(
+    {
+      method: 'POST',
+      pathname: '/sync/bootstrap',
+      requestId: 'req-bootstrap',
+      authorization: 'Bearer token-1',
+      body: { version: 1 },
+    },
+    { sync },
+  );
+
+  const download = await apiRouterModule.routeApiRequest(
+    {
+      method: 'GET',
+      pathname: '/sync/snapshot',
+      requestId: 'req-download',
+      authorization: 'Bearer token-2',
+    },
+    { sync },
+  );
+
+  const conflict = await apiRouterModule.routeApiRequest(
+    {
+      method: 'PUT',
+      pathname: '/sync/snapshot',
+      requestId: 'req-upload',
+      authorization: 'Bearer token-3',
+      body: {
+        version: 1,
+        revision: 3,
+      },
+    },
+    { sync },
+  );
+
+  assert.equal(bootstrap.status, 200);
+  assert.equal(download.status, 200);
+  assert.equal(conflict.status, 409);
+  assert.equal(conflict.body.error.code, 'SYNC_CONFLICT');
+  assert.equal(
+    conflict.body.error.currentSnapshot.revision,
+    4,
+  );
+  assert.deepEqual(calls, [
+    ['bootstrap', 'token-1', { version: 1 }],
+    ['download', 'token-2'],
+  ]);
+});
+
 test('backend config uses safe local defaults and validates invalid values', () => {
   assert.deepEqual(
     apiServerConfigModule.readApiConfig({}),
@@ -1706,8 +2028,8 @@ test('backend router exposes health and explicit unconfigured cloud endpoints', 
     requestId: 'req-sync',
   });
 
-  assert.equal(sync.status, 501);
-  assert.equal(sync.body.error.code, 'SYNC_NOT_CONFIGURED');
+  assert.equal(sync.status, 503);
+  assert.equal(sync.body.error.code, 'SYNC_UNAVAILABLE');
 });
 
 test('backend router distinguishes method not allowed from unknown routes', () => {

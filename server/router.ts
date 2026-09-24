@@ -2,6 +2,10 @@ import {
   AuthServiceError,
   type AuthService,
 } from './auth/authService.js';
+import {
+  SyncServiceError,
+  type SyncService,
+} from './sync/syncService.js';
 
 export type DatabaseHealthStatus =
   | 'not_configured'
@@ -25,6 +29,7 @@ export interface ApiRouteResponse {
 
 export interface ApiRouteDependencies {
   auth?: AuthService | null;
+  sync?: SyncService | null;
 }
 
 type RouteHandlerResult =
@@ -38,23 +43,6 @@ interface RouteDefinition {
     request: ApiRouteRequest,
     dependencies: ApiRouteDependencies,
   ): RouteHandlerResult;
-}
-
-function notConfigured(
-  requestId: string,
-  code: string,
-  message: string,
-): ApiRouteResponse {
-  return {
-    status: 501,
-    body: {
-      error: {
-        code,
-        message,
-        requestId,
-      },
-    },
-  };
 }
 
 function authUnavailable(
@@ -72,6 +60,21 @@ function authUnavailable(
   };
 }
 
+function syncUnavailable(
+  requestId: string,
+): ApiRouteResponse {
+  return {
+    status: 503,
+    body: {
+      error: {
+        code: 'SYNC_UNAVAILABLE',
+        message: 'A sincronização não está disponível nesta instância.',
+        requestId,
+      },
+    },
+  };
+}
+
 function getBearerToken(
   authorization: string | undefined,
 ): string | null {
@@ -83,7 +86,7 @@ function getBearerToken(
   return token || null;
 }
 
-async function handleAuthOperation(
+async function handleServiceOperation(
   requestId: string,
   operation: () => Promise<unknown>,
   successStatus = 200,
@@ -104,6 +107,22 @@ async function handleAuthOperation(
             code: error.code,
             message: error.message,
             requestId,
+          },
+        },
+      };
+    }
+
+    if (error instanceof SyncServiceError) {
+      return {
+        status: error.status,
+        body: {
+          error: {
+            code: error.code,
+            message: error.message,
+            requestId,
+            ...(error.currentSnapshot
+              ? { currentSnapshot: error.currentSnapshot }
+              : {}),
           },
         },
       };
@@ -153,7 +172,7 @@ const routes: RouteDefinition[] = [
         ? request.body as Record<string, unknown>
         : {};
 
-      return handleAuthOperation(
+      return handleServiceOperation(
         request.requestId,
         () => dependencies.auth!.signUp({
           email: body.email as string,
@@ -179,7 +198,7 @@ const routes: RouteDefinition[] = [
         ? request.body as Record<string, unknown>
         : {};
 
-      return handleAuthOperation(
+      return handleServiceOperation(
         request.requestId,
         () => dependencies.auth!.signIn({
           email: body.email as string,
@@ -198,7 +217,7 @@ const routes: RouteDefinition[] = [
 
       const token = getBearerToken(request.authorization);
 
-      return handleAuthOperation(
+      return handleServiceOperation(
         request.requestId,
         async () => {
           await dependencies.auth!.signOut(token ?? '');
@@ -219,7 +238,7 @@ const routes: RouteDefinition[] = [
 
       const token = getBearerToken(request.authorization);
 
-      return handleAuthOperation(
+      return handleServiceOperation(
         request.requestId,
         () => dependencies.auth!.getCurrentUser(token ?? ''),
       );
@@ -228,33 +247,54 @@ const routes: RouteDefinition[] = [
   {
     method: 'POST',
     pathname: '/sync/bootstrap',
-    handle(request) {
-      return notConfigured(
+    handle(request, dependencies) {
+      if (!dependencies.sync) {
+        return syncUnavailable(request.requestId);
+      }
+
+      const token = getBearerToken(request.authorization);
+
+      return handleServiceOperation(
         request.requestId,
-        'SYNC_NOT_CONFIGURED',
-        'A sincronização do CodeMpi ainda não foi configurada.',
+        () => dependencies.sync!.bootstrap(
+          token ?? '',
+          request.body,
+        ),
       );
     },
   },
   {
     method: 'GET',
     pathname: '/sync/snapshot',
-    handle(request) {
-      return notConfigured(
+    handle(request, dependencies) {
+      if (!dependencies.sync) {
+        return syncUnavailable(request.requestId);
+      }
+
+      const token = getBearerToken(request.authorization);
+
+      return handleServiceOperation(
         request.requestId,
-        'SYNC_NOT_CONFIGURED',
-        'A sincronização do CodeMpi ainda não foi configurada.',
+        () => dependencies.sync!.download(token ?? ''),
       );
     },
   },
   {
     method: 'PUT',
     pathname: '/sync/snapshot',
-    handle(request) {
-      return notConfigured(
+    handle(request, dependencies) {
+      if (!dependencies.sync) {
+        return syncUnavailable(request.requestId);
+      }
+
+      const token = getBearerToken(request.authorization);
+
+      return handleServiceOperation(
         request.requestId,
-        'SYNC_NOT_CONFIGURED',
-        'A sincronização do CodeMpi ainda não foi configurada.',
+        () => dependencies.sync!.upload(
+          token ?? '',
+          request.body,
+        ),
       );
     },
   },
