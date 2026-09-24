@@ -247,9 +247,9 @@ export function MissionPage({
                   {(isPassed || alreadyDoneXP) && (
                     <div className="win-banner show">
                       <span>
-                        {alreadyDoneXP
-                          ? `Exercício já concluído — você ganhou ${alreadyDoneXP} XP aqui.`
-                          : `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`}
+                        {isPassed
+                          ? `Todos os testes passaram! Você ganhou ${Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} XP.`
+                          : `Exercício já concluído — este desafio valeu ${alreadyDoneXP} XP.`}
                       </span>
 
                       {(
