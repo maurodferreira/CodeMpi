@@ -39,7 +39,6 @@ export default function App() {
     levelComplete,
     levelUnlocked,
     exUnlocked,
-    getMult,
     totalEarned,
     totalMax,
     levelsDoneTotal,
