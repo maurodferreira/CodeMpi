@@ -620,7 +620,7 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         code: 'function processarPedido(produto, quantidade) {\n  // use o objeto para validar e atualizar o pedido\n}',
         explanation: 'N7 marca a passagem de valores isolados para estruturas que representam entidades. O objetivo não é decorar sintaxe de objetos, mas aprender a organizar e manipular dados de forma clara.',
       },
-    ],
+    }),
   },
 
 };
