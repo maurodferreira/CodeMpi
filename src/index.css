@@ -2041,7 +2041,6 @@ footer.note::before {
   border:1px solid rgba(124,255,155,.14);
   border-radius:11px;
   background:linear-gradient(90deg,rgba(124,255,155,.055),rgba(124,255,155,.015));
-  animation: rewardPulse 2.8s ease-in-out infinite;
 }
 .lesson-reward-icon {
   display:grid;
@@ -2114,6 +2113,8 @@ footer.note::before {
 }
 @media (max-width: 520px) {
   .lesson-reward-strip { margin:16px 20px 0; }
+  .lesson-footer .btn,
+  .quiz-option { min-height:44px; }
   .test-summary { align-items:flex-start; flex-direction:column; }
 }
 

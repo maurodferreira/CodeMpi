@@ -37,6 +37,7 @@ export function LessonPage({
   const isQuiz = currentLessonStep.type === 'quiz';
   const stepLabel = STEP_LABELS[currentLessonStep.type];
   const progressPercent = ((lessonStep + 1) / currentLesson.steps.length) * 100;
+  const isLastStep = lessonStep === currentLesson.steps.length - 1;
 
   return (
     <main className="lesson-page">
@@ -65,14 +66,16 @@ export function LessonPage({
           </div>
         </div>
 
-        <div className="lesson-reward-strip">
+        {(isLastStep || lessonCompletion) && (
+          <div className="lesson-reward-strip">
           <span className="lesson-reward-icon">✦</span>
           <div>
             <strong>{lessonCompletion ? `Aula concluída · +${lessonReward} XP recebidos` : `Conclua a aula e receba +${lessonReward} XP`}</strong>
             <small>{lessonCompletion ? 'Você pode revisitar esta aula quando quiser.' : 'Uma pequena recompensa por completar a preparação antes da prática.'}</small>
           </div>
-          {lessonCompletion && <span className="lesson-reward-check">✓</span>}
-        </div>
+            {lessonCompletion && <span className="lesson-reward-check">✓</span>}
+          </div>
+        )}
 
         <div className="lesson-content">
           <div className="lesson-step-heading">
