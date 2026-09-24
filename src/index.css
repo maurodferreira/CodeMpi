@@ -5702,6 +5702,9 @@ html[data-ui-scale="large"] .settings-toggle {
 }
 
 .code-editor-focus-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-left: auto;
   min-height: 27px;
   padding: 5px 9px;
