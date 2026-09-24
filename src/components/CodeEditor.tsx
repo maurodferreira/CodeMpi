@@ -8,9 +8,27 @@ import CodeMirror from '@uiw/react-codemirror';
 interface CodeEditorProps {
   code: string;
   onChange: (value: string) => void;
+  fontSize?: 'small' | 'medium' | 'large';
+  lineWrapping?: boolean;
+  lineNumbers?: boolean;
+  indentSize?: 2 | 4;
 }
 
-export function CodeEditor({ code, onChange }: CodeEditorProps) {
+const EDITOR_FONT_SIZES = {
+  small: 13,
+  medium: 15,
+  large: 17,
+} as const;
+
+export function CodeEditor({
+  code,
+  onChange,
+  fontSize = 'medium',
+  lineWrapping = true,
+  lineNumbers = true,
+  indentSize = 2,
+}: CodeEditorProps) {
+  const editorFontSize = EDITOR_FONT_SIZES[fontSize];
   return (
     <div className="code-editor-shell">
       <div className="code-editor-topbar">
@@ -25,13 +43,17 @@ export function CodeEditor({ code, onChange }: CodeEditorProps) {
         theme={oneDark}
         extensions={[
           javascript(),
-          EditorView.lineWrapping,
+          ...(lineWrapping ? [EditorView.lineWrapping] : []),
           keymap.of([...defaultKeymap, indentWithTab]),
-          EditorState.tabSize.of(2),
+          EditorState.tabSize.of(indentSize),
+          EditorView.theme({
+            '.cm-content': { fontSize: `${editorFontSize}px` },
+            '.cm-gutters': { fontSize: `${editorFontSize}px` },
+          }),
         ]}
         onChange={onChange}
         basicSetup={{
-          lineNumbers: true,
+          lineNumbers,
           foldGutter: true,
           highlightActiveLine: true,
           highlightActiveLineGutter: true,
