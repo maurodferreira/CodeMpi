@@ -47,9 +47,7 @@ export default function App() {
   const [code, setCode] = useState(currentExercise?.starter || '');
   const [lessonStep, setLessonStep] = useState(0);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const [completionLevel, setCompletionLevel] = useState<number | null>(
-    route.view === 'completion' ? route.levelIndex ?? null : null,
-  );
+  const [completionLevel, setCompletionLevel] = useState<number | null>(null);
   const processedRoutePath = useRef<string | null>(null);
   const { theme, setTheme } = useTheme();
   const { preferences, setPreferences } = useAppPreferences();
