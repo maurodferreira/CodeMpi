@@ -1,10 +1,9 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { LEVELS } from '../data/levels';
 import { getActivityStreak } from '../utils/progress';
-import type { ConceptSummary, StoreData, View } from '../types';
+import type { ConceptSummary, View } from '../types';
 
 interface DashboardProps {
-  store: StoreData;
   completedExercises: number;
   totalEarned: number;
   levelsDoneTotal: number;
