@@ -4,6 +4,12 @@ import type {
 } from '../domain/cloud';
 import type { ApiClient } from './apiClient';
 
+export interface SignUpCredentials {
+  email: string;
+  password: string;
+  displayName?: string;
+}
+
 export interface SignInCredentials {
   email: string;
   password: string;
@@ -15,6 +21,7 @@ export interface AuthResult {
 }
 
 export interface AuthRepository {
+  signUp(credentials: SignUpCredentials): Promise<AuthResult>;
   signIn(credentials: SignInCredentials): Promise<AuthResult>;
   signOut(accessToken: string): Promise<void>;
   getCurrentUser(accessToken: string): Promise<CloudUserProfile>;
@@ -22,6 +29,13 @@ export interface AuthRepository {
 
 export function createAuthRepository(api: ApiClient): AuthRepository {
   return {
+    signUp(credentials) {
+      return api.request<AuthResult>('auth/sign-up', {
+        method: 'POST',
+        body: credentials,
+      });
+    },
+
     signIn(credentials) {
       return api.request<AuthResult>('auth/sign-in', {
         method: 'POST',

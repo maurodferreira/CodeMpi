@@ -25,6 +25,18 @@ const {
   ProgressSnapshotConflictError,
 } = await import('../dist-server/server/database/postgresRepositories.js');
 
+const {
+  createPostgresAuthDataStore,
+} = await import('../dist-server/server/auth/authDataStore.js');
+
+const {
+  createAuthService,
+} = await import('../dist-server/server/auth/authService.js');
+
+const {
+  createApiServer,
+} = await import('../dist-server/server/server.js');
+
 const database = createPostgresDatabase(databaseUrl, {
   maxConnections: 4,
   connectionTimeoutMs: 5_000,
@@ -197,4 +209,222 @@ SELECT
     sessions: 0,
     snapshots: 0,
   });
+});
+
+
+test('HTTP auth flow persists hashed credentials and revokes sessions in PostgreSQL', async () => {
+  const auth = createAuthService({
+    store: createPostgresAuthDataStore(database),
+    sessionTtlHours: 24,
+  });
+
+  const config = {
+    host: '127.0.0.1',
+    port: 3001,
+    webOrigin: 'http://localhost:5173',
+    bodyLimitBytes: 65536,
+    nodeEnv: 'test',
+    databaseUrl,
+    sessionTtlHours: 24,
+  };
+
+  const server = createApiServer(config, {
+    database,
+    auth,
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, config.host, resolve);
+  });
+
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+
+  const baseUrl = `http://${config.host}:${address.port}`;
+  const email = `auth.${randomUUID()}@codempi.dev`;
+  const password = 'senha-segura-123';
+
+  try {
+    const signUpResponse = await fetch(
+      `${baseUrl}/auth/sign-up`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          displayName: 'Aluno Auth',
+        }),
+      },
+    );
+
+    assert.equal(signUpResponse.status, 201);
+
+    const signUp = await signUpResponse.json();
+
+    assert.equal(signUp.user.email, email);
+    assert.equal(signUp.user.displayName, 'Aluno Auth');
+    assert.equal(signUp.session.kind, 'cloud');
+    assert.ok(signUp.session.accessToken.length >= 40);
+
+    const storedUser = await database.query(
+      `
+SELECT password_hash
+FROM codempi_users
+WHERE id = $1;
+`.trim(),
+      [signUp.user.id],
+    );
+
+    assert.equal(storedUser.rowCount, 1);
+    assert.match(
+      storedUser.rows[0].password_hash,
+      /^scrypt\$/,
+    );
+    assert.notEqual(
+      storedUser.rows[0].password_hash,
+      password,
+    );
+
+    const storedSession = await database.query(
+      `
+SELECT token_hash
+FROM codempi_sessions
+WHERE user_id = $1
+ORDER BY created_at DESC
+LIMIT 1;
+`.trim(),
+      [signUp.user.id],
+    );
+
+    assert.equal(storedSession.rowCount, 1);
+    assert.match(
+      storedSession.rows[0].token_hash,
+      /^[a-f0-9]{64}$/,
+    );
+    assert.notEqual(
+      storedSession.rows[0].token_hash,
+      signUp.session.accessToken,
+    );
+
+    const meResponse = await fetch(
+      `${baseUrl}/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${signUp.session.accessToken}`,
+        },
+      },
+    );
+
+    assert.equal(meResponse.status, 200);
+
+    const me = await meResponse.json();
+    assert.equal(me.id, signUp.user.id);
+    assert.equal(me.email, email);
+
+    const duplicateResponse = await fetch(
+      `${baseUrl}/auth/sign-up`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toUpperCase(),
+          password,
+        }),
+      },
+    );
+
+    assert.equal(duplicateResponse.status, 409);
+    assert.equal(
+      (await duplicateResponse.json()).error.code,
+      'EMAIL_ALREADY_EXISTS',
+    );
+
+    const wrongPasswordResponse = await fetch(
+      `${baseUrl}/auth/sign-in`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password: 'senha-incorreta',
+        }),
+      },
+    );
+
+    assert.equal(wrongPasswordResponse.status, 401);
+    assert.equal(
+      (await wrongPasswordResponse.json()).error.code,
+      'INVALID_CREDENTIALS',
+    );
+
+    const signOutResponse = await fetch(
+      `${baseUrl}/auth/sign-out`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${signUp.session.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    assert.equal(signOutResponse.status, 200);
+    assert.deepEqual(
+      await signOutResponse.json(),
+      { signedOut: true },
+    );
+
+    const revokedMeResponse = await fetch(
+      `${baseUrl}/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${signUp.session.accessToken}`,
+        },
+      },
+    );
+
+    assert.equal(revokedMeResponse.status, 401);
+    assert.equal(
+      (await revokedMeResponse.json()).error.code,
+      'UNAUTHORIZED',
+    );
+
+    const signInResponse = await fetch(
+      `${baseUrl}/auth/sign-in`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toUpperCase(),
+          password,
+        }),
+      },
+    );
+
+    assert.equal(signInResponse.status, 200);
+
+    const signIn = await signInResponse.json();
+    assert.equal(signIn.user.id, signUp.user.id);
+    assert.notEqual(
+      signIn.session.accessToken,
+      signUp.session.accessToken,
+    );
+  } finally {
+    await new Promise((resolve, reject) => {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+  }
 });

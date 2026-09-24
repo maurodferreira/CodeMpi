@@ -5,6 +5,7 @@ export interface ApiConfig {
   bodyLimitBytes: number;
   nodeEnv: string;
   databaseUrl: string | null;
+  sessionTtlHours: number;
 }
 
 type ApiEnvironment = Record<string, string | undefined>;
@@ -97,6 +98,13 @@ export function readApiConfig(
     nodeEnv: env.NODE_ENV?.trim() || 'development',
     databaseUrl: normalizeDatabaseUrl(
       env.CODEMPI_DATABASE_URL,
+    ),
+    sessionTtlHours: parseInteger(
+      env.CODEMPI_SESSION_TTL_HOURS,
+      24,
+      'CODEMPI_SESSION_TTL_HOURS',
+      1,
+      168,
     ),
   };
 }

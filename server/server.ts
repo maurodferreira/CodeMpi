@@ -10,6 +10,7 @@ import {
   routeApiRequest,
   type ApiRouteResponse,
   type DatabaseHealthStatus,
+  type ApiRouteDependencies,
 } from './router.js';
 
 interface BodyReadSuccess {
@@ -30,7 +31,8 @@ interface DatabaseHealthProbe {
   ping(): Promise<void>;
 }
 
-export interface ApiServerDependencies {
+export interface ApiServerDependencies
+  extends ApiRouteDependencies {
   database?: DatabaseHealthProbe | null;
 }
 
@@ -267,14 +269,31 @@ export function createApiServer(
       ? await getDatabaseHealth(dependencies.database)
       : undefined;
 
-    const routeResponse = routeApiRequest({
-      method: request.method ?? 'GET',
-      pathname: url.pathname,
-      requestId,
-      body: bodyResult.body,
-      databaseHealth,
-    });
+    try {
+      const routeResponse = await routeApiRequest(
+        {
+          method: request.method ?? 'GET',
+          pathname: url.pathname,
+          requestId,
+          body: bodyResult.body,
+          authorization: request.headers.authorization,
+          databaseHealth,
+        },
+        dependencies,
+      );
 
-    sendJson(response, requestId, routeResponse);
+      sendJson(response, requestId, routeResponse);
+    } catch {
+      sendJson(response, requestId, {
+        status: 500,
+        body: {
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Não foi possível concluir a requisição.',
+            requestId,
+          },
+        },
+      });
+    }
   });
 }

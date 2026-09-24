@@ -1,3 +1,8 @@
+import {
+  AuthServiceError,
+  type AuthService,
+} from './auth/authService.js';
+
 export type DatabaseHealthStatus =
   | 'not_configured'
   | 'ok'
@@ -8,6 +13,7 @@ export interface ApiRouteRequest {
   pathname: string;
   requestId: string;
   body?: unknown;
+  authorization?: string;
   databaseHealth?: DatabaseHealthStatus;
 }
 
@@ -17,10 +23,21 @@ export interface ApiRouteResponse {
   headers?: Record<string, string>;
 }
 
+export interface ApiRouteDependencies {
+  auth?: AuthService | null;
+}
+
+type RouteHandlerResult =
+  | ApiRouteResponse
+  | Promise<ApiRouteResponse>;
+
 interface RouteDefinition {
   method: string;
   pathname: string;
-  handle(request: ApiRouteRequest): ApiRouteResponse;
+  handle(
+    request: ApiRouteRequest,
+    dependencies: ApiRouteDependencies,
+  ): RouteHandlerResult;
 }
 
 function notConfigured(
@@ -38,6 +55,62 @@ function notConfigured(
       },
     },
   };
+}
+
+function authUnavailable(
+  requestId: string,
+): ApiRouteResponse {
+  return {
+    status: 503,
+    body: {
+      error: {
+        code: 'AUTH_UNAVAILABLE',
+        message: 'A autenticação não está disponível nesta instância.',
+        requestId,
+      },
+    },
+  };
+}
+
+function getBearerToken(
+  authorization: string | undefined,
+): string | null {
+  if (!authorization) return null;
+
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  const token = match?.[1]?.trim();
+
+  return token || null;
+}
+
+async function handleAuthOperation(
+  requestId: string,
+  operation: () => Promise<unknown>,
+  successStatus = 200,
+): Promise<ApiRouteResponse> {
+  try {
+    const body = await operation();
+
+    return {
+      status: successStatus,
+      body,
+    };
+  } catch (error) {
+    if (error instanceof AuthServiceError) {
+      return {
+        status: error.status,
+        body: {
+          error: {
+            code: error.code,
+            message: error.message,
+            requestId,
+          },
+        },
+      };
+    }
+
+    throw error;
+  }
 }
 
 const routes: RouteDefinition[] = [
@@ -67,34 +140,88 @@ const routes: RouteDefinition[] = [
   },
   {
     method: 'POST',
-    pathname: '/auth/sign-in',
-    handle(request) {
-      return notConfigured(
+    pathname: '/auth/sign-up',
+    handle(request, dependencies) {
+      if (!dependencies.auth) {
+        return authUnavailable(request.requestId);
+      }
+
+      const body = (
+        request.body
+        && typeof request.body === 'object'
+      )
+        ? request.body as Record<string, unknown>
+        : {};
+
+      return handleAuthOperation(
         request.requestId,
-        'AUTH_NOT_CONFIGURED',
-        'A autenticação do CodeMpi ainda não foi configurada.',
+        () => dependencies.auth!.signUp({
+          email: body.email as string,
+          password: body.password as string,
+          displayName: body.displayName as string | undefined,
+        }),
+        201,
+      );
+    },
+  },
+  {
+    method: 'POST',
+    pathname: '/auth/sign-in',
+    handle(request, dependencies) {
+      if (!dependencies.auth) {
+        return authUnavailable(request.requestId);
+      }
+
+      const body = (
+        request.body
+        && typeof request.body === 'object'
+      )
+        ? request.body as Record<string, unknown>
+        : {};
+
+      return handleAuthOperation(
+        request.requestId,
+        () => dependencies.auth!.signIn({
+          email: body.email as string,
+          password: body.password as string,
+        }),
       );
     },
   },
   {
     method: 'POST',
     pathname: '/auth/sign-out',
-    handle(request) {
-      return notConfigured(
+    handle(request, dependencies) {
+      if (!dependencies.auth) {
+        return authUnavailable(request.requestId);
+      }
+
+      const token = getBearerToken(request.authorization);
+
+      return handleAuthOperation(
         request.requestId,
-        'AUTH_NOT_CONFIGURED',
-        'A autenticação do CodeMpi ainda não foi configurada.',
+        async () => {
+          await dependencies.auth!.signOut(token ?? '');
+          return {
+            signedOut: true,
+          };
+        },
       );
     },
   },
   {
     method: 'GET',
     pathname: '/me',
-    handle(request) {
-      return notConfigured(
+    handle(request, dependencies) {
+      if (!dependencies.auth) {
+        return authUnavailable(request.requestId);
+      }
+
+      const token = getBearerToken(request.authorization);
+
+      return handleAuthOperation(
         request.requestId,
-        'AUTH_NOT_CONFIGURED',
-        'A autenticação do CodeMpi ainda não foi configurada.',
+        () => dependencies.auth!.getCurrentUser(token ?? ''),
       );
     },
   },
@@ -135,7 +262,8 @@ const routes: RouteDefinition[] = [
 
 export function routeApiRequest(
   request: ApiRouteRequest,
-): ApiRouteResponse {
+  dependencies: ApiRouteDependencies = {},
+): RouteHandlerResult {
   const method = request.method.toUpperCase();
 
   const route = routes.find(
@@ -146,10 +274,13 @@ export function routeApiRequest(
   );
 
   if (route) {
-    return route.handle({
-      ...request,
-      method,
-    });
+    return route.handle(
+      {
+        ...request,
+        method,
+      },
+      dependencies,
+    );
   }
 
   const allowedMethods = routes
