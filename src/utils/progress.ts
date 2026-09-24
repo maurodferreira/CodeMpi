@@ -1,3 +1,7 @@
+export function getProgressKey(levelIndex: number, exerciseIndex: number): string {
+  return `${levelIndex}-${exerciseIndex}`;
+}
+
 export function getLocalDateKey(date = new Date()): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
