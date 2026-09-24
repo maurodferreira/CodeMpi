@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { javascript } from '@codemirror/lang-javascript';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
@@ -20,6 +21,15 @@ const EDITOR_FONT_SIZES = {
   large: 17,
 } as const;
 
+const MOBILE_CODE_TOOLS = [
+  { label: '{ }', insert: '{ }', ariaLabel: 'Inserir chaves' },
+  { label: '( )', insert: '( )', ariaLabel: 'Inserir parênteses' },
+  { label: '[ ]', insert: '[ ]', ariaLabel: 'Inserir colchetes' },
+  { label: '=>', insert: ' => ', ariaLabel: 'Inserir arrow function' },
+  { label: ';', insert: ';', ariaLabel: 'Inserir ponto e vírgula' },
+  { label: '=', insert: ' = ', ariaLabel: 'Inserir sinal de igualdade' },
+] as const;
+
 export function CodeEditor({
   code,
   onChange,
@@ -29,6 +39,50 @@ export function CodeEditor({
   indentSize = 2,
 }: CodeEditorProps) {
   const editorFontSize = EDITOR_FONT_SIZES[fontSize];
+  const editorViewRef = useRef<EditorView | null>(null);
+
+  const insertText = (text: string) => {
+    const view = editorViewRef.current;
+    if (!view) return;
+
+    view.dispatch(
+      view.state.changeByRange((range) => ({
+        changes: {
+          from: range.from,
+          to: range.to,
+          insert: text,
+        },
+        range: {
+          from: range.from + text.length,
+          to: range.from + text.length,
+        },
+      })),
+    );
+
+    view.focus();
+  };
+
+  const moveCursor = (direction: 'left' | 'right') => {
+    const view = editorViewRef.current;
+    if (!view) return;
+
+    const { main } = view.state.selection;
+    const position = direction === 'left'
+      ? main.from
+      : main.to;
+
+    const nextPosition = direction === 'left'
+      ? Math.max(0, position - 1)
+      : Math.min(view.state.doc.length, position + 1);
+
+    view.dispatch({
+      selection: { anchor: nextPosition },
+      scrollIntoView: true,
+    });
+
+    view.focus();
+  };
+
   return (
     <div className="code-editor-shell">
       <div className="code-editor-topbar">
@@ -51,6 +105,9 @@ export function CodeEditor({
             '.cm-gutters': { fontSize: `${editorFontSize}px` },
           }),
         ]}
+        onCreateEditor={(view) => {
+          editorViewRef.current = view;
+        }}
         onChange={onChange}
         basicSetup={{
           lineNumbers,
@@ -64,6 +121,50 @@ export function CodeEditor({
         }}
         className="code-editor"
       />
+
+      <div className="mobile-code-toolbar" aria-label="Atalhos de programação">
+        <div className="mobile-code-toolbar-scroll">
+          {MOBILE_CODE_TOOLS.map((tool) => (
+            <button
+              key={tool.label}
+              type="button"
+              aria-label={tool.ariaLabel}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => insertText(tool.insert)}
+            >
+              {tool.label}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            className="mobile-code-tool-wide"
+            aria-label={`Inserir indentação de ${indentSize} espaços`}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => insertText(' '.repeat(indentSize))}
+          >
+            TAB
+          </button>
+
+          <button
+            type="button"
+            aria-label="Mover cursor para a esquerda"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => moveCursor('left')}
+          >
+            ←
+          </button>
+
+          <button
+            type="button"
+            aria-label="Mover cursor para a direita"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => moveCursor('right')}
+          >
+            →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
