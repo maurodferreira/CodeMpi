@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './styles/dashboard-refinement.css';
 import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
 import { CompletionPage } from './components/CompletionPage';
