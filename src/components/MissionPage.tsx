@@ -118,23 +118,13 @@ export function MissionPage({
             </nav>
 
             <section className="panel">
-              <div className="panel-head">
+              <div className="panel-head mission-level-head">
                 <div className="kicker">
-                  {currentLevel.tag} · {currentLevel.name}
+                  {currentLevel.tag}
                   {currentExercise ? ` · EXERCÍCIO ${exerciseIndex + 1}/${currentLevel.exercises!.length}` : ''}
                 </div>
-                <h2>{currentExercise ? currentExercise.title : currentLevel.name}</h2>
-                <p>{currentExercise ? currentExercise.desc : 'Este nível ainda está sendo construído — chegando em breve.'}</p>
-
-                <div className="badges">
-                  {currentExercise && (
-                    <>
-                      <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
-                      <span className="badge xp">XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}</span>
-                      <span className="sig">{currentExercise.sig}</span>
-                    </>
-                  )}
-                </div>
+                <h2>{currentLevel.name}</h2>
+                <p>{currentExercise ? 'Escolha um desafio, entenda o objetivo e escreva a solução no editor.' : 'Este nível ainda está sendo construído — chegando em breve.'}</p>
               </div>
 
               {!hasExercises || !currentExercise ? (
@@ -146,6 +136,40 @@ export function MissionPage({
                 </div>
               ) : (
                 <div id="exBody">
+                  <section className={`challenge-card challenge-${currentExercise.difficulty}`} aria-labelledby="challenge-title">
+                    <div className="challenge-card-top">
+                      <div className="challenge-title-wrap">
+                        <span className="challenge-eyebrow">DESAFIO {String(exerciseIndex + 1).padStart(2, '0')}</span>
+                        <h3 id="challenge-title">{currentExercise.title}</h3>
+                      </div>
+
+                      <div className="challenge-badges">
+                        <span className={`badge diff-${currentExercise.difficulty}`}>{DIFF_LABEL[currentExercise.difficulty]}</span>
+                        <span className="badge xp">XP {Math.round(currentExercise.xp * getMult(levelIndex, exerciseIndex))} / {currentExercise.xp}</span>
+                      </div>
+                    </div>
+
+                    <div className="challenge-prompt">
+                      <span className="challenge-label">O QUE FAZER</span>
+                      <p>{currentExercise.desc}</p>
+                    </div>
+
+                    <div className="challenge-specs">
+                      <div className="challenge-spec">
+                        <span>ASSINATURA</span>
+                        <code>{currentExercise.sig}</code>
+                      </div>
+                      <div className="challenge-spec">
+                        <span>HABILIDADE</span>
+                        <strong>{currentExercise.skill}</strong>
+                      </div>
+                      <div className="challenge-spec">
+                        <span>VALIDAÇÃO</span>
+                        <strong>{currentExercise.tests.length} casos de teste</strong>
+                      </div>
+                    </div>
+                  </section>
+
                   <div className="ex-strip">
                     {currentLevel.exercises!.map((exercise, ei) => {
                       const isDone = Boolean(store.done[getKey(levelIndex, ei)]);
