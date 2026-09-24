@@ -41,8 +41,14 @@ export function AppHeader({
         <button className={`nav-link ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>
           Início
         </button>
+        <button className={`nav-link ${view === 'search' ? 'active' : ''}`} onClick={() => setView('search')}>
+          Buscar
+        </button>
         <button className={`nav-link ${view === 'map' ? 'active' : ''}`} onClick={() => setView('map')}>
           Jornada
+        </button>
+        <button className={`nav-link ${view === 'memory' ? 'active' : ''}`} onClick={() => setView('memory')}>
+          Memória
         </button>
         <button className={`nav-link ${view === 'mission' ? 'active' : ''}`} onClick={() => setView('mission')}>
           Missão
@@ -53,23 +59,54 @@ export function AppHeader({
       </nav>
 
       <div className="header-actions">
+        <button
+          className="mobile-settings"
+          type="button"
+          onClick={() => setView('settings')}
+          aria-label="Abrir configurações"
+          title="Configurações"
+        >
+          ⚙
+        </button>
         <div className="score-box">
-        <div className="score-meta">
-          <span className="score-label">XP TOTAL</span>
-          <span className="score-max">
-            META <span id="maxscore">{totalMax}</span>
-          </span>
-        </div>
-        <div className="score-value" id="score">{totalEarned}</div>
-        <div className="score-track" aria-hidden={true}>
-          <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
-        </div>
+          <div className="score-meta">
+            <span className="score-label">XP TOTAL</span>
+            <span className="score-max">
+              META <span id="maxscore">{totalMax}</span>
+            </span>
+          </div>
+          <div className="score-value" id="score">{totalEarned}</div>
+          <div className="score-track" aria-hidden={true}>
+            <span style={{ width: `${Math.min(100, overallProgress)}%` }} />
+          </div>
           <div className="sub" id="lvlprog">
             {levelsDoneTotal} / {LEVELS.length} níveis fechados
           </div>
         </div>
-
       </div>
+
+      <nav className="mobile-tabbar" aria-label="Navegação mobile">
+        <button className={view === 'dashboard' ? 'active' : ''} type="button" onClick={() => setView('dashboard')}>
+          <span>⌂</span>
+          Início
+        </button>
+        <button className={view === 'search' ? 'active' : ''} type="button" onClick={() => setView('search')}>
+          <span>⌕</span>
+          Buscar
+        </button>
+        <button className={view === 'map' ? 'active' : ''} type="button" onClick={() => setView('map')}>
+          <span>◌</span>
+          Jornada
+        </button>
+        <button className={view === 'memory' ? 'active' : ''} type="button" onClick={() => setView('memory')}>
+          <span>✦</span>
+          Memória
+        </button>
+        <button className={view === 'mission' ? 'active' : ''} type="button" onClick={() => setView('mission')}>
+          <span>›_</span>
+          Missão
+        </button>
+      </nav>
     </header>
   );
 }
