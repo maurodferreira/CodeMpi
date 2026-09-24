@@ -263,7 +263,48 @@ A duração padrão da sessão é 24 horas e pode ser ajustada com:
 CODEMPI_SESSION_TTL_HOURS=24
 ```
 
-A interface do app ainda permanece local-first. As telas de cadastro/login serão conectadas somente depois de a API de autenticação estar completamente validada.
+A interface do app ainda permanece local-first. A API de autenticação e a sincronização cloud já estão disponíveis no backend; a próxima etapa é conectá-las à experiência de conta sem alterar o progresso local antes da confirmação do servidor.
+
+### Sync Foundation
+
+A API já possui sincronização autenticada de progresso:
+
+```text
+POST /sync/bootstrap
+GET  /sync/snapshot
+PUT  /sync/snapshot
+```
+
+Regras principais:
+
+- o usuário do snapshot é sempre derivado do access token; `userId` enviado pelo cliente não é confiável;
+- o bootstrap local → cloud é idempotente e nunca sobrescreve um snapshot já existente;
+- snapshots usam `revision` para concorrência otimista;
+- uploads com revisão antiga recebem `409 SYNC_CONFLICT`;
+- em conflito, a API devolve o snapshot cloud atual para futura reconciliação;
+- payloads de progresso, preferências e tema são validados antes de chegar ao PostgreSQL;
+- snapshot inexistente retorna `404 SNAPSHOT_NOT_FOUND`;
+- a origem local do primeiro bootstrap é preservada em `sourceLocalUserId`.
+
+A CI valida o fluxo real contra PostgreSQL:
+
+```text
+criar conta
+   ↓
+bootstrap do progresso local
+   ↓
+bootstrap repetido sem overwrite
+   ↓
+download
+   ↓
+update revisionado
+   ↓
+tentativa stale
+   ↓
+409 + snapshot atual preservado
+```
+
+O frontend ainda não sincroniza automaticamente nesta etapa.
 
 ### Persistência atual
 
@@ -275,7 +316,8 @@ Hoje:
 - a fundação de sessão cloud usa `sessionStorage`, para sobreviver a recarregamentos sem persistir o token indefinidamente;
 - a cloud fica desligada por padrão;
 - a Backend Foundation já existe e expõe uma API local real;
-- autenticação, banco de dados, login visual e sincronização ativa ainda não estão implementados.
+- autenticação e sincronização cloud já existem no backend PostgreSQL;
+- login visual e sincronização automática no frontend ainda não estão conectados.
 
 A sessão cloud já possui validação de usuário, token, expiração e vínculo entre IDs. Sessões inválidas ou expiradas são descartadas automaticamente.
 
@@ -638,9 +680,12 @@ Em andamento:
 - [x] testes de integração PostgreSQL na CI;
 - [x] autenticação real no backend;
 - [x] cadastro, login, /me e logout na API;
+- [x] Sync Foundation no backend;
+- [x] bootstrap local → cloud idempotente;
+- [x] snapshots revisionados com conflito 409;
 - [ ] interface de conta CodeMpi;
-- [ ] progresso sincronizado;
-- [ ] recuperação de progresso;
+- [ ] sincronização automática no frontend;
+- [ ] recuperação/reconciliação visual de conflitos;
 - [ ] uso em múltiplos dispositivos;
 - [ ] perfil do usuário.
 
