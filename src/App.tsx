@@ -10,6 +10,7 @@ import { LessonPage } from './components/LessonPage';
 import { MissionPage } from './components/MissionPage';
 import { SearchPage } from './components/SearchPage';
 import { SettingsPage } from './components/SettingsPage';
+import { useAppPreferences } from './hooks/useAppPreferences';
 import { useMissionRunner } from './hooks/useMissionRunner';
 import { useLearningProgress } from './hooks/useLearningProgress';
 import { useProgressStore } from './hooks/useProgressStore';
@@ -35,6 +36,7 @@ export default function App() {
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [completionLevel, setCompletionLevel] = useState<number | null>(null);
   const { theme, setTheme } = useTheme();
+  const { preferences, setPreferences } = useAppPreferences();
 
   const {
     getKey,
@@ -146,6 +148,14 @@ export default function App() {
     }));
   };
 
+  const handleResetCodeWithPreference = () => {
+    if (preferences.confirmReset && !window.confirm('Reiniciar o código? O conteúdo atual será substituído pelo código inicial.')) {
+      return;
+    }
+
+    handleResetCode();
+  };
+
   const handleLevelCompletion = (li: number) => {
     setCompletionLevel(li);
     setView('completion');
@@ -189,7 +199,13 @@ export default function App() {
       />
 
       {view === 'settings' && (
-        <SettingsPage theme={theme} setTheme={setTheme} setView={setView} />
+        <SettingsPage
+          theme={theme}
+          setTheme={setTheme}
+          preferences={preferences}
+          setPreferences={setPreferences}
+          setView={setView}
+        />
       )}
 
       {view === 'dashboard' && (
@@ -278,6 +294,7 @@ export default function App() {
           exerciseIndex={exerciseIndex}
           store={store}
           code={code}
+          preferences={preferences}
           hintsShown={hintsShown}
           alreadyDoneXP={alreadyDoneXP}
           isPassed={isPassed}
@@ -304,7 +321,7 @@ export default function App() {
           setFreeResult={setFreeResult}
           setShowFreeTest={setShowFreeTest}
           handleEvaluate={handleEvaluate}
-          handleResetCode={handleResetCode}
+          handleResetCode={handleResetCodeWithPreference}
           handleFreeTest={handleFreeTest}
           handleShowHint={handleShowHint}
           handleNext={handleNext}
