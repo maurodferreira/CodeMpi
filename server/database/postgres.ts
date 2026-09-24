@@ -1,14 +1,16 @@
 import {
   Pool,
+  type PoolClient,
   type PoolConfig,
   type QueryResultRow,
 } from 'pg';
 import type {
+  Database,
   DatabaseClient,
   DatabaseQueryResult,
 } from './types.js';
 
-export interface PostgresDatabase extends DatabaseClient {
+export interface PostgresDatabase extends Database {
   ping(): Promise<void>;
   close(): Promise<void>;
 }
@@ -17,6 +19,35 @@ export interface CreatePostgresDatabaseOptions {
   maxConnections?: number;
   connectionTimeoutMs?: number;
   idleTimeoutMs?: number;
+}
+
+async function queryWithClient<Row>(
+  client: Pool | PoolClient,
+  sql: string,
+  params: readonly unknown[] = [],
+): Promise<DatabaseQueryResult<Row>> {
+  const result = await client.query<QueryResultRow>(
+    sql,
+    [...params],
+  );
+
+  return {
+    rows: result.rows as Row[],
+    rowCount: result.rowCount ?? 0,
+  };
+}
+
+function createTransactionClient(
+  client: PoolClient,
+): DatabaseClient {
+  return {
+    query<Row = Record<string, unknown>>(
+      sql: string,
+      params: readonly unknown[] = [],
+    ) {
+      return queryWithClient<Row>(client, sql, params);
+    },
+  };
 }
 
 export function createPostgresDatabase(
@@ -34,19 +65,39 @@ export function createPostgresDatabase(
   const pool = new Pool(config);
 
   return {
-    async query<Row = Record<string, unknown>>(
+    query<Row = Record<string, unknown>>(
       sql: string,
       params: readonly unknown[] = [],
-    ): Promise<DatabaseQueryResult<Row>> {
-      const result = await pool.query<QueryResultRow>(
-        sql,
-        [...params],
-      );
+    ) {
+      return queryWithClient<Row>(pool, sql, params);
+    },
 
-      return {
-        rows: result.rows as Row[],
-        rowCount: result.rowCount ?? 0,
-      };
+    async transaction<T>(
+      work: (client: DatabaseClient) => Promise<T>,
+    ): Promise<T> {
+      const client = await pool.connect();
+
+      try {
+        await client.query('BEGIN');
+
+        const result = await work(
+          createTransactionClient(client),
+        );
+
+        await client.query('COMMIT');
+
+        return result;
+      } catch (error) {
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          // Mantém o erro original da transação.
+        }
+
+        throw error;
+      } finally {
+        client.release();
+      }
     },
 
     async ping() {
