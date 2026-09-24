@@ -7,7 +7,7 @@ CodeMpi é uma plataforma educacional de programação criada para levar uma pes
 A proposta não é ser apenas uma lista de exercícios. O produto combina aula guiada, prática progressiva, feedback imediato, revisão por conceito e acompanhamento individual da aprendizagem.
 
 > **Versão atual: 0.7.0**  
-> N1–N7 disponíveis · 70 desafios · 252 casos de teste · 56 conceitos acompanhados
+> N1–N7 disponíveis · 70 desafios · 252 casos de teste · 55 conceitos acompanhados
 
 ---
 
@@ -58,7 +58,7 @@ Hoje o CodeMpi possui:
 - **70 desafios implementados**;
 - **252 casos de teste** cadastrados;
 - **7 aulas guiadas**;
-- **56 conceitos** acompanhados pela memória de aprendizado;
+- **55 conceitos** acompanhados pela memória de aprendizado;
 - revisão rápida e feedback pedagógico específico para todos os conceitos atuais.
 
 ---
