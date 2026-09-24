@@ -205,7 +205,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
               <article className={`memory-card state-${concept.state}`} key={concept.id}>
                 <div className="memory-card-top">
                   <span className="memory-state">{meta.label}</span>
-                  {orderedConcepts[0]?.id === concept.id && concept.state !== 'new' ? (
+                  {recommendedConcept?.id === concept.id ? (
                     <span className="memory-recommended">PRÓXIMO FOCO</span>
                   ) : (
                     <span className="memory-percent">{concept.progress}%</span>
