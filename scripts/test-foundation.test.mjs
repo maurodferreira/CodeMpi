@@ -26,6 +26,7 @@ const persistenceModule = await vite.ssrLoadModule('/src/services/persistence.ts
 const progressRepositoryModule = await vite.ssrLoadModule('/src/services/progressRepository.ts');
 const preferencesRepositoryModule = await vite.ssrLoadModule('/src/services/preferencesRepository.ts');
 const themeRepositoryModule = await vite.ssrLoadModule('/src/services/themeRepository.ts');
+const codeExecutorModule = await vite.ssrLoadModule('/src/services/codeExecutor.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -520,6 +521,93 @@ test('theme repository validates stored themes and saves through the adapter', (
   assert.equal(repository.load(), 'violet');
 });
 
+
+test('code executor reports syntax errors before running tests', () => {
+  const result = codeExecutorModule.browserCodeExecutor.runTests(
+    'function somar(a, b) { return a + ; }',
+    'somar',
+    [{ args: [1, 2], exp: 3 }],
+  );
+
+  assert.equal(result.status, 'compile-error');
+  assert.equal(result.passed, 0);
+  assert.equal(result.total, 1);
+});
+
+test('code executor reports a missing expected function', () => {
+  const result = codeExecutorModule.browserCodeExecutor.runTests(
+    'function outra() { return 1; }',
+    'somar',
+    [{ args: [1, 2], exp: 3 }],
+  );
+
+  assert.equal(result.status, 'missing-function');
+  assert.equal(result.passed, 0);
+  assert.equal(result.total, 1);
+});
+
+test('code executor captures runtime errors without stopping the suite', () => {
+  const result = codeExecutorModule.browserCodeExecutor.runTests(
+    'function executar(valor) { if (valor === 2) throw new Error("falhou"); return valor; }',
+    'executar',
+    [
+      { args: [1], exp: 1 },
+      { args: [2], exp: 2 },
+      { args: [3], exp: 3 },
+    ],
+  );
+
+  assert.equal(result.status, 'completed');
+  assert.equal(result.passed, 2);
+  assert.equal(result.total, 3);
+  assert.equal(result.cases[0].passed, true);
+  assert.equal(result.cases[1].passed, false);
+  assert.match(result.cases[1].error, /falhou/);
+  assert.equal(result.cases[2].passed, true);
+});
+
+test('code executor isolates mutable test arguments', () => {
+  const original = { estoque: 5, vendas: 0 };
+  const tests = [
+    {
+      args: [original, 2],
+      exp: { estoque: 3, vendas: 2 },
+    },
+  ];
+
+  const result = codeExecutorModule.browserCodeExecutor.runTests(
+    'function vender(produto, quantidade) { produto.estoque -= quantidade; produto.vendas += quantidade; return produto; }',
+    'vender',
+    tests,
+  );
+
+  assert.equal(result.status, 'completed');
+  assert.equal(result.passed, 1);
+  assert.deepEqual(original, { estoque: 5, vendas: 0 });
+});
+
+test('free execution returns values and runtime errors through the executor', () => {
+  const success = codeExecutorModule.browserCodeExecutor.runFunction(
+    'function dobro(n) { return n * 2; }',
+    'dobro',
+    [6],
+  );
+
+  assert.deepEqual(success, {
+    status: 'success',
+    value: 12,
+  });
+
+  const failure = codeExecutorModule.browserCodeExecutor.runFunction(
+    'function falhar() { throw new Error("erro livre"); }',
+    'falhar',
+    [],
+  );
+
+  assert.equal(failure.status, 'runtime-error');
+  assert.match(failure.error, /erro livre/);
+});
+
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', () => {
   const builtLevels = levelsModule.LEVELS.filter((level) => level.exercises?.length);
 
@@ -538,28 +626,25 @@ test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', ()
       assert.ok(exercise.conceptIds?.length);
 
       const solution = exercise.hints[3];
-      const solutionFactory = new Function(
-        `${solution}\nreturn typeof ${exercise.fn} === "function" ? ${exercise.fn} : undefined;`,
+      const execution = codeExecutorModule.browserCodeExecutor.runTests(
+        solution,
+        exercise.fn,
+        exercise.tests,
       );
-      const solutionFunction = solutionFactory();
 
       assert.equal(
-        typeof solutionFunction,
-        'function',
-        `${level.tag} / ${exercise.title}: solução completa não declarou ${exercise.fn}`,
+        execution.status,
+        'completed',
+        `${level.tag} / ${exercise.title}: solução completa não compilou corretamente`,
       );
 
-      for (const testCase of exercise.tests) {
-        testCount += 1;
+      assert.equal(
+        execution.passed,
+        exercise.tests.length,
+        `${level.tag} / ${exercise.title}: solução oficial falhou em algum caso`,
+      );
 
-        const result = solutionFunction(...structuredClone(testCase.args));
-
-        assert.equal(
-          valueEquality.areValuesEqual(result, testCase.exp),
-          true,
-          `${level.tag} / ${exercise.title}: resultado oficial divergente em ${JSON.stringify(testCase.args)}`,
-        );
-      }
+      testCount += exercise.tests.length;
     }
   }
 
