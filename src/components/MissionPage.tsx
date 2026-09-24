@@ -339,7 +339,6 @@ export function MissionPage({
                         )}
 
                         <>
-                          <>
                             <div className="diagnostic-tip">
                               <span>O QUE OBSERVAR</span>
                               <strong>{learningFeedback.tone === 'error'
@@ -380,8 +379,7 @@ export function MissionPage({
                                 {hintsShown >= currentExercise.hints.length ? 'Dicas já exibidas' : 'Usar dica'}
                               </button>
                             </div>
-                          </>
-                        </> 
+                        </>
                       </div>
                     </div>
                   )}
