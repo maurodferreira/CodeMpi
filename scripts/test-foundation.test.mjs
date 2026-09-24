@@ -29,6 +29,11 @@ const themeRepositoryModule = await vite.ssrLoadModule('/src/services/themeRepos
 const codeExecutorModule = await vite.ssrLoadModule('/src/services/codeExecutor.ts');
 const workerExecutorModule = await vite.ssrLoadModule('/src/services/workerCodeExecutor.ts');
 const executionPolicyModule = await vite.ssrLoadModule('/src/services/executionPolicy.ts');
+const apiClientModule = await vite.ssrLoadModule('/src/services/apiClient.ts');
+const authRepositoryModule = await vite.ssrLoadModule('/src/services/authRepository.ts');
+const syncRepositoryModule = await vite.ssrLoadModule('/src/services/syncRepository.ts');
+const cloudMigrationModule = await vite.ssrLoadModule('/src/services/cloudMigration.ts');
+const cloudDomainModule = await vite.ssrLoadModule('/src/domain/cloud.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -782,6 +787,247 @@ test('worker executor interrupts an execution that exceeds the timeout', async (
   assert.equal(result.passed, 0);
   assert.equal(result.total, 1);
   assert.equal(worker.terminated, true);
+});
+
+
+test('api client normalizes URLs and sends JSON with bearer token', async () => {
+  let requestUrl;
+  let requestOptions;
+
+  const client = apiClientModule.createApiClient({
+    baseUrl: 'https://api.codempi.test/',
+    fetchImpl: async (url, options) => {
+      requestUrl = url;
+      requestOptions = options;
+
+      return new Response(
+        JSON.stringify({ ok: true }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      );
+    },
+  });
+
+  const result = await client.request('/sync/bootstrap', {
+    method: 'POST',
+    accessToken: 'token-123',
+    body: { hello: 'world' },
+  });
+
+  assert.equal(requestUrl, 'https://api.codempi.test/sync/bootstrap');
+  assert.equal(requestOptions.method, 'POST');
+  assert.equal(requestOptions.headers.Authorization, 'Bearer token-123');
+  assert.equal(requestOptions.headers['Content-Type'], 'application/json');
+  assert.equal(requestOptions.body, JSON.stringify({ hello: 'world' }));
+  assert.deepEqual(result, { ok: true });
+});
+
+test('api client exposes API errors with status and payload', async () => {
+  const client = apiClientModule.createApiClient({
+    baseUrl: 'https://api.codempi.test',
+    fetchImpl: async () => new Response(
+      JSON.stringify({ message: 'Sessão expirada.' }),
+      {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      },
+    ),
+  });
+
+  await assert.rejects(
+    () => client.request('/me'),
+    (error) => {
+      assert.equal(error.name, 'ApiError');
+      assert.equal(error.status, 401);
+      assert.equal(error.message, 'Sessão expirada.');
+      assert.deepEqual(error.payload, { message: 'Sessão expirada.' });
+      return true;
+    },
+  );
+});
+
+test('auth repository maps authentication operations to API endpoints', async () => {
+  const calls = [];
+
+  const api = {
+    async request(path, options = {}) {
+      calls.push({ path, options });
+
+      if (path === 'auth/sign-in') {
+        return {
+          user: {
+            id: 'cloud_1',
+            kind: 'cloud',
+            email: 'teste@codempi.dev',
+            createdAt: '2026-09-24T19:00:00.000Z',
+          },
+          session: {
+            userId: 'cloud_1',
+            kind: 'cloud',
+            accessToken: 'access-token',
+            expiresAt: '2026-09-24T20:00:00.000Z',
+          },
+        };
+      }
+
+      if (path === 'me') {
+        return {
+          id: 'cloud_1',
+          kind: 'cloud',
+          email: 'teste@codempi.dev',
+          createdAt: '2026-09-24T19:00:00.000Z',
+        };
+      }
+
+      return undefined;
+    },
+  };
+
+  const repository = authRepositoryModule.createAuthRepository(api);
+  const auth = await repository.signIn({
+    email: 'teste@codempi.dev',
+    password: 'senha-segura',
+  });
+
+  await repository.getCurrentUser(auth.session.accessToken);
+  await repository.signOut(auth.session.accessToken);
+
+  assert.deepEqual(calls, [
+    {
+      path: 'auth/sign-in',
+      options: {
+        method: 'POST',
+        body: {
+          email: 'teste@codempi.dev',
+          password: 'senha-segura',
+        },
+      },
+    },
+    {
+      path: 'me',
+      options: {
+        accessToken: 'access-token',
+      },
+    },
+    {
+      path: 'auth/sign-out',
+      options: {
+        method: 'POST',
+        accessToken: 'access-token',
+      },
+    },
+  ]);
+});
+
+test('sync repository keeps bootstrap and snapshot operations separated', async () => {
+  const calls = [];
+  const cloudSnapshot = {
+    version: cloudDomainModule.CLOUD_SNAPSHOT_VERSION,
+    userId: 'cloud_1',
+    progress: storeMigration.createEmptyStore(),
+    preferences: preferencesRepositoryModule.createPreferencesRepository({
+      read: () => null,
+      write: () => true,
+      remove: () => true,
+    }).load(),
+    theme: 'green',
+    updatedAt: '2026-09-24T19:10:00.000Z',
+  };
+
+  const api = {
+    async request(path, options = {}) {
+      calls.push({ path, options });
+      return cloudSnapshot;
+    },
+  };
+
+  const repository = syncRepositoryModule.createSyncRepository(api);
+  const bootstrap = {
+    version: cloudDomainModule.CLOUD_SNAPSHOT_VERSION,
+    sourceLocalUserId: 'local_1',
+    progress: storeMigration.createEmptyStore(),
+    preferences: cloudSnapshot.preferences,
+    theme: 'green',
+    exportedAt: '2026-09-24T19:05:00.000Z',
+  };
+
+  await repository.bootstrapLocalProfile('token', bootstrap);
+  await repository.downloadSnapshot('token');
+  await repository.uploadSnapshot('token', cloudSnapshot);
+
+  assert.deepEqual(calls, [
+    {
+      path: 'sync/bootstrap',
+      options: {
+        method: 'POST',
+        accessToken: 'token',
+        body: bootstrap,
+      },
+    },
+    {
+      path: 'sync/snapshot',
+      options: {
+        accessToken: 'token',
+      },
+    },
+    {
+      path: 'sync/snapshot',
+      options: {
+        method: 'PUT',
+        accessToken: 'token',
+        body: cloudSnapshot,
+      },
+    },
+  ]);
+});
+
+test('local to cloud bootstrap clones current local data without mutating it', () => {
+  const identity = {
+    user: {
+      id: 'local_original',
+      kind: 'local',
+      createdAt: '2026-09-20T12:00:00.000Z',
+    },
+    session: {
+      userId: 'local_original',
+      kind: 'local',
+      startedAt: '2026-09-24T18:00:00.000Z',
+    },
+  };
+
+  const progressData = storeMigration.createEmptyStore();
+  progressData.done['6-9'] = 550;
+
+  const preferences = preferencesRepositoryModule.createPreferencesRepository({
+    read: () => null,
+    write: () => true,
+    remove: () => true,
+  }).load();
+
+  preferences.interfaceScale = 'large';
+
+  const payload = cloudMigrationModule.createLocalToCloudBootstrapPayload({
+    identity,
+    progress: progressData,
+    preferences,
+    theme: 'violet',
+    now: () => '2026-09-24T19:15:00.000Z',
+  });
+
+  assert.equal(payload.version, cloudDomainModule.CLOUD_SNAPSHOT_VERSION);
+  assert.equal(payload.sourceLocalUserId, 'local_original');
+  assert.equal(payload.progress.done['6-9'], 550);
+  assert.equal(payload.preferences.interfaceScale, 'large');
+  assert.equal(payload.theme, 'violet');
+  assert.equal(payload.exportedAt, '2026-09-24T19:15:00.000Z');
+
+  payload.progress.done['6-9'] = 1;
+  payload.preferences.interfaceScale = 'compact';
+
+  assert.equal(progressData.done['6-9'], 550);
+  assert.equal(preferences.interfaceScale, 'large');
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {
