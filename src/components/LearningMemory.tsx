@@ -93,7 +93,16 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
 
   const selectedMeta = selectedConcept ? STATE_META[selectedConcept.state] : null;
   const selectedExercises = selectedConcept ? getRelatedExercises(selectedConcept) : [];
-  const recommendedConcept = orderedConcepts.find((concept) => concept.state !== 'new') || null;
+  const recommendedConcept = [...concepts]
+    .filter((concept) => concept.state !== 'new')
+    .sort((a, b) => (
+      (a.state === 'review' ? 0 : a.state === 'developing' ? 1 : 2) -
+      (b.state === 'review' ? 0 : b.state === 'developing' ? 1 : 2) ||
+      b.failures - a.failures ||
+      b.attempts - a.attempts ||
+      a.progress - b.progress ||
+      a.name.localeCompare(b.name)
+    ))[0] || null;
   const recommendedReason = recommendedConcept
     ? recommendedConcept.failures >= 2
       ? `${recommendedConcept.failures} erros em ${recommendedConcept.attempts} tentativas — este conceito merece uma nova passada.`
