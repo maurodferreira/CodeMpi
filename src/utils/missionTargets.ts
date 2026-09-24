@@ -14,10 +14,11 @@ export interface MissionTarget {
 export function findConceptMissionTarget(
   concept: ConceptSummary,
   store: StoreData,
+  canOpen: (levelIndex: number, exerciseIndex: number) => boolean = () => true,
 ): MissionTarget | null {
   const candidates = LEVELS.flatMap((level, levelIndex) =>
     (level.exercises || []).flatMap((exercise, exerciseIndex) => {
-      if (!exercise.conceptIds?.includes(concept.id)) return [];
+      if (!exercise.conceptIds?.includes(concept.id) || !canOpen(levelIndex, exerciseIndex)) return [];
 
       const key = getProgressKey(levelIndex, exerciseIndex);
       const performance = store.performance[key] || { attempts: 0, failures: 0 };
