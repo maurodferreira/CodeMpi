@@ -40,6 +40,7 @@ const cloudSessionRepositoryModule = await vite.ssrLoadModule('/src/services/clo
 const apiServerConfigModule = await vite.ssrLoadModule('/server/config.ts');
 const apiRouterModule = await vite.ssrLoadModule('/server/router.ts');
 const apiServerModule = await vite.ssrLoadModule('/server/server.ts');
+const databaseMigrationsModule = await vite.ssrLoadModule('/server/database/migrations.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -1228,6 +1229,7 @@ test('backend config uses safe local defaults and validates invalid values', () 
       webOrigin: 'http://localhost:5173',
       bodyLimitBytes: 65536,
       nodeEnv: 'development',
+      databaseUrl: null,
     },
   );
 
@@ -1244,6 +1246,20 @@ test('backend config uses safe local defaults and validates invalid values', () 
     }),
     /CODEMPI_WEB_ORIGIN/,
   );
+  assert.equal(
+    apiServerConfigModule.readApiConfig({
+      CODEMPI_DATABASE_URL: 'postgresql://user:pass@localhost:5432/codempi',
+    }).databaseUrl,
+    'postgresql://user:pass@localhost:5432/codempi',
+  );
+
+  assert.throws(
+    () => apiServerConfigModule.readApiConfig({
+      CODEMPI_DATABASE_URL: 'mysql://localhost/codempi',
+    }),
+    /CODEMPI_DATABASE_URL/,
+  );
+
 });
 
 test('backend router exposes health and explicit unconfigured cloud endpoints', () => {
@@ -1443,6 +1459,142 @@ test('backend HTTP server validates JSON and request body size before routing', 
       });
     });
   }
+});
+
+
+test('database schema defines users sessions snapshots and migration history', () => {
+  const migration = databaseMigrationsModule.DATABASE_MIGRATIONS[0];
+
+  assert.equal(migration.id, '001_initial_cloud_schema');
+  assert.match(migration.sql, /CREATE TABLE IF NOT EXISTS codempi_users/);
+  assert.match(migration.sql, /CREATE TABLE IF NOT EXISTS codempi_sessions/);
+  assert.match(migration.sql, /CREATE TABLE IF NOT EXISTS codempi_progress_snapshots/);
+  assert.match(migration.sql, /password_hash TEXT NOT NULL/);
+  assert.match(migration.sql, /token_hash TEXT NOT NULL/);
+  assert.match(migration.sql, /progress JSONB NOT NULL/);
+  assert.match(migration.sql, /preferences JSONB NOT NULL/);
+  assert.match(migration.sql, /revision BIGINT NOT NULL DEFAULT 1/);
+  assert.match(migration.sql, /ON DELETE CASCADE/);
+});
+
+test('database migrations run pending migrations inside transactions', async () => {
+  const calls = [];
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      if (sql.startsWith('SELECT id FROM codempi_schema_migrations')) {
+        return {
+          rows: [],
+          rowCount: 0,
+        };
+      }
+
+      return {
+        rows: [],
+        rowCount: 0,
+      };
+    },
+  };
+
+  const executed = await databaseMigrationsModule.runDatabaseMigrations(database);
+
+  assert.deepEqual(executed, ['001_initial_cloud_schema']);
+  assert.equal(
+    calls.some((call) => call.sql === 'BEGIN'),
+    true,
+  );
+  assert.equal(
+    calls.some((call) => call.sql === 'COMMIT'),
+    true,
+  );
+  assert.equal(
+    calls.some((call) => call.sql === 'ROLLBACK'),
+    false,
+  );
+
+  const insert = calls.find((call) => (
+    call.sql.startsWith('INSERT INTO codempi_schema_migrations')
+  ));
+
+  assert.deepEqual(
+    insert.params,
+    [
+      '001_initial_cloud_schema',
+      'Cria usuários, sessões e snapshots de progresso.',
+    ],
+  );
+});
+
+test('database migrations skip versions already recorded', async () => {
+  const calls = [];
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      if (sql.startsWith('SELECT id FROM codempi_schema_migrations')) {
+        return {
+          rows: [{ id: '001_initial_cloud_schema' }],
+          rowCount: 1,
+        };
+      }
+
+      return {
+        rows: [],
+        rowCount: 0,
+      };
+    },
+  };
+
+  const executed = await databaseMigrationsModule.runDatabaseMigrations(database);
+
+  assert.deepEqual(executed, []);
+  assert.equal(
+    calls.some((call) => call.sql === 'BEGIN'),
+    false,
+  );
+});
+
+test('database migrations rollback when a migration fails', async () => {
+  const calls = [];
+
+  const database = {
+    async query(sql, params = []) {
+      calls.push({ sql, params });
+
+      if (sql.startsWith('SELECT id FROM codempi_schema_migrations')) {
+        return {
+          rows: [],
+          rowCount: 0,
+        };
+      }
+
+      if (sql.includes('CREATE TABLE IF NOT EXISTS codempi_users')) {
+        throw new Error('database failure');
+      }
+
+      return {
+        rows: [],
+        rowCount: 0,
+      };
+    },
+  };
+
+  await assert.rejects(
+    () => databaseMigrationsModule.runDatabaseMigrations(database),
+    /database failure/,
+  );
+
+  assert.equal(
+    calls.some((call) => call.sql === 'ROLLBACK'),
+    true,
+  );
+  assert.equal(
+    calls.some((call) => call.sql === 'COMMIT'),
+    false,
+  );
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {
