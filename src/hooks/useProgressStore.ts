@@ -1,55 +1,54 @@
 import { useEffect, useState } from 'react';
+import { browserPersistence, STORAGE_KEYS } from '../services/persistence';
 import { addTodayActivity } from '../utils/progress';
 import type { StoreData } from '../types';
-
-const STORAGE_KEY = 'circuito_v2';
 const CURRENT_PROGRESS_VERSION = 2;
 
-const EMPTY_STORE: StoreData = {
+const createEmptyStore = (): StoreData => ({
   done: {},
   hints: {},
   lessonDone: {},
   performance: {},
   activityDates: [],
   progressVersion: CURRENT_PROGRESS_VERSION,
-};
+});
 
 export function useProgressStore() {
   const [store, setStore] = useState<StoreData>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+    const parsed = browserPersistence.read<Partial<StoreData>>(STORAGE_KEYS.progress);
 
-      if (!saved) return EMPTY_STORE;
+    if (!parsed) return createEmptyStore();
 
-      const parsed = JSON.parse(saved) as Partial<StoreData>;
-      const savedVersion = parsed.progressVersion ?? 1;
+    const savedVersion = parsed.progressVersion ?? 1;
 
-      const migratedStore: StoreData = {
-        ...EMPTY_STORE,
-        ...parsed,
-        progressVersion: savedVersion,
-      };
+    const migratedStore: StoreData = {
+      ...createEmptyStore(),
+      ...parsed,
+      done: parsed.done ?? {},
+      hints: parsed.hints ?? {},
+      lessonDone: parsed.lessonDone ?? {},
+      performance: parsed.performance ?? {},
+      activityDates: Array.isArray(parsed.activityDates) ? parsed.activityDates : [],
+      progressVersion: savedVersion,
+    };
 
-      if (savedVersion < CURRENT_PROGRESS_VERSION) {
-        const changedExerciseKeys = ['0-5', '1-7'];
+    if (savedVersion < CURRENT_PROGRESS_VERSION) {
+      const changedExerciseKeys = ['0-5', '1-7'];
 
-        changedExerciseKeys.forEach((key) => {
-          delete migratedStore.done[key];
-          delete migratedStore.hints[key];
-          delete migratedStore.performance[key];
-        });
+      changedExerciseKeys.forEach((key) => {
+        delete migratedStore.done[key];
+        delete migratedStore.hints[key];
+        delete migratedStore.performance[key];
+      });
 
-        migratedStore.progressVersion = CURRENT_PROGRESS_VERSION;
-      }
-
-      return migratedStore;
-    } catch {
-      return EMPTY_STORE;
+      migratedStore.progressVersion = CURRENT_PROGRESS_VERSION;
     }
+
+    return migratedStore;
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    browserPersistence.write(STORAGE_KEYS.progress, store);
   }, [store]);
 
   const registerActivity = () => {
