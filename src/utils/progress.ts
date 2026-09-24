@@ -60,7 +60,9 @@ export function getActivityStreak(activityDates: string[], today = getLocalDateK
   return { current, best, activeToday };
 }
 
-export function addTodayActivity(activityDates: string[]): string[] {
-  const today = getLocalDateKey();
+export function addTodayActivity(
+  activityDates: string[],
+  today = getLocalDateKey(),
+): string[] {
   return Array.from(new Set([...activityDates, today])).sort();
 }

@@ -1,0 +1,329 @@
+import assert from 'node:assert/strict';
+import { after, test } from 'node:test';
+import { createServer } from 'vite';
+
+const vite = await createServer({
+  appType: 'custom',
+  logLevel: 'silent',
+  server: {
+    middlewareMode: true,
+  },
+});
+
+after(async () => {
+  await vite.close();
+});
+
+const progress = await vite.ssrLoadModule('/src/utils/progress.ts');
+const xp = await vite.ssrLoadModule('/src/utils/xp.ts');
+const missionTargets = await vite.ssrLoadModule('/src/utils/missionTargets.ts');
+const router = await vite.ssrLoadModule('/src/hooks/useAppRouter.ts');
+const storeMigration = await vite.ssrLoadModule('/src/utils/storeMigration.ts');
+const valueEquality = await vite.ssrLoadModule('/src/utils/valueEquality.ts');
+const levelsModule = await vite.ssrLoadModule('/src/data/levels.ts');
+
+test('progress keys remain stable', () => {
+  assert.equal(progress.getProgressKey(0, 0), '0-0');
+  assert.equal(progress.getProgressKey(6, 9), '6-9');
+});
+
+test('local date key uses calendar date', () => {
+  const date = new Date(2026, 8, 24, 14, 30, 0);
+  assert.equal(progress.getLocalDateKey(date), '2026-09-24');
+});
+
+test('activity streak calculates current and best runs', () => {
+  assert.deepEqual(
+    progress.getActivityStreak([], '2026-09-24'),
+    { current: 0, best: 0, activeToday: false },
+  );
+
+  assert.deepEqual(
+    progress.getActivityStreak(
+      ['2026-09-20', '2026-09-21', '2026-09-21', '2026-09-22', '2026-09-24'],
+      '2026-09-24',
+    ),
+    { current: 1, best: 3, activeToday: true },
+  );
+
+  assert.deepEqual(
+    progress.getActivityStreak(
+      ['2026-09-20', '2026-09-21', '2026-09-22'],
+      '2026-09-23',
+    ),
+    { current: 3, best: 3, activeToday: false },
+  );
+});
+
+test('activity registration is deterministic and avoids duplicates', () => {
+  assert.deepEqual(
+    progress.addTodayActivity(
+      ['2026-09-22', '2026-09-24', '2026-09-24'],
+      '2026-09-23',
+    ),
+    ['2026-09-22', '2026-09-23', '2026-09-24'],
+  );
+});
+
+test('hint multipliers clamp to the supported range', () => {
+  assert.equal(xp.getHintMultiplier(-5), 1);
+  assert.equal(xp.getHintMultiplier(0), 1);
+  assert.equal(xp.getHintMultiplier(1), 0.9);
+  assert.equal(xp.getHintMultiplier(2), 0.75);
+  assert.equal(xp.getHintMultiplier(3), 0.5);
+  assert.equal(xp.getHintMultiplier(4), 0.25);
+  assert.equal(xp.getHintMultiplier(99), 0.25);
+});
+
+test('exercise XP respects hints and rounding', () => {
+  assert.equal(xp.calculateExerciseXp(200, 0), 200);
+  assert.equal(xp.calculateExerciseXp(200, 1), 180);
+  assert.equal(xp.calculateExerciseXp(200, 2), 150);
+  assert.equal(xp.calculateExerciseXp(200, 3), 100);
+  assert.equal(xp.calculateExerciseXp(200, 4), 50);
+  assert.equal(xp.calculateExerciseXp(125, 1), 113);
+});
+
+test('store migration preserves valid progress and removes only changed legacy keys', () => {
+  const legacy = {
+    done: {
+      '0-5': 200,
+      '2-1': 300,
+    },
+    hints: {
+      '0-5': 2,
+      '2-1': 1,
+    },
+    lessonDone: {
+      0: true,
+    },
+    performance: {
+      '0-5': { attempts: 4, failures: 2 },
+      '2-1': { attempts: 2, failures: 1 },
+    },
+    activityDates: ['2026-09-20'],
+    progressVersion: 1,
+  };
+
+  const snapshot = structuredClone(legacy);
+  const migrated = storeMigration.migrateStore(legacy);
+
+  assert.equal(migrated.progressVersion, storeMigration.CURRENT_PROGRESS_VERSION);
+  assert.equal(migrated.done['0-5'], undefined);
+  assert.equal(migrated.hints['0-5'], undefined);
+  assert.equal(migrated.performance['0-5'], undefined);
+  assert.equal(migrated.done['2-1'], 300);
+  assert.equal(migrated.hints['2-1'], 1);
+  assert.deepEqual(migrated.performance['2-1'], { attempts: 2, failures: 1 });
+  assert.equal(migrated.lessonDone[0], true);
+  assert.deepEqual(migrated.activityDates, ['2026-09-20']);
+  assert.deepEqual(legacy, snapshot);
+});
+
+test('current store data is not unnecessarily reset', () => {
+  const current = {
+    done: { '0-5': 200 },
+    hints: { '0-5': 3 },
+    lessonDone: {},
+    performance: { '0-5': { attempts: 3, failures: 1 } },
+    activityDates: [],
+    progressVersion: storeMigration.CURRENT_PROGRESS_VERSION,
+  };
+
+  const migrated = storeMigration.migrateStore(current);
+
+  assert.equal(migrated.done['0-5'], 200);
+  assert.equal(migrated.hints['0-5'], 3);
+  assert.deepEqual(migrated.performance['0-5'], { attempts: 3, failures: 1 });
+});
+
+test('empty or partial store data receives safe defaults', () => {
+  assert.deepEqual(
+    storeMigration.migrateStore(null),
+    storeMigration.createEmptyStore(),
+  );
+
+  const migrated = storeMigration.migrateStore({
+    done: { '0-0': 100 },
+  });
+
+  assert.equal(migrated.done['0-0'], 100);
+  assert.deepEqual(migrated.hints, {});
+  assert.deepEqual(migrated.lessonDone, {});
+  assert.deepEqual(migrated.performance, {});
+  assert.deepEqual(migrated.activityDates, []);
+  assert.equal(migrated.progressVersion, storeMigration.CURRENT_PROGRESS_VERSION);
+});
+
+test('structured equality ignores object key order but preserves array order', () => {
+  assert.equal(valueEquality.areValuesEqual(10, 10), true);
+  assert.equal(valueEquality.areValuesEqual(Number.NaN, Number.NaN), true);
+  assert.equal(valueEquality.areValuesEqual([1, 2], [1, 2]), true);
+  assert.equal(valueEquality.areValuesEqual([1, 2], [2, 1]), false);
+  assert.equal(
+    valueEquality.areValuesEqual(
+      { nome: 'Ana', idade: 20, dados: { ativo: true, pontos: [1, 2] } },
+      { dados: { pontos: [1, 2], ativo: true }, idade: 20, nome: 'Ana' },
+    ),
+    true,
+  );
+  assert.equal(
+    valueEquality.areValuesEqual(
+      { nome: 'Ana' },
+      { nome: 'Ana', idade: 20 },
+    ),
+    false,
+  );
+});
+
+test('next mission points to the first unfinished exercise', () => {
+  const store = storeMigration.createEmptyStore();
+
+  assert.equal(missionTargets.getNextExerciseIndex(0, store), 0);
+
+  store.done['0-0'] = 100;
+  store.done['0-1'] = 100;
+
+  assert.equal(missionTargets.getNextExerciseIndex(0, store), 2);
+
+  for (let index = 0; index < 10; index += 1) {
+    store.done[`0-${index}`] = 100;
+  }
+
+  assert.equal(missionTargets.getNextExerciseIndex(0, store), 9);
+});
+
+test('concept review target respects exercise unlock rules', () => {
+  const concept = {
+    id: 'objectDeletion',
+    state: 'developing',
+  };
+
+  const store = storeMigration.createEmptyStore();
+
+  const target = missionTargets.findConceptMissionTarget(
+    concept,
+    store,
+    (levelIndex, exerciseIndex) => levelIndex === 6 && exerciseIndex === 4,
+  );
+
+  assert.ok(target);
+  assert.equal(target.levelIndex, 6);
+  assert.equal(target.exerciseIndex, 4);
+  assert.equal(target.exercise.title, 'Remover uma propriedade');
+
+  const blocked = missionTargets.findConceptMissionTarget(
+    concept,
+    store,
+    () => false,
+  );
+
+  assert.equal(blocked, null);
+});
+
+test('app route parser handles static, lesson, mission and completion URLs', () => {
+  assert.deepEqual(router.parseAppRoute('/'), {
+    view: 'dashboard',
+    pathname: '/',
+  });
+
+  assert.deepEqual(router.parseAppRoute('/jornada/'), {
+    view: 'map',
+    pathname: '/jornada',
+  });
+
+  assert.deepEqual(router.parseAppRoute('/nivel/n7/aula'), {
+    view: 'lesson',
+    pathname: '/nivel/n7/aula',
+    levelIndex: 6,
+  });
+
+  assert.deepEqual(router.parseAppRoute('/nivel/n7/desafio/10'), {
+    view: 'mission',
+    pathname: '/nivel/n7/desafio/10',
+    levelIndex: 6,
+    exerciseIndex: 9,
+  });
+
+  assert.deepEqual(router.parseAppRoute('/nivel/n7/concluido'), {
+    view: 'completion',
+    pathname: '/nivel/n7/concluido',
+    levelIndex: 6,
+  });
+});
+
+test('invalid routes fall back to dashboard', () => {
+  assert.deepEqual(router.parseAppRoute('/nivel/n0'), {
+    view: 'dashboard',
+    pathname: '/',
+  });
+
+  assert.deepEqual(router.parseAppRoute('/nivel/n2/desafio/0'), {
+    view: 'dashboard',
+    pathname: '/',
+  });
+
+  assert.deepEqual(router.parseAppRoute('/qualquer-coisa'), {
+    view: 'dashboard',
+    pathname: '/',
+  });
+});
+
+test('route builders generate canonical CodeMpi URLs', () => {
+  assert.equal(router.getViewPath('dashboard'), '/');
+  assert.equal(router.getViewPath('map'), '/jornada');
+  assert.equal(router.getViewPath('search'), '/buscar');
+  assert.equal(router.getViewPath('memory'), '/memoria');
+  assert.equal(router.getViewPath('settings'), '/configuracoes');
+  assert.equal(router.getLevelPath(6), '/nivel/n7');
+  assert.equal(router.getLessonPath(6), '/nivel/n7/aula');
+  assert.equal(router.getMissionPath(6, 9), '/nivel/n7/desafio/10');
+  assert.equal(router.getCompletionPath(6), '/nivel/n7/concluido');
+});
+
+test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', () => {
+  const builtLevels = levelsModule.LEVELS.filter((level) => level.exercises?.length);
+
+  assert.equal(builtLevels.length, 7);
+
+  let exerciseCount = 0;
+  let testCount = 0;
+
+  for (const level of builtLevels) {
+    assert.equal(level.exercises.length, 10);
+
+    for (const exercise of level.exercises) {
+      exerciseCount += 1;
+
+      assert.equal(exercise.hints.length, 4);
+      assert.ok(exercise.conceptIds?.length);
+
+      const solution = exercise.hints[3];
+      const solutionFactory = new Function(
+        `${solution}\nreturn typeof ${exercise.fn} === "function" ? ${exercise.fn} : undefined;`,
+      );
+      const solutionFunction = solutionFactory();
+
+      assert.equal(
+        typeof solutionFunction,
+        'function',
+        `${level.tag} / ${exercise.title}: solução completa não declarou ${exercise.fn}`,
+      );
+
+      for (const testCase of exercise.tests) {
+        testCount += 1;
+
+        const result = solutionFunction(...structuredClone(testCase.args));
+
+        assert.equal(
+          valueEquality.areValuesEqual(result, testCase.exp),
+          true,
+          `${level.tag} / ${exercise.title}: resultado oficial divergente em ${JSON.stringify(testCase.args)}`,
+        );
+      }
+    }
+  }
+
+  assert.equal(exerciseCount, 70);
+  assert.equal(testCount, 252);
+});

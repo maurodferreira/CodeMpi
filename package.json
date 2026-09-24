@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check": "npm run lint && npm run build"
+    "check": "npm run lint && npm run test && npm run build",
+    "test": "node --test scripts/test-foundation.test.mjs"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
