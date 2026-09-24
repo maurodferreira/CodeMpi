@@ -192,7 +192,7 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 - request ID por requisição
 - graceful shutdown
 
-A fundação da API já existe e o runtime PostgreSQL usa `pg` com pool de conexões. O schema, migrations e repositories SQL de usuário, sessão e progresso já estão conectados à camada de banco. Autenticação e sincronização HTTP ainda não estão ativadas.
+A fundação da API já existe e o runtime PostgreSQL usa `pg` com pool de conexões. O schema, migrations e repositories SQL de usuário, sessão e progresso já estão conectados à camada de banco. A autenticação HTTP do backend também já está implementada; a interface de cadastro/login e a sincronização de progresso entram nas próximas etapas.
 
 
 ### Database Foundation
@@ -230,6 +230,40 @@ Os repositories PostgreSQL implementam:
 - controle otimista de concorrência via `revision`.
 
 A CI sobe uma instância PostgreSQL descartável e executa testes de integração reais sobre migrations, usuários, sessões, snapshots, conflitos de revisão e `ON DELETE CASCADE`.
+
+
+### Auth Foundation
+
+A API já possui autenticação real quando PostgreSQL está configurado:
+
+```text
+POST /auth/sign-up
+POST /auth/sign-in
+POST /auth/sign-out
+GET  /me
+```
+
+A implementação atual inclui:
+
+- senha derivada com `scrypt` e salt aleatório;
+- senha nunca armazenada em texto puro;
+- access token aleatório de 256 bits;
+- somente SHA-256 do token é persistido no banco;
+- criação de usuário e primeira sessão na mesma transação;
+- sessões com expiração configurável;
+- revogação de sessão no logout;
+- respostas genéricas para credenciais inválidas;
+- e-mail normalizado;
+- rejeição de cadastro duplicado;
+- testes HTTP completos contra PostgreSQL real na CI.
+
+A duração padrão da sessão é 24 horas e pode ser ajustada com:
+
+```env
+CODEMPI_SESSION_TTL_HOURS=24
+```
+
+A interface do app ainda permanece local-first. As telas de cadastro/login serão conectadas somente depois de a API de autenticação estar completamente validada.
 
 ### Persistência atual
 
@@ -410,6 +444,7 @@ CODEMPI_API_PORT=3001
 CODEMPI_WEB_ORIGIN=http://localhost:5173
 CODEMPI_API_BODY_LIMIT=65536
 CODEMPI_DATABASE_URL=
+CODEMPI_SESSION_TTL_HOURS=24
 ```
 
 Para desenvolvimento futuro com uma API real, crie um arquivo `.env.local` e habilite explicitamente a integração:
@@ -601,8 +636,9 @@ Em andamento:
 - [x] driver PostgreSQL conectado à API;
 - [x] repositories SQL de usuário, sessão e progresso;
 - [x] testes de integração PostgreSQL na CI;
-- [ ] autenticação real;
-- [ ] conta CodeMpi;
+- [x] autenticação real no backend;
+- [x] cadastro, login, /me e logout na API;
+- [ ] interface de conta CodeMpi;
 - [ ] progresso sincronizado;
 - [ ] recuperação de progresso;
 - [ ] uso em múltiplos dispositivos;
