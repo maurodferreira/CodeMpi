@@ -292,7 +292,7 @@ export const LEVELS: Level[] = [
             {
                 title: "BOSS · Remover duplicados", conceptIds: ["arrays","arrayIteration","arrayPush","arraySearch","arrayDuplicates"], desc: "Retorne uma nova lista contendo cada valor apenas uma vez, preservando a ordem da primeira aparição.", sig: "function removerDuplicados(valores) { ... }", starter: "function removerDuplicados(valores) {\n  const resultado = [];\n\n  // adicione um valor somente na primeira vez em que ele aparecer\n}", fn: "removerDuplicados", difficulty: "boss", xp: 550, skill: "combinar percurso, busca e construção de uma nova lista",
                 hints: ["Pense em construir a resposta aos poucos, sem alterar a lista original.", "Antes de adicionar um valor, descubra se ele já está em resultado.", "Use resultado.includes(valores[i]) para verificar se o valor já apareceu; só faça push quando não estiver presente.", "function removerDuplicados(valores) {\n  const resultado = [];\n\n  for (let i = 0; i < valores.length; i++) {\n    if (!resultado.includes(valores[i])) {\n      resultado.push(valores[i]);\n    }\n  }\n\n  return resultado;\n}"],
-                tests: [{ args: [[],], exp: [] }, { args: [[1, 2, 2, 3, 1]], exp: [1, 2, 3] }, { args: [[5, 5, 5]], exp: [5] }, { args: [[1, 2, 3]], exp: [1, 2, 3] }, { args: [[2, 1, 2, 1]], exp: [2, 1] }]
+                tests: [{ args: [[]], exp: [] }, { args: [[1, 2, 2, 3, 1]], exp: [1, 2, 3] }, { args: [[5, 5, 5]], exp: [5] }, { args: [[1, 2, 3]], exp: [1, 2, 3] }, { args: [[2, 1, 2, 1]], exp: [2, 1] }]
             }
         ]
     },
