@@ -311,7 +311,7 @@ export function SettingsPage({
               <h2>Instale o CodeMpi</h2>
             </div>
             <span className={`install-status-badge ${isInstalled ? 'installed' : canInstall ? 'available' : ''}`}>
-              {isInstalled ? 'INSTALADO' : canInstall ? 'DISPONÍVEL' : 'NESTE NAVEGADOR'}
+              {isInstalled ? 'INSTALADO' : canInstall ? 'DISPONÍVEL' : 'PELO NAVEGADOR'}
             </span>
           </div>
 
@@ -321,14 +321,16 @@ export function SettingsPage({
               <strong>
                 {isInstalled
                   ? 'CodeMpi instalado neste dispositivo.'
-                  : 'Use o CodeMpi como um aplicativo.'}
+                  : canInstall
+                    ? 'Use o CodeMpi como um aplicativo.'
+                    : 'A instalação é gerenciada pelo navegador.'}
               </strong>
               <p>
                 {isInstalled
                   ? 'Abra pelo atalho do sistema para usar a experiência standalone e continuar com seu progresso local.'
                   : canInstall
                     ? 'Instale para abrir em uma janela própria e manter acesso ao conteúdo que já foi carregado mesmo sem conexão.'
-                    : 'Quando o navegador disponibilizar a instalação, o botão aparecerá aqui automaticamente.'}
+                    : 'Se o Chrome mostrar “Abrir no app” na barra, o CodeMpi já está instalado. Use esse atalho para abrir a versão standalone. Caso contrário, a opção de instalação pode aparecer pelo menu do navegador quando estiver disponível.'}
               </p>
             </div>
 
