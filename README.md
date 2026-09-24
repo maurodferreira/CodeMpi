@@ -8,12 +8,12 @@ A proposta é levar o aluno do básico ao pensamento algorítmico por meio de au
 
 - aulas guiadas para os níveis iniciais;
 - desafios progressivos com XP;
-- multiplicador de XP por uso de dicas: 100%, 90%, 75% e 50%;
+- multiplicador de XP por uso de dicas: 100%, 90%, 75%, 50% e 25% na solução completa;
 - testes automáticos;
 - diagnóstico educativo de erros;
 - teste de mesa com entradas personalizadas;
 - continuidade diária sem perda de progresso;
-- memória de aprendizado e revisão;
+- memória de aprendizado com revisão rápida sem XP;
 - mapa da jornada;
 - tela de conclusão de nível;
 - temas de interface personalizáveis.
@@ -36,6 +36,7 @@ src/
 │   ├── CompletionPage.tsx
 │   ├── Dashboard.tsx
 │   ├── JourneyMap.tsx
+│   ├── LearningMemory.tsx
 │   ├── LessonPage.tsx
 │   ├── MissionPage.tsx
 │   └── SettingsPage.tsx
@@ -74,14 +75,30 @@ npm run build
 npm run lint
 ```
 
-## Conteúdo
+## Conteúdo atual
 
-- **N1 — Variáveis e Operadores:** disponível.
-- **N2 — Condicionais:** disponível.
-- **N3 a N10:** jornada estruturada, conteúdo ainda em construção.
+- **N1 — Variáveis e Operadores:** disponível, com aula guiada e 10 desafios.
+- **N2 — Condicionais:** disponível, com aula guiada e 10 desafios.
+- **N3 — Loops:** disponível, com aula guiada e 10 desafios.
+- **N4 a N10:** jornada estruturada, conteúdo ainda em construção.
+
+## Sistema de aprendizagem
+
+A progressão atual combina:
+
+1. aula guiada antes do primeiro desafio de cada nível;
+2. exercícios com testes automáticos;
+3. feedback educativo baseado no primeiro caso que falhou;
+4. diagnóstico por conceito, com foco e pergunta para pensar;
+5. dicas progressivas sem bloquear a conclusão;
+6. solução completa como último nível de ajuda, reduzindo o XP para 25%;
+7. memória de aprendizado baseada em conclusão, tentativas e erros;
+8. revisão rápida de conceito sem alterar XP ou progresso.
+
+A primeira conclusão de um exercício registra o XP conquistado. Reabrir um exercício já concluído não concede XP novamente.
 
 ## Arquitetura
 
-O `App.tsx` atua como orquestrador. As telas ficam em `components/`, o estado persistente e a execução da missão ficam em hooks, e regras reutilizáveis de progressão e XP ficam separadas da UI.
+O `App.tsx` atua como orquestrador. As telas ficam em `components/`, o estado persistente e a execução da missão ficam em hooks, os dados pedagógicos ficam em `data/`, e regras reutilizáveis de progressão, seleção de missão, feedback e XP ficam separadas da UI.
 
 A execução atual de JavaScript acontece no navegador para o protótipo. Antes de disponibilizar execução de código para usuários públicos, o executor deverá ser substituído por um ambiente sandbox seguro.
