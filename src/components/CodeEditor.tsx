@@ -95,6 +95,9 @@ export function CodeEditor({
         <span className="code-editor-dot" />
         <span>desafio.js</span>
         <span className="code-editor-language">JavaScript</span>
+        {focusMode && focusLabel && (
+          <span className="code-editor-focus-label">{focusLabel}</span>
+        )}
         {onToggleFocus && (
           <button
             type="button"
