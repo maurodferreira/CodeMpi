@@ -66,10 +66,11 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         body: 'Não precisa ter medo de errar. Escolha uma opção; você pode tentar novamente quantas vezes precisar.',
         quiz: {
           question: 'Depois deste código, qual será o valor de total?',
-          options: ['100', '115', '125', '150'],
-          answer: 2,
+          options: ['125', '100', '115', '150'],
+          answer: 0,
           explanation: 'pontos vale 100, bonus vale 25 e total recebe a soma dos dois. Portanto, o resultado é 125.',
         },
+        code: 'let pontos = 100;\nlet bonus = 25;\n\nlet total = pontos + bonus;',
       },
       {
         id: 'ready',
@@ -122,11 +123,12 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         title: 'Qual caminho será escolhido?',
         body: 'Leia a condição com calma. Errar aqui faz parte do aprendizado.',
         quiz: {
-          question: 'Se idade vale 16, qual mensagem o código imprime? if (idade >= 18) { console.log("adulto"); } else { console.log("menor"); }',
-          options: ['adulto', 'menor', 'true', 'nada'],
-          answer: 1,
+          question: 'Se idade vale 16, qual mensagem será impressa?',
+          options: ['adulto', 'true', 'menor', 'nada'],
+          answer: 2,
           explanation: '16 >= 18 é falso. Por isso, o else executa e o programa imprime "menor".',
         },
+        code: 'const idade = 16;\n\nif (idade >= 18) {\n  console.log("adulto");\n} else {\n  console.log("menor");\n}',
       },
       {
         id: 'ready',
@@ -189,11 +191,12 @@ export const LEVEL_LESSONS: Record<number, LevelLesson> = {
         title: 'Quantas vezes esse laço roda?',
         body: 'Leia a condição do for com calma e acompanhe o valor de i.',
         quiz: {
-          question: 'Quantas vezes o bloco abaixo será executado? for (let i = 1; i <= 4; i++) { ... }',
+          question: 'Quantas vezes o bloco abaixo será executado?',
           options: ['3 vezes', '4 vezes', '5 vezes', 'Infinitamente'],
           answer: 1,
           explanation: 'i assume os valores 1, 2, 3 e 4. Quando chega a 5, a condição i <= 4 deixa de ser verdadeira.',
         },
+        code: 'for (let i = 1; i <= 4; i++) {\n  console.log(i);\n}',
       },
       {
         id: 'ready',
