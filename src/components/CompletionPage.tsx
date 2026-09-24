@@ -16,7 +16,7 @@ const COMPLETION_LEARNED: Record<number, string[]> = {
   2: ['for', 'Contadores', 'Acumuladores', 'Percorrer listas'],
   3: ['Strings', 'length e índices', 'Transformação de texto', 'Percorrer strings', 'Comparação', 'Palíndromos'],
   4: ['Arrays', 'Índices e length', 'Percorrer arrays', 'Busca', 'Filtros', 'Construir novas listas', 'Remover duplicados'],
-  5: ['Funções reutilizáveis', 'Parâmetros', 'Validação', 'Retorno antecipado', 'Composição de funções', 'Lógica em etapas'],
+  5: ['Funções reutilizáveis', 'Parâmetros', 'Validação', 'Retorno antecipado', 'Porcentagens', 'Estado em sequência', 'Composição de funções', 'Lógica em etapas'],
 };
 
 export function CompletionPage({
