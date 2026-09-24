@@ -164,8 +164,10 @@ export function useAppRouter({
   const resolveRouteRef = useRef(resolveRoute);
   const onRouteChangeRef = useRef(onRouteChange);
 
-  resolveRouteRef.current = resolveRoute;
-  onRouteChangeRef.current = onRouteChange;
+  useEffect(() => {
+    resolveRouteRef.current = resolveRoute;
+    onRouteChangeRef.current = onRouteChange;
+  }, [onRouteChange, resolveRoute]);
 
   const [route, setRoute] = useState<AppRoute>(() => (
     resolveRoute(parseAppRoute(window.location.pathname))
