@@ -4,9 +4,10 @@ import type { View } from '../types';
 interface AppFooterProps {
   view: View;
   setView: Dispatch<SetStateAction<View>>;
+  onOpenMission: () => void;
 }
 
-export function AppFooter({ view, setView }: AppFooterProps) {
+export function AppFooter({ view, setView, onOpenMission }: AppFooterProps) {
   const goTo = (nextView: View) => {
     setView(nextView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -32,7 +33,16 @@ export function AppFooter({ view, setView }: AppFooterProps) {
             <button type="button" className={view === 'map' ? 'active' : ''} onClick={() => goTo('map')}>Jornada</button>
             <button type="button" className={view === 'search' ? 'active' : ''} onClick={() => goTo('search')}>Buscar</button>
             <button type="button" className={view === 'memory' ? 'active' : ''} onClick={() => goTo('memory')}>Memória</button>
-            <button type="button" className={view === 'mission' ? 'active' : ''} onClick={() => goTo('mission')}>Missão</button>
+            <button
+              type="button"
+              className={view === 'mission' ? 'active' : ''}
+              onClick={() => {
+                onOpenMission();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Missão
+            </button>
             <button type="button" className={view === 'settings' ? 'active' : ''} onClick={() => goTo('settings')}>Configurações</button>
           </div>
         </nav>
