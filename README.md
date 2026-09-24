@@ -41,6 +41,8 @@ src/
 │   └── SettingsPage.tsx
 ├── data/
 │   ├── concepts.ts
+│   ├── conceptGuidance.ts
+│   ├── conceptReviews.ts
 │   ├── levels.ts
 │   ├── lessons.ts
 │   └── themes.ts
@@ -50,6 +52,8 @@ src/
 │   ├── useProgressStore.ts
 │   └── useTheme.ts
 ├── utils/
+│   ├── learningFeedback.ts
+│   ├── missionTargets.ts
 │   ├── progress.ts
 │   └── xp.ts
 ├── index.css
