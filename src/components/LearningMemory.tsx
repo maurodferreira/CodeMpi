@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LEVELS } from '../data/levels';
 import { getProgressKey } from '../utils/progress';
 import { getConceptReview } from '../data/conceptReviews';
@@ -29,6 +29,8 @@ const STATE_META = {
   },
 } as const;
 
+type MemoryFilter = 'all' | 'review' | 'developing' | 'solid' | 'new';
+
 const STATE_ORDER = {
   review: 0,
   developing: 1,
@@ -40,7 +42,7 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
   const [selectedConcept, setSelectedConcept] = useState<ConceptSummary | null>(null);
   const [reviewingConcept, setReviewingConcept] = useState<ConceptSummary | null>(null);
   const [reviewAnswer, setReviewAnswer] = useState<number | null>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  const [filter, setFilter] = useState<MemoryFilter>('all');
 
   const orderedConcepts = [...concepts].sort((a, b) => (
     STATE_ORDER[a.state] - STATE_ORDER[b.state] ||
@@ -74,16 +76,9 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedConcept, reviewingConcept]);
 
-  const scrollCarousel = (direction: 'prev' | 'next') => {
-    const element = carouselRef.current;
-    if (!element) return;
-
-    const amount = Math.max(element.clientWidth * 0.82, 320);
-    element.scrollBy({
-      left: direction === 'next' ? amount : -amount,
-      behavior: 'smooth',
-    });
-  };
+  const visibleConcepts = filter === 'all'
+    ? orderedConcepts
+    : orderedConcepts.filter((concept) => concept.state === filter);
 
   const getRelatedExercises = (concept: ConceptSummary) => LEVELS.flatMap((level, levelIndex) =>
     (level.exercises || []).flatMap((exercise, exerciseIndex) => {
@@ -189,18 +184,37 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
         )}
 
         <div className="memory-summary" aria-label="Resumo da memória de aprendizado">
-          <span className="memory-summary-item review"><b>{counts.review}</b><span>para revisar</span></span>
-          <span className="memory-summary-item developing"><b>{counts.developing}</b><span>em desenvolvimento</span></span>
-          <span className="memory-summary-item solid"><b>{counts.solid}</b><span>dominados</span></span>
-          <span className="memory-summary-item new"><b>{counts.new}</b><span>ainda não praticados</span></span>
+          <button type="button" className={`memory-summary-item review ${filter === 'review' ? 'selected' : ''}`} onClick={() => setFilter('review')} aria-pressed={filter === 'review'}>
+            <b>{counts.review}</b><span>para revisar</span>
+          </button>
+          <button type="button" className={`memory-summary-item developing ${filter === 'developing' ? 'selected' : ''}`} onClick={() => setFilter('developing')} aria-pressed={filter === 'developing'}>
+            <b>{counts.developing}</b><span>em desenvolvimento</span>
+          </button>
+          <button type="button" className={`memory-summary-item solid ${filter === 'solid' ? 'selected' : ''}`} onClick={() => setFilter('solid')} aria-pressed={filter === 'solid'}>
+            <b>{counts.solid}</b><span>dominados</span>
+          </button>
+          <button type="button" className={`memory-summary-item new ${filter === 'new' ? 'selected' : ''}`} onClick={() => setFilter('new')} aria-pressed={filter === 'new'}>
+            <b>{counts.new}</b><span>ainda não praticados</span>
+          </button>
         </div>
 
-        <div
-          ref={carouselRef}
-          className="memory-grid"
-          aria-label="Conceitos acompanhados"
-        >
-          {orderedConcepts.map((concept) => {
+        <div className="memory-concepts-toolbar">
+          <div>
+            <span className="section-kicker">CONCEITOS</span>
+            <strong>{filter === 'all' ? 'Todos os conceitos' : STATE_META[filter].label}</strong>
+          </div>
+          <button
+            type="button"
+            className={`memory-filter-clear ${filter === 'all' ? 'hidden' : ''}`}
+            onClick={() => setFilter('all')}
+            disabled={filter === 'all'}
+          >
+            Ver todos →
+          </button>
+        </div>
+
+        <div className="memory-grid" aria-label="Conceitos acompanhados">
+          {visibleConcepts.map((concept) => {
             const meta = STATE_META[concept.state];
 
             return (
@@ -239,6 +253,16 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
             );
           })}
         </div>
+
+        {visibleConcepts.length === 0 && (
+          <div className="memory-empty-filter">
+            <span>◎</span>
+            <div>
+              <strong>Nenhum conceito nesta categoria ainda.</strong>
+              <p>Continue praticando para preencher esta parte da sua memória de aprendizado.</p>
+            </div>
+          </div>
+        )}
       </section>
 
       {reviewingConcept && reviewData && (
