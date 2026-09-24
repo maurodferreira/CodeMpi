@@ -1,15 +1,8 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
+import { lazy, Suspense, useCallback, useState, type Dispatch, type SetStateAction } from 'react';
 import './styles/dashboard-refinement.css';
 import { AppFooter } from './components/AppFooter';
 import { AppHeader } from './components/AppHeader';
-import { CompletionPage } from './components/CompletionPage';
 import { Dashboard } from './components/Dashboard';
-import { JourneyMap } from './components/JourneyMap';
-import { LearningMemoryPage } from './components/LearningMemoryPage';
-import { LessonPage } from './components/LessonPage';
-import { MissionPage } from './components/MissionPage';
-import { SearchPage } from './components/SearchPage';
-import { SettingsPage } from './components/SettingsPage';
 import { LEVELS } from './data/levels';
 import { LEVEL_LESSONS } from './data/lessons';
 import { useAppPreferences } from './hooks/useAppPreferences';
@@ -31,6 +24,44 @@ import type { ConceptSummary, View } from './types';
 import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
 import { HINT_MULTIPLIERS } from './utils/xp';
+
+const CompletionPage = lazy(() => import('./components/CompletionPage').then((module) => ({
+  default: module.CompletionPage,
+})));
+
+const JourneyMap = lazy(() => import('./components/JourneyMap').then((module) => ({
+  default: module.JourneyMap,
+})));
+
+const LearningMemoryPage = lazy(() => import('./components/LearningMemoryPage').then((module) => ({
+  default: module.LearningMemoryPage,
+})));
+
+const LessonPage = lazy(() => import('./components/LessonPage').then((module) => ({
+  default: module.LessonPage,
+})));
+
+const MissionPage = lazy(() => import('./components/MissionPage').then((module) => ({
+  default: module.MissionPage,
+})));
+
+const SearchPage = lazy(() => import('./components/SearchPage').then((module) => ({
+  default: module.SearchPage,
+})));
+
+const SettingsPage = lazy(() => import('./components/SettingsPage').then((module) => ({
+  default: module.SettingsPage,
+})));
+
+function ScreenFallback() {
+  return (
+    <main aria-busy="true" aria-live="polite">
+      <section className="panel">
+        <div className="console-empty">Carregando interface…</div>
+      </section>
+    </main>
+  );
+}
 
 export default function App() {
   const { store, setStore, registerActivity } = useProgressStore();
@@ -344,6 +375,7 @@ export default function App() {
         onOpenMission={handleOpenMissionNavigation}
       />
 
+      <Suspense fallback={<ScreenFallback />}>
       {view === 'settings' && (
         <SettingsPage
           theme={theme}
@@ -479,6 +511,8 @@ export default function App() {
           handleNext={handleNext}
         />
       )}
+
+      </Suspense>
 
       <AppFooter view={view} setView={setView} onOpenMission={handleOpenMissionNavigation} />
     </div>
