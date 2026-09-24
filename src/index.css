@@ -4457,3 +4457,300 @@ header.top.app-header {
     width: 100%;
   }
 }
+/* Settings refinement — mobile-first preferences */
+.settings-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.settings-control-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(7,17,15,.32);
+}
+
+.settings-control-card > div:first-child {
+  min-width: 0;
+}
+
+.settings-control-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted-2);
+  font-size: 6.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.settings-control-card strong {
+  display: block;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 11px;
+  letter-spacing: -.015em;
+}
+
+.settings-control-card small {
+  display: block;
+  max-width: 370px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 7.5px;
+  line-height: 1.55;
+}
+
+.settings-segmented {
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: rgba(4,12,10,.32);
+}
+
+.settings-segmented button {
+  min-height: 31px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-2);
+  cursor: pointer;
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+.settings-segmented button:hover {
+  color: var(--text);
+}
+
+.settings-segmented button.active {
+  background: rgba(124,255,155,.09);
+  color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(124,255,155,.12);
+}
+
+.settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  min-height: 32px;
+  padding: 6px 9px 6px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(4,12,10,.26);
+  color: var(--muted-2);
+  cursor: pointer;
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+.settings-toggle > span {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--muted-2);
+  border-radius: 50%;
+  background: transparent;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.settings-toggle.active {
+  border-color: rgba(124,255,155,.22);
+  background: rgba(124,255,155,.055);
+  color: var(--accent);
+}
+
+.settings-toggle.active > span {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(124,255,155,.25);
+}
+
+html[data-high-contrast="true"] {
+  --line: color-mix(in srgb, var(--text) 26%, var(--bg));
+  --line-soft: color-mix(in srgb, var(--text) 15%, var(--bg));
+  --muted-2: color-mix(in srgb, var(--text) 54%, var(--bg));
+}
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-ui-scale="compact"] {
+  --ui-control-height: 38px;
+  --ui-control-padding: 9px;
+}
+
+html[data-ui-scale="comfortable"] {
+  --ui-control-height: 42px;
+  --ui-control-padding: 11px;
+}
+
+html[data-ui-scale="large"] {
+  --ui-control-height: 48px;
+  --ui-control-padding: 14px;
+}
+
+html[data-ui-scale="compact"] .btn,
+html[data-ui-scale="compact"] .settings-segmented button,
+html[data-ui-scale="compact"] .settings-toggle {
+  min-height: var(--ui-control-height);
+}
+
+html[data-ui-scale="large"] .btn,
+html[data-ui-scale="large"] .settings-segmented button,
+html[data-ui-scale="large"] .settings-toggle {
+  min-height: var(--ui-control-height);
+}
+
+@media (max-width: 760px) {
+  .settings-page {
+    padding-bottom: 10px;
+  }
+
+  .settings-shell {
+    padding: 20px 15px;
+    border-radius: 16px;
+  }
+
+  .settings-intro {
+    padding-bottom: 22px;
+  }
+
+  .settings-intro h1 {
+    font-size: 31px;
+    line-height: 1;
+  }
+
+  .settings-intro p {
+    font-size: 9.5px;
+  }
+
+  .settings-section {
+    padding-top: 20px;
+  }
+
+  .settings-section + .settings-section {
+    margin-top: 21px;
+  }
+
+  .settings-section-head {
+    align-items: flex-start;
+  }
+
+  .settings-section-head h2 {
+    font-size: 18px;
+  }
+
+  .settings-meta {
+    font-size: 7px;
+    text-align: right;
+  }
+
+  .theme-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .theme-preview {
+    height: 92px;
+  }
+
+  .theme-copy {
+    padding: 10px 11px 12px;
+  }
+
+  .theme-copy strong {
+    font-size: 11px;
+  }
+
+  .theme-copy p {
+    font-size: 7px;
+  }
+
+  .settings-option-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .settings-control-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .settings-control-card small {
+    font-size: 7.5px;
+  }
+
+  .settings-segmented {
+    width: 100%;
+  }
+
+  .settings-segmented button {
+    flex: 1 1 0;
+  }
+
+  .settings-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .account-preview-card {
+    padding: 13px;
+  }
+
+  .account-preview-card p {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .settings-page {
+    margin-inline: -1px;
+  }
+
+  .settings-toolbar {
+    font-size: 7px;
+  }
+
+  .settings-shell {
+    padding-inline: 13px;
+  }
+
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-preview {
+    height: 100px;
+  }
+
+  .settings-intro h1 {
+    font-size: 28px;
+  }
+
+  .settings-section-head h2 {
+    font-size: 17px;
+  }
+
+  .settings-control-card {
+    padding: 13px;
+  }
+}
