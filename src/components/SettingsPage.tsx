@@ -50,7 +50,7 @@ export function SettingsPage({
         <div className="settings-intro">
           <span className="eyebrow">CODEMPI / PREFERÊNCIAS</span>
           <h1>Deixe a jornada com a sua cara.</h1>
-          <p>Personalize a interface, o editor e o ritmo da prática. Suas escolhas ficam salvas neste dispositivo.</p>
+          <p>Personalize a interface, o editor e a experiência de prática. Suas escolhas ficam salvas neste dispositivo.</p>
         </div>
 
         <section className="settings-section">
