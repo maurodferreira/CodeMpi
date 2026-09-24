@@ -3042,6 +3042,43 @@ button.btn.secondary:hover {
   font-size:16px;
 }
 
+.account-session-note {
+  display:block;
+  margin-top:6px;
+  color:var(--muted-2);
+  font-size:7.5px;
+  line-height:1.5;
+}
+
+.account-cloud-note {
+  position:relative;
+  margin-top:10px;
+  padding:12px 42px 12px 13px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  background:rgba(7,17,15,.16);
+}
+
+.account-cloud-note strong {
+  display:block;
+  color:var(--text);
+  font-size:9px;
+}
+
+.account-cloud-note p {
+  max-width:760px;
+  margin:4px 0 0;
+  color:var(--muted-2);
+  font-size:8px;
+  line-height:1.55;
+}
+
+.account-cloud-note .coming-badge {
+  position:absolute;
+  top:11px;
+  right:11px;
+}
+
 @media (max-width:900px) {
   .theme-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -3065,6 +3102,14 @@ button.btn.secondary:hover {
     text-align:center;
   }
   .account-preview-card { align-items:flex-start; }
+  .account-cloud-note {
+    padding:12px;
+  }
+  .account-cloud-note .coming-badge {
+    position:static;
+    display:inline-flex;
+    margin-top:9px;
+  }
 }
 
 
