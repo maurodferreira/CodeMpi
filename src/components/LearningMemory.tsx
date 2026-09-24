@@ -178,6 +178,9 @@ export function LearningMemory({ concepts, store, onReview }: LearningMemoryProp
         )}
 
         <div className="memory-summary" aria-label="Resumo da memória de aprendizado">
+          <button type="button" className={`memory-summary-item all ${filter === 'all' ? 'selected' : ''}`} onClick={() => setFilter('all')} aria-pressed={filter === 'all'}>
+            <b>{concepts.length}</b><span>todos</span>
+          </button>
           <button type="button" className={`memory-summary-item review ${filter === 'review' ? 'selected' : ''}`} onClick={() => setFilter('review')} aria-pressed={filter === 'review'}>
             <b>{counts.review}</b><span>para revisar</span>
           </button>
