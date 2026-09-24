@@ -130,6 +130,13 @@ export function useAppRouter() {
   const [route, setRoute] = useState<AppRoute>(() => parseAppRoute(window.location.pathname));
 
   useEffect(() => {
+    const initialRoute = parseAppRoute(window.location.pathname);
+
+    if (normalizePathname(window.location.pathname) !== initialRoute.pathname) {
+      window.history.replaceState({}, '', initialRoute.pathname);
+      setRoute(initialRoute);
+    }
+
     const handlePopState = () => {
       setRoute(parseAppRoute(window.location.pathname));
     };
