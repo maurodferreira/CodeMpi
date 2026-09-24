@@ -166,11 +166,11 @@ export function Dashboard({
                   <h2>{reviewTarget.skill}</h2>
                   <p>
                     {reviewConcepts.length > 0
-                      ? 'Esse conceito apareceu algumas vezes nas suas dificuldades. Uma revisão curta pode ajudar a consolidar a base.'
-                      : 'Você já avançou nesse assunto. Uma passada rápida ajuda a manter o conhecimento ativo.'}
+                      ? 'Esse conceito apareceu algumas vezes nas suas dificuldades. Um exercício direcionado ajuda a consolidar a base.'
+                      : 'Você já avançou nesse assunto. Um exercício curto ajuda a manter o conhecimento ativo.'}
                   </p>
                   <button className="btn ghost" onClick={() => handleReviewConcept(reviewTarget)}>
-                    Revisar agora →
+                    Praticar agora →
                   </button>
                 </>
               ) : (
