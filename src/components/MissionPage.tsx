@@ -88,6 +88,15 @@ export function MissionPage({
   const [focusMode, setFocusMode] = useState(false);
   const hasExercises = Boolean(currentLevel.exercises?.length);
 
+  const handleFeedbackRetry = () => {
+    const editor = document.querySelector<HTMLElement>('.code-editor .cm-content');
+
+    if (!editor) return;
+
+    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    editor.focus();
+  };
+
   return (
 <main className={`mission-shell ${focusMode ? 'code-focus' : ''}`}>
           <div className="mission-toolbar">
@@ -357,6 +366,20 @@ export function MissionPage({
                                 )}
                               </div>
                             )}
+
+                            <div className="learning-feedback-actions">
+                              <button type="button" className="btn ghost" onClick={handleFeedbackRetry}>
+                                Tentar novamente
+                              </button>
+                              <button
+                                type="button"
+                                className="btn secondary"
+                                disabled={hintsShown >= currentExercise.hints.length}
+                                onClick={handleShowHint}
+                              >
+                                {hintsShown >= currentExercise.hints.length ? 'Dicas já exibidas' : 'Usar dica'}
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>

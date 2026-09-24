@@ -2550,6 +2550,16 @@ button.btn.secondary:hover {
   font-weight:500;
 }
 
+.learning-feedback-actions {
+  display:flex;
+  gap:8px;
+  margin-top:13px;
+}
+
+.learning-feedback-actions .btn {
+  min-height:36px;
+}
+
 @media (max-width:700px) {
   .diagnostic-grid {
     grid-template-columns:1fr;
@@ -2612,6 +2622,14 @@ button.btn.secondary:hover {
 @media (max-width:700px) {
   .learning-guidance-grid {
     grid-template-columns:1fr;
+  }
+
+  .learning-feedback-actions {
+    flex-direction:column;
+  }
+
+  .learning-feedback-actions .btn {
+    width:100%;
   }
 }
 
