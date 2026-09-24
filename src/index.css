@@ -4032,3 +4032,126 @@ header.top.app-header {
     line-height: 1.5;
   }
 }
+
+
+/* Intelligent learning memory */
+.memory-recommendation {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 13px;
+  padding: 14px 15px;
+  border: 1px solid rgba(124,255,155,.16);
+  border-radius: 13px;
+  background:
+    linear-gradient(100deg, rgba(124,255,155,.055), rgba(7,17,15,.34));
+}
+
+.memory-recommendation.state-review {
+  border-color: rgba(255,184,77,.2);
+  background:
+    linear-gradient(100deg, rgba(255,184,77,.055), rgba(7,17,15,.34));
+}
+
+.memory-recommendation-empty {
+  border-style: dashed;
+  border-color: var(--line);
+  background: rgba(7,17,15,.2);
+}
+
+.memory-recommendation-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid rgba(124,255,155,.2);
+  border-radius: 9px;
+  color: var(--accent);
+  background: rgba(124,255,155,.055);
+  font-size: 15px;
+}
+
+.memory-recommendation.state-review .memory-recommendation-icon {
+  border-color: rgba(255,184,77,.22);
+  color: var(--amber);
+  background: rgba(255,184,77,.055);
+}
+
+.memory-recommendation-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.memory-recommendation-copy .section-kicker {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.memory-recommendation-copy strong {
+  display: block;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 14px;
+  letter-spacing: -.02em;
+}
+
+.memory-recommendation-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 8.5px;
+  line-height: 1.55;
+}
+
+.memory-recommendation-action {
+  min-height: 34px;
+  padding: 0 11px;
+  flex: none;
+  border: 1px solid rgba(124,255,155,.18);
+  border-radius: 8px;
+  background: rgba(124,255,155,.045);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  transition: .18s ease;
+}
+
+.memory-recommendation-action:hover {
+  border-color: var(--accent);
+  background: rgba(124,255,155,.09);
+  transform: translateY(-1px);
+}
+
+.memory-recommended {
+  padding: 3px 6px;
+  border: 1px solid rgba(124,255,155,.16);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(124,255,155,.045);
+  font-size: 6px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.memory-card.state-review .memory-recommended {
+  border-color: rgba(255,184,77,.18);
+  color: var(--amber);
+  background: rgba(255,184,77,.04);
+}
+
+@media (max-width:700px) {
+  .memory-recommendation {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .memory-recommendation-copy {
+    width: calc(100% - 48px);
+  }
+
+  .memory-recommendation-action {
+    width: 100%;
+    margin-left: 48px;
+  }
+}
