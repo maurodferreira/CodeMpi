@@ -1,10 +1,12 @@
 const CACHE_PREFIX = 'codempi-';
-const CACHE_NAME = 'codempi-shell-v2';
+const CACHE_NAME = 'codempi-shell-v3';
 
 const APP_SHELL = [
   '/',
   '/manifest.json',
-  '/app-icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
   '/favicon.svg',
   '/logo.png',
 ];
