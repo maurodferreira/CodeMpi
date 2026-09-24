@@ -105,6 +105,25 @@ function validateKey(key: string): void {
   }
 }
 
+function isNonNegativeSafeInteger(
+  value: unknown,
+): value is number {
+  return (
+    typeof value === 'number'
+    && Number.isSafeInteger(value)
+    && value >= 0
+  );
+}
+
+function isPositiveSafeInteger(
+  value: unknown,
+): value is number {
+  return (
+    isNonNegativeSafeInteger(value)
+    && value >= 1
+  );
+}
+
 function parseNumberRecord(
   value: unknown,
   label: string,
@@ -174,12 +193,8 @@ function parsePerformance(
     const failures = entry.failures;
 
     if (
-      typeof attempts !== 'number'
-      || typeof failures !== 'number'
-      || !Number.isInteger(attempts)
-      || !Number.isInteger(failures)
-      || attempts < 0
-      || failures < 0
+      !isNonNegativeSafeInteger(attempts)
+      || !isNonNegativeSafeInteger(failures)
       || failures > attempts
     ) {
       fail('performance contém tentativas/falhas inválidas.');
@@ -226,11 +241,7 @@ function parseProgress(
 
   const progressVersion = value.progressVersion;
 
-  if (
-    typeof progressVersion !== 'number'
-    || !Number.isInteger(progressVersion)
-    || progressVersion < 1
-  ) {
+  if (!isPositiveSafeInteger(progressVersion)) {
     fail('progressVersion é inválida.');
   }
 
@@ -380,11 +391,7 @@ export function parseUpdateSyncInput(
 
   const revision = value.revision;
 
-  if (
-    typeof revision !== 'number'
-    || !Number.isSafeInteger(revision)
-    || revision < 1
-  ) {
+  if (!isPositiveSafeInteger(revision)) {
     fail('revision é inválida.');
   }
 
