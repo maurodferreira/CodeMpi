@@ -8,6 +8,7 @@ import { JourneyMap } from './components/JourneyMap';
 import { LearningMemoryPage } from './components/LearningMemoryPage';
 import { LessonPage } from './components/LessonPage';
 import { MissionPage } from './components/MissionPage';
+import { SearchPage } from './components/SearchPage';
 import { SettingsPage } from './components/SettingsPage';
 import { useMissionRunner } from './hooks/useMissionRunner';
 import { useLearningProgress } from './hooks/useLearningProgress';
@@ -224,6 +225,14 @@ export default function App() {
           levelComplete={levelComplete}
           levelDoneCount={levelDoneCount}
           openMission={openMission}
+        />
+      )}
+
+      {view === 'search' && (
+        <SearchPage
+          concepts={concepts}
+          openMission={openMission}
+          onReview={handleReviewConcept}
         />
       )}
 
