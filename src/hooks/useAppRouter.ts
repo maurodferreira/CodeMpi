@@ -58,41 +58,66 @@ export function parseAppRoute(pathname: string): AppRoute {
   const lessonMatch = normalized.match(/^\/nivel\/n(\d+)\/aula$/i);
 
   if (lessonMatch) {
+    const levelIndex = toLevelIndex(lessonMatch[1]);
+
+    if (levelIndex === undefined) {
+      return { view: 'dashboard', pathname: '/' };
+    }
+
     return {
       view: 'lesson',
       pathname: normalized,
-      levelIndex: toLevelIndex(lessonMatch[1]),
+      levelIndex,
     };
   }
 
   const missionMatch = normalized.match(/^\/nivel\/n(\d+)\/desafio\/(\d+)$/i);
 
   if (missionMatch) {
+    const levelIndex = toLevelIndex(missionMatch[1]);
+    const exerciseIndex = toExerciseIndex(missionMatch[2]);
+
+    if (levelIndex === undefined || exerciseIndex === undefined) {
+      return { view: 'dashboard', pathname: '/' };
+    }
+
     return {
       view: 'mission',
       pathname: normalized,
-      levelIndex: toLevelIndex(missionMatch[1]),
-      exerciseIndex: toExerciseIndex(missionMatch[2]),
+      levelIndex,
+      exerciseIndex,
     };
   }
 
   const levelMatch = normalized.match(/^\/nivel\/n(\d+)$/i);
 
   if (levelMatch) {
+    const levelIndex = toLevelIndex(levelMatch[1]);
+
+    if (levelIndex === undefined) {
+      return { view: 'dashboard', pathname: '/' };
+    }
+
     return {
       view: 'mission',
       pathname: normalized,
-      levelIndex: toLevelIndex(levelMatch[1]),
+      levelIndex,
     };
   }
 
   const completionMatch = normalized.match(/^\/nivel\/n(\d+)\/concluido$/i);
 
   if (completionMatch) {
+    const levelIndex = toLevelIndex(completionMatch[1]);
+
+    if (levelIndex === undefined) {
+      return { view: 'dashboard', pathname: '/' };
+    }
+
     return {
       view: 'completion',
       pathname: normalized,
-      levelIndex: toLevelIndex(completionMatch[1]),
+      levelIndex,
     };
   }
 
