@@ -183,9 +183,18 @@ Quando todo o conteúdo atualmente disponível é concluído, o progresso perman
 
 ### Persistência atual
 
-- LocalStorage
+O CodeMpi continua **local-first**.
 
-Ainda não há backend, autenticação ou sincronização entre dispositivos.
+Hoje:
+
+- progresso, preferências, tema e identidade local usam `localStorage`;
+- a fundação de sessão cloud usa `sessionStorage`, para sobreviver a recarregamentos sem persistir o token indefinidamente;
+- a cloud fica desligada por padrão;
+- ainda não há backend conectado, login visual ou sincronização ativa entre dispositivos.
+
+A sessão cloud já possui validação de usuário, token, expiração e vínculo entre IDs. Sessões inválidas ou expiradas são descartadas automaticamente.
+
+> Quando a autenticação real for conectada, a estratégia final de segurança deve preferir sessão/refresh token protegido pelo servidor (por exemplo, cookie `HttpOnly` seguro) em vez de depender de credenciais de longa duração acessíveis pelo JavaScript.
 
 ---
 
@@ -314,6 +323,24 @@ O Vite normalmente disponibiliza o projeto em:
 ```text
 http://localhost:5173
 ```
+
+### Configuração da Cloud Foundation
+
+A cloud permanece desligada por padrão. O arquivo `.env.example` documenta as variáveis disponíveis:
+
+```env
+VITE_CODEMPI_CLOUD_ENABLED=false
+VITE_CODEMPI_API_URL=http://localhost:3001
+```
+
+Para desenvolvimento futuro com uma API real, crie um arquivo `.env.local` e habilite explicitamente a integração:
+
+```env
+VITE_CODEMPI_CLOUD_ENABLED=true
+VITE_CODEMPI_API_URL=http://localhost:3001
+```
+
+Se a flag não estiver como `true` ou a URL não for HTTP/HTTPS válida, os serviços cloud não são inicializados.
 
 ---
 

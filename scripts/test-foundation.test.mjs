@@ -34,6 +34,9 @@ const authRepositoryModule = await vite.ssrLoadModule('/src/services/authReposit
 const syncRepositoryModule = await vite.ssrLoadModule('/src/services/syncRepository.ts');
 const cloudMigrationModule = await vite.ssrLoadModule('/src/services/cloudMigration.ts');
 const cloudDomainModule = await vite.ssrLoadModule('/src/domain/cloud.ts');
+const cloudConfigModule = await vite.ssrLoadModule('/src/config/cloud.ts');
+const cloudServicesModule = await vite.ssrLoadModule('/src/services/cloudServices.ts');
+const cloudSessionRepositoryModule = await vite.ssrLoadModule('/src/services/cloudSessionRepository.ts');
 
 test('progress keys remain stable', () => {
   assert.equal(progress.getProgressKey(0, 0), '0-0');
@@ -1028,6 +1031,188 @@ test('local to cloud bootstrap clones current local data without mutating it', (
 
   assert.equal(progressData.done['6-9'], 550);
   assert.equal(preferences.interfaceScale, 'large');
+});
+
+
+test('cloud config stays disabled unless explicitly enabled with a valid API URL', () => {
+  assert.deepEqual(
+    cloudConfigModule.readCloudConfig({}),
+    {
+      enabled: false,
+      apiBaseUrl: null,
+    },
+  );
+
+  assert.deepEqual(
+    cloudConfigModule.readCloudConfig({
+      VITE_CODEMPI_CLOUD_ENABLED: 'true',
+      VITE_CODEMPI_API_URL: 'invalid-url',
+    }),
+    {
+      enabled: false,
+      apiBaseUrl: null,
+    },
+  );
+
+  assert.deepEqual(
+    cloudConfigModule.readCloudConfig({
+      VITE_CODEMPI_CLOUD_ENABLED: 'true',
+      VITE_CODEMPI_API_URL: 'https://api.codempi.dev/',
+    }),
+    {
+      enabled: true,
+      apiBaseUrl: 'https://api.codempi.dev',
+    },
+  );
+});
+
+test('cloud services are only composed when cloud is enabled', () => {
+  assert.equal(
+    cloudServicesModule.createCloudServices({
+      enabled: false,
+      apiBaseUrl: 'https://api.codempi.dev',
+    }),
+    null,
+  );
+
+  const services = cloudServicesModule.createCloudServices({
+    enabled: true,
+    apiBaseUrl: 'https://api.codempi.dev',
+  });
+
+  assert.ok(services);
+  assert.equal(typeof services.api.request, 'function');
+  assert.equal(typeof services.auth.signIn, 'function');
+  assert.equal(typeof services.sync.downloadSnapshot, 'function');
+  assert.equal(typeof services.session.load, 'function');
+});
+
+test('cloud session repository persists a valid authenticated identity', () => {
+  const data = new Map();
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = cloudSessionRepositoryModule.createCloudSessionRepository({
+    persistence,
+    now: () => Date.parse('2026-09-24T19:00:00.000Z'),
+  });
+
+  const identity = {
+    user: {
+      id: 'cloud_1',
+      kind: 'cloud',
+      email: 'aluno@codempi.dev',
+      displayName: 'Aluno',
+      createdAt: '2026-09-24T18:00:00.000Z',
+    },
+    session: {
+      userId: 'cloud_1',
+      kind: 'cloud',
+      accessToken: 'access-token',
+      expiresAt: '2026-09-24T20:00:00.000Z',
+    },
+  };
+
+  assert.equal(repository.save(identity), true);
+  assert.deepEqual(repository.load(), identity);
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.cloudUser).id,
+    'cloud_1',
+  );
+  assert.equal(
+    data.get(persistenceModule.STORAGE_KEYS.cloudSession).accessToken,
+    'access-token',
+  );
+});
+
+test('cloud session repository clears expired sessions automatically', () => {
+  const data = new Map([
+    [persistenceModule.STORAGE_KEYS.cloudUser, {
+      id: 'cloud_1',
+      kind: 'cloud',
+      email: 'aluno@codempi.dev',
+      createdAt: '2026-09-24T18:00:00.000Z',
+    }],
+    [persistenceModule.STORAGE_KEYS.cloudSession, {
+      userId: 'cloud_1',
+      kind: 'cloud',
+      accessToken: 'expired-token',
+      expiresAt: '2026-09-24T18:30:00.000Z',
+    }],
+  ]);
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = cloudSessionRepositoryModule.createCloudSessionRepository({
+    persistence,
+    now: () => Date.parse('2026-09-24T19:00:00.000Z'),
+  });
+
+  assert.equal(repository.load(), null);
+  assert.equal(data.has(persistenceModule.STORAGE_KEYS.cloudUser), false);
+  assert.equal(data.has(persistenceModule.STORAGE_KEYS.cloudSession), false);
+});
+
+test('cloud session repository rejects mismatched user and session IDs', () => {
+  const data = new Map();
+
+  const persistence = {
+    read(key) {
+      return data.has(key) ? structuredClone(data.get(key)) : null;
+    },
+    write(key, value) {
+      data.set(key, structuredClone(value));
+      return true;
+    },
+    remove(key) {
+      return data.delete(key);
+    },
+  };
+
+  const repository = cloudSessionRepositoryModule.createCloudSessionRepository({
+    persistence,
+    now: () => Date.parse('2026-09-24T19:00:00.000Z'),
+  });
+
+  const saved = repository.save({
+    user: {
+      id: 'cloud_1',
+      kind: 'cloud',
+      email: 'aluno@codempi.dev',
+      createdAt: '2026-09-24T18:00:00.000Z',
+    },
+    session: {
+      userId: 'cloud_2',
+      kind: 'cloud',
+      accessToken: 'access-token',
+      expiresAt: '2026-09-24T20:00:00.000Z',
+    },
+  });
+
+  assert.equal(saved, false);
+  assert.equal(data.size, 0);
 });
 
 test('N1-N7 curriculum keeps 70 exercises and 252 valid official test cases', async () => {
