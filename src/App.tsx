@@ -26,6 +26,7 @@ import { useLearningProgress } from './hooks/useLearningProgress';
 import { useMissionRunner } from './hooks/useMissionRunner';
 import { useProgressStore } from './hooks/useProgressStore';
 import { useTheme } from './hooks/useTheme';
+import { useUserSession } from './hooks/useUserSession';
 import type { ConceptSummary, View } from './types';
 import { findConceptMissionTarget, getNextExerciseIndex } from './utils/missionTargets';
 import { getActivityStreak, getLocalDateKey } from './utils/progress';
@@ -36,6 +37,7 @@ export default function App() {
   const { theme, setTheme } = useTheme();
   const { preferences, setPreferences } = useAppPreferences();
   const { canInstall, isInstalled, requestInstall } = useInstallPrompt();
+  const { user, session } = useUserSession();
 
   const {
     getKey,
@@ -351,6 +353,8 @@ export default function App() {
           canInstall={canInstall}
           isInstalled={isInstalled}
           onInstall={requestInstall}
+          user={user}
+          session={session}
         />
       )}
 
